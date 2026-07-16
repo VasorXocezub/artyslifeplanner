@@ -578,7 +578,17 @@ export default function HabitsView() {
                   <label>Goal period</label>
                   <select
                     value={form.goal_period}
-                    onChange={(e) => setForm({ ...form, goal_period: e.target.value })}
+                    onChange={(e) => {
+                      const period = e.target.value
+                      const defaultTaskDaysMode =
+                        period === 'week' ? 'days_per_week' : period === 'month' ? 'days_per_month' : 'every_day'
+                      setForm({
+                        ...form,
+                        goal_period: period,
+                        task_days_mode: defaultTaskDaysMode,
+                        task_days_count: form.target_count,
+                      })
+                    }}
                   >
                     <option value="day">Every day</option>
                     <option value="week">Every week</option>
