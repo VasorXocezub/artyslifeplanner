@@ -6,21 +6,21 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: '🎂 Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#F5A8C0', tint: '#FDF0F1' },
+      { key: 'contacts', title: '🎂 Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#6BACF2', tint: '#EAF3FC' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps ✨', enabled: true, accent: '#3A3A3A', tint: '#FCF3EE' },
-      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#E31E24', tint: '#FBF3EF' },
-      { key: 'todos', title: 'To-Do', desc: 'One thing at a time, bestie 📋', enabled: true, accent: '#E9C86A', tint: '#FBEFE7' },
+      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps ✨', enabled: true, accent: '#003B7B', tint: '#E8F5FA' },
+      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#BA0000', tint: '#FDEAEA' },
+      { key: 'todos', title: 'To-Do', desc: 'One thing at a time, bestie 📋', enabled: true, accent: '#DF011A', tint: '#FDEAEA' },
     ],
   },
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#3A3A3A', tint: '#F0EFEE' },
+      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#003B7B', tint: '#F0F4FA' },
     ],
   },
 ]
@@ -133,43 +133,43 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
         <div className="stat-strip">
           {!hiddenModules.includes('contacts') && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#F5A8C0' }} />
+              <span className="stat-dot" style={{ background: '#6BACF2' }} />
               {birthdayLabel()}
             </div>
           )}
           {!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#E9C86A' }} />
+              <span className="stat-dot" style={{ background: '#DF011A' }} />
               🎉 {stats.birthdaysThisMonth.length} birthday{stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month
             </div>
           )}
           {!hiddenModules.includes('goals') && stats.goalsInProgress > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#3A3A3A' }} />
+              <span className="stat-dot" style={{ background: '#003B7B' }} />
               🚀 {stats.goalsInProgress} goal{stats.goalsInProgress > 1 ? 's' : ''} in motion
             </div>
           )}
           {!hiddenModules.includes('habits') && stats.habitsTotal > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#E31E24' }} />
+              <span className="stat-dot" style={{ background: '#BA0000' }} />
               🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
             </div>
           )}
           {!hiddenModules.includes('finances') && stats.hasTransactions && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#2A2A2A' : '#E31E24' }} />
+              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#001F42' : '#BA0000' }} />
               💸 {formatMoney(stats.netBalance, user?.user_metadata?.currency)} net
             </div>
           )}
           {!hiddenModules.includes('finances') && stats.hasSavings && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#3A3A3A' }} />
+              <span className="stat-dot" style={{ background: '#003B7B' }} />
               🐷 {formatMoney(stats.totalSaved, user?.user_metadata?.currency)} saved
             </div>
           )}
           {!hiddenModules.includes('todos') && stats.todosOpen > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#3A3A3A' }} />
+              <span className="stat-dot" style={{ background: '#003B7B' }} />
               📋 {stats.todosOpen} to-do{stats.todosOpen > 1 ? 's' : ''} open
             </div>
           )}

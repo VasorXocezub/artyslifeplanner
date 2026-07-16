@@ -6,7 +6,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['#F5A8C0', '#E31E24', '#3A3A3A', '#3A3A3A']
+const CHIP_COLORS = ['#6BACF2', '#BA0000', '#003B7B', '#003B7B']
 const ICON_OPTIONS = ['🎂', '🎈', '🎁', '✨', '👑', '💐', '🦋', '🌸', '☕', '🍾', '💌', '🧁']
 
 function parseLocalDate(dateStr) {

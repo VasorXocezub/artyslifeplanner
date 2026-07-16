@@ -20,11 +20,11 @@
   content: '';
   position: absolute;
   top: 0;
-  right: -11px;
+  right: -17px;
   bottom: 0;
-  width: 22px;
-  background-image: radial-gradient(circle 11px at 11px 11px, var(--sidebar-bg) 11px, transparent 11.5px);
-  background-size: 22px 22px;
+  width: 34px;
+  background-image: radial-gradient(circle 17px at 17px 17px, var(--sidebar-bg) 17px, transparent 17.5px);
+  background-size: 34px 34px;
   background-repeat: repeat-y;
   pointer-events: none;
 }
@@ -83,7 +83,7 @@
 
 .nav-item:not(.active):hover {
   color: #fff;
-  background: rgba(168, 207, 234, 0.18);
+  background: rgba(107, 172, 242, 0.18);
 }
 
 .nav-item[disabled] {
@@ -92,7 +92,7 @@
 }
 
 .sidebar-settings-trigger {
-  background: rgba(168, 207, 234, 0.15);
+  background: rgba(107, 172, 242, 0.15);
   border: none;
   color: var(--sidebar-text);
   opacity: 0.85;
@@ -105,7 +105,7 @@
 
 .sidebar-settings-trigger:hover {
   opacity: 1;
-  background: rgba(168, 207, 234, 0.25);
+  background: rgba(107, 172, 242, 0.25);
 }
 
 .sidebar-footer {
@@ -176,14 +176,14 @@
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(227, 30, 36, 0.25);
+  box-shadow: 0 3px 10px rgba(186, 0, 0, 0.25);
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-primary:hover {
-  background: #C4181D;
+  background: #8A0000;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(227, 30, 36, 0.3);
+  box-shadow: 0 4px 14px rgba(186, 0, 0, 0.3);
 }
 
 .btn-ghost {
@@ -1555,7 +1555,7 @@
 }
 
 .tick-stepper-done .tick-btn-add:hover {
-  background: #C4181D;
+  background: #8A0000;
 }
 
 .toggle-group {
@@ -1714,15 +1714,15 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  max-width: 480px;
-  height: 10px;
+  max-width: 560px;
+  height: 16px;
   background-image:
-    radial-gradient(circle, var(--pink) 4px, transparent 4.2px),
-    radial-gradient(circle, var(--coral) 4px, transparent 4.2px),
-    radial-gradient(circle, var(--butter) 4px, transparent 4.2px),
-    radial-gradient(circle, var(--baby) 4px, transparent 4.2px);
-  background-size: 40px 10px;
-  background-position: 0 0, 10px 0, 20px 0, 30px 0;
+    radial-gradient(circle, var(--pink) 6.5px, transparent 6.8px),
+    radial-gradient(circle, var(--coral) 6.5px, transparent 6.8px),
+    radial-gradient(circle, var(--butter) 6.5px, transparent 6.8px),
+    radial-gradient(circle, var(--baby) 6.5px, transparent 6.8px);
+  background-size: 60px 16px;
+  background-position: 0 0, 15px 0, 30px 0, 45px 0;
   background-repeat: repeat-x;
 }
 

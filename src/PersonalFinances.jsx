@@ -10,7 +10,7 @@ const emptyForm = {
   notes: '',
 }
 
-const CARD_COLORS = ['#F5A8C0', '#E31E24', '#3A3A3A', '#3A3A3A', '#3A3A3A', '#E9C86A']
+const CARD_COLORS = ['#6BACF2', '#BA0000', '#003B7B', '#003B7B', '#003B7B', '#DF011A']
 
 function formatDate(d) {
   if (!d) return null
