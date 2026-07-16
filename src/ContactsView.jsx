@@ -6,7 +6,8 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
+const CHIP_COLORS = ['#D9A8B8', '#C98A72', '#AFC6DD', '#243B63']
+const ICON_OPTIONS = ['🎂', '🎈', '🎁', '✨', '👑', '💐', '🦋', '🌸', '☕', '🍾', '💌', '🧁']
 
 function parseLocalDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -17,6 +18,11 @@ function formatMonthDay(month, day) {
   return `${MONTH_NAMES[month].slice(0, 3)} ${day}`
 }
 
+const emptyForm = {
+  name: '', icon: '🎂', birthday: '',
+  fave_flowers: '', fave_store: '', coffee_order: '', gift_ideas: '', gift_notes: '',
+}
+
 export default function ContactsView() {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,7 +30,7 @@ export default function ContactsView() {
   const [viewDate, setViewDate] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState({ name: '', birthday: '' })
+  const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -36,7 +42,7 @@ export default function ContactsView() {
     setError(null)
     const { data, error } = await supabase
       .from('contacts')
-      .select('id, name, birthday')
+      .select('*')
       .not('birthday', 'is', null)
       .order('name', { ascending: true })
 
@@ -47,20 +53,29 @@ export default function ContactsView() {
 
   function openAdd(prefillDate) {
     setEditingId(null)
-    setForm({ name: '', birthday: prefillDate || new Date().toISOString().split('T')[0] })
+    setForm({ ...emptyForm, birthday: prefillDate || new Date().toISOString().split('T')[0] })
     setModalOpen(true)
   }
 
   function openEdit(contact) {
     setEditingId(contact.id)
-    setForm({ name: contact.name || '', birthday: contact.birthday || '' })
+    setForm({
+      name: contact.name || '',
+      icon: contact.icon || '🎂',
+      birthday: contact.birthday || '',
+      fave_flowers: contact.fave_flowers || '',
+      fave_store: contact.fave_store || '',
+      coffee_order: contact.coffee_order || '',
+      gift_ideas: contact.gift_ideas || '',
+      gift_notes: contact.gift_notes || '',
+    })
     setModalOpen(true)
   }
 
   function closeModal() {
     setModalOpen(false)
     setEditingId(null)
-    setForm({ name: '', birthday: '' })
+    setForm(emptyForm)
   }
 
   async function handleSave(e) {
@@ -68,7 +83,16 @@ export default function ContactsView() {
     if (!form.name.trim() || !form.birthday) return
     setSaving(true)
 
-    const payload = { name: form.name.trim(), birthday: form.birthday }
+    const payload = {
+      name: form.name.trim(),
+      icon: form.icon || '🎂',
+      birthday: form.birthday,
+      fave_flowers: form.fave_flowers.trim() || null,
+      fave_store: form.fave_store.trim() || null,
+      coffee_order: form.coffee_order.trim() || null,
+      gift_ideas: form.gift_ideas.trim() || null,
+      gift_notes: form.gift_notes.trim() || null,
+    }
 
     let error
     if (editingId) {
@@ -89,7 +113,7 @@ export default function ContactsView() {
 
   async function handleDelete() {
     if (!editingId) return
-    if (!confirm('Remove this birthday?')) return
+    if (!confirm('Remove this from the Cake Club?')) return
     setSaving(true)
     const { error } = await supabase.from('contacts').delete().eq('id', editingId)
     setSaving(false)
@@ -139,6 +163,8 @@ export default function ContactsView() {
       .sort((a, b) => a.nextDate - b.nextDate)
   }, [contacts])
 
+  const upNext = upcoming.slice(0, 3)
+
   function goToMonth(delta) {
     setViewDate(new Date(year, month + delta, 1))
   }
@@ -147,10 +173,8 @@ export default function ContactsView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">Birthdays</h1>
-          <p className="view-subtitle">
-            {contacts.length === 0 ? 'Not a single candle lit yet, bestie' : `${contacts.length} ${contacts.length === 1 ? 'cake day' : 'cake days'} on the books, iconic`}
-          </p>
+          <h1 className="view-title">🎂 Cake Club</h1>
+          <p className="view-subtitle cake-club-subtitle">It's giving thoughtful queen. ✨</p>
         </div>
         <div className="toolbar">
           <button className="btn-primary" onClick={() => openAdd()}>+ Add birthday</button>
@@ -162,6 +186,30 @@ export default function ContactsView() {
 
       {!loading && !error && (
         <>
+          {upNext.length > 0 && (
+            <div className="upnext-section">
+              <p className="module-group-label">UP NEXT</p>
+              <div className="card-grid">
+                {upNext.map((c, i) => (
+                  <div
+                    className="contact-card upnext-card"
+                    key={c.id}
+                    onClick={() => openEdit(c)}
+                    style={{ borderTopColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
+                  >
+                    <h3 className="contact-name">{c.icon || '🎂'} {c.name}</h3>
+                    <p className="habit-schedule">
+                      {formatMonthDay(c.month, c.day)} · {c.daysAway === 0 ? 'today!' : `in ${c.daysAway}d`}
+                    </p>
+                    <span className="module-link" style={{ color: CHIP_COLORS[i % CHIP_COLORS.length] }}>
+                      Open Gift Vault →
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="calendar-card">
             <div className="calendar-nav">
               <button className="cal-nav-btn" onClick={() => goToMonth(-1)}>‹</button>
@@ -195,7 +243,7 @@ export default function ContactsView() {
                             openEdit(c)
                           }}
                         >
-                          🎂 {c.name}
+                          {c.icon || '🎂'} {c.name}
                         </span>
                       ))}
                     </div>
@@ -216,7 +264,7 @@ export default function ContactsView() {
                     onClick={() => openEdit(c)}
                     style={{ borderLeftColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
                   >
-                    <span className="upcoming-name">{c.name}</span>
+                    <span className="upcoming-name">{c.icon || '🎂'} {c.name}</span>
                     <span className="upcoming-date">
                       {formatMonthDay(c.month, c.day)} · {c.daysAway === 0 ? 'today' : `in ${c.daysAway}d`}
                     </span>
@@ -228,7 +276,7 @@ export default function ContactsView() {
 
           {contacts.length === 0 && (
             <div className="empty-state">
-              <h3>No cakes yet, but we're manifesting 🎂</h3>
+              <h3>No cake emergencies this month. 🎂</h3>
               <p>Tap a date above, or hit "+ Add birthday" to get started, queen ✨</p>
             </div>
           )}
@@ -237,8 +285,8 @@ export default function ContactsView() {
 
       {modalOpen && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingId ? 'Edit birthday' : 'New birthday'}</h2>
+          <div className="modal gift-vault-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{editingId ? 'Gift Vault' : 'New birthday'}</h2>
             <form onSubmit={handleSave}>
               <div className="field">
                 <label>Name</label>
@@ -250,6 +298,33 @@ export default function ContactsView() {
                   required
                 />
               </div>
+
+              <div className="field">
+                <label>Icon</label>
+                <div className="icon-picker">
+                  <span className="icon-preview">{form.icon || '🎂'}</span>
+                  <input
+                    className="icon-custom-input"
+                    value={form.icon}
+                    maxLength={4}
+                    onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                    placeholder="Paste any emoji"
+                  />
+                </div>
+                <div className="icon-grid">
+                  {ICON_OPTIONS.map((emoji) => (
+                    <button
+                      type="button"
+                      key={emoji}
+                      className={`icon-cell ${form.icon === emoji ? 'icon-cell-active' : ''}`}
+                      onClick={() => setForm({ ...form, icon: emoji })}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="field">
                 <label>Birthday</label>
                 <input
@@ -259,6 +334,58 @@ export default function ContactsView() {
                   required
                 />
               </div>
+
+              <div className="gift-vault-divider">
+                <span className="module-group-label">🔐 GIFT VAULT</span>
+                <p className="field-hint">Their favorites, so you're always ready.</p>
+              </div>
+
+              <div className="field-row">
+                <div className="field">
+                  <label>Fave flowers</label>
+                  <input
+                    value={form.fave_flowers}
+                    onChange={(e) => setForm({ ...form, fave_flowers: e.target.value })}
+                    placeholder="Peonies, sunflowers…"
+                  />
+                </div>
+                <div className="field">
+                  <label>Fave store</label>
+                  <input
+                    value={form.fave_store}
+                    onChange={(e) => setForm({ ...form, fave_store: e.target.value })}
+                    placeholder="Zara, Sephora…"
+                  />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Coffee order</label>
+                <input
+                  value={form.coffee_order}
+                  onChange={(e) => setForm({ ...form, coffee_order: e.target.value })}
+                  placeholder="Oat milk cappuccino, extra hot…"
+                />
+              </div>
+
+              <div className="field">
+                <label>Gift ideas</label>
+                <textarea
+                  value={form.gift_ideas}
+                  onChange={(e) => setForm({ ...form, gift_ideas: e.target.value })}
+                  placeholder="Things they've mentioned wanting…"
+                />
+              </div>
+
+              <div className="field">
+                <label>Other notes</label>
+                <textarea
+                  value={form.gift_notes}
+                  onChange={(e) => setForm({ ...form, gift_notes: e.target.value })}
+                  placeholder="Anything else worth remembering…"
+                />
+              </div>
+
               <div className="modal-actions">
                 <div>
                   {editingId && (

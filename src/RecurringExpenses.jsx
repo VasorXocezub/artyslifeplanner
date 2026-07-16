@@ -3,7 +3,7 @@ import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
 const emptyForm = { name: '', amount: '', category: '', frequency: 'monthly', next_due: '', start_date: '', end_date: '' }
-const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
+const CARD_COLORS = ['#D9A8B8', '#C98A72', '#AFC6DD', '#243B63', '#AFC6DD', '#E9C86A']
 const FREQUENCY_LABELS = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }
 
 function toMonthly(amount, frequency) {
@@ -131,6 +131,10 @@ export default function RecurringExpenses({ currency }) {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const knownCategories = Array.from(
+    new Set(items.map((i) => i.category).filter(Boolean))
+  ).sort()
+
   const activeItems = items.filter((i) => {
     if (!i.active) return false
     if (i.start_date && new Date(i.start_date + 'T00:00:00') > today) return false
@@ -278,7 +282,13 @@ export default function RecurringExpenses({ currency }) {
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   placeholder="Subscriptions, housing, insurance…"
+                  list="recurring-category-options"
                 />
+                <datalist id="recurring-category-options">
+                  {knownCategories.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="field">
                 <label>Next due date (optional)</label>

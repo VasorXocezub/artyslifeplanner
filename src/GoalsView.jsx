@@ -16,9 +16,9 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS = {
-  not_started: '#A8CFEA',
-  in_progress: '#EF7B4D',
-  done: '#F2B6C6',
+  not_started: '#AFC6DD',
+  in_progress: '#C98A72',
+  done: '#D9A8B8',
 }
 
 function formatDate(d) {
@@ -123,6 +123,10 @@ export default function GoalsView() {
     fetchGoals()
   }
 
+  const knownCategories = Array.from(
+    new Set(goals.map((g) => g.category).filter(Boolean))
+  ).sort()
+
   const filtered = goals.filter((g) => {
     const q = search.toLowerCase()
     const matchesSearch =
@@ -182,7 +186,7 @@ export default function GoalsView() {
               className="contact-card"
               key={g.id}
               onClick={() => openEdit(g)}
-              style={{ borderTopColor: STATUS_COLORS[g.status] || '#F2B6C6' }}
+              style={{ borderTopColor: STATUS_COLORS[g.status] || '#D9A8B8' }}
             >
               <span className="status-badge" style={{ background: STATUS_COLORS[g.status] }}>
                 {STATUS_LABELS[g.status]}
@@ -221,7 +225,13 @@ export default function GoalsView() {
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   placeholder="Health, career, finances…"
+                  list="goal-category-options"
                 />
+                <datalist id="goal-category-options">
+                  {knownCategories.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="field">
                 <label>Target date</label>

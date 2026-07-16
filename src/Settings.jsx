@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { supabase } from './lib/supabase'
 
 const TOGGLEABLE_MODULES = [
-  { key: 'contacts', label: 'Birthdays', icon: '🎂' },
+  { key: 'contacts', label: '🎂 Cake Club', icon: '🎂' },
   { key: 'goals', label: 'Goals', icon: '🌱' },
   { key: 'habits', label: 'Habits', icon: '🔥' },
   { key: 'finances', label: 'Finances', icon: '💸' },
@@ -11,7 +10,6 @@ const TOGGLEABLE_MODULES = [
 
 export default function Settings({ hiddenModules, onSave, onClose }) {
   const [selected, setSelected] = useState(new Set(hiddenModules))
-  const [saving, setSaving] = useState(false)
 
   function toggle(key) {
     setSelected((prev) => {
@@ -22,15 +20,9 @@ export default function Settings({ hiddenModules, onSave, onClose }) {
     })
   }
 
-  async function handleSave() {
-    setSaving(true)
-    const hidden_modules = Array.from(selected)
-    const { error } = await supabase.auth.updateUser({ data: { hidden_modules } })
-    setSaving(false)
-    if (!error) {
-      onSave(hidden_modules)
-      onClose()
-    }
+  function handleSave() {
+    onSave(Array.from(selected))
+    onClose()
   }
 
   return (
@@ -62,8 +54,8 @@ export default function Settings({ hiddenModules, onSave, onClose }) {
           <div />
           <div className="modal-actions-right">
             <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button type="button" className="btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
+            <button type="button" className="btn-primary" onClick={handleSave}>
+              Save
             </button>
           </div>
         </div>

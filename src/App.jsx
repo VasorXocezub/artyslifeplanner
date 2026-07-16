@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
-import Auth from './Auth'
+import { getDisplayName, setDisplayName, getHiddenModules, setHiddenModules } from './lib/localPrefs'
 import Settings from './Settings'
 import Dashboard from './Dashboard'
 import ContactsView from './ContactsView'
@@ -12,7 +11,7 @@ import './App.css'
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
-  { key: 'contacts', label: 'Birthdays', num: '01', enabled: true },
+  { key: 'contacts', label: '🎂 Cake Club', num: '01', enabled: true },
   { key: 'goals', label: 'Goals', num: '02', enabled: true },
   { key: 'habits', label: 'Habits', num: '03', enabled: true },
   { key: 'finances', label: 'Finances', num: '04', enabled: true },
@@ -21,55 +20,29 @@ const NAV_ITEMS = [
 
 function App() {
   const [view, setView] = useState('home')
-  const [session, setSession] = useState(undefined)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
+  const [displayName, setDisplayNameState] = useState(getDisplayName())
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [hiddenModules, setHiddenModules] = useState([])
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setHiddenModules(data.session?.user?.user_metadata?.hidden_modules || [])
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-      setHiddenModules(newSession?.user?.user_metadata?.hidden_modules || [])
-    })
-
-    return () => listener.subscription.unsubscribe()
-  }, [])
+  const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
 
   useEffect(() => {
     if (hiddenModules.includes(view)) setView('home')
   }, [hiddenModules, view])
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-  }
-
-  async function handleSaveName() {
+  function handleSaveName() {
     if (!nameInput.trim()) return
-    const { data, error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } })
-    if (!error && data.user) {
-      setSession((s) => ({ ...s, user: data.user }))
-      setEditingName(false)
-    }
+    setDisplayName(nameInput.trim())
+    setDisplayNameState(nameInput.trim())
+    setEditingName(false)
   }
 
-  // Still checking for an existing session
-  if (session === undefined) {
-    return (
-      <div className="auth-screen">
-        <p className="loading">Loading…</p>
-      </div>
-    )
+  function handleSaveModules(newHidden) {
+    setHiddenModules(newHidden)
+    setHiddenModulesState(newHidden)
   }
 
-  if (!session) {
-    return <Auth />
-  }
+  const localUser = { user_metadata: { full_name: displayName } }
 
   return (
     <div className="app">
@@ -107,16 +80,16 @@ function App() {
             </div>
           ) : (
             <>
-              {session.user.user_metadata?.full_name || session.user.email}
+              {displayName || 'you'}
               {' · '}
               <button
                 className="name-edit-trigger"
                 onClick={() => {
-                  setNameInput(session.user.user_metadata?.full_name || '')
+                  setNameInput(displayName)
                   setEditingName(true)
                 }}
               >
-                {session.user.user_metadata?.full_name ? 'edit name' : 'set your name'}
+                {displayName ? 'edit name' : 'set your name'}
               </button>
             </>
           )}
@@ -124,10 +97,9 @@ function App() {
         <button className="sidebar-settings-trigger" onClick={() => setSettingsOpen(true)}>
           ⚙ Modules
         </button>
-        <button className="sidebar-logout" onClick={handleLogout}>Log out</button>
       </aside>
       <main className="main">
-        {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
+        {view === 'home' && <Dashboard onNavigate={setView} user={localUser} hiddenModules={hiddenModules} />}
         {view === 'contacts' && <ContactsView />}
         {view === 'goals' && <GoalsView />}
         {view === 'habits' && <HabitsView />}
@@ -137,7 +109,7 @@ function App() {
       {settingsOpen && (
         <Settings
           hiddenModules={hiddenModules}
-          onSave={setHiddenModules}
+          onSave={handleSaveModules}
           onClose={() => setSettingsOpen(false)}
         />
       )}

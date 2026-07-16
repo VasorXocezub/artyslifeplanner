@@ -251,7 +251,7 @@
 .contact-card {
   background: var(--surface);
   color: var(--ink);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 30px 20px 16px;
   position: relative;
   box-shadow: 0 4px 14px rgba(107, 27, 61, 0.12);
@@ -287,8 +287,8 @@
 }
 
 .contact-name {
-  font-family: var(--font-display);
-  font-size: 20px;
+  font-family: var(--font-script);
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.3;
   margin: 0;
@@ -332,10 +332,6 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.hero-panel {
-  position: relative;
 }
 
 .empty-state {
@@ -417,7 +413,7 @@
   width: 100%;
   background: #fff;
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 9px 12px;
   font-size: 14px;
   font-weight: 600;
@@ -483,6 +479,31 @@
   font-weight: 700;
 }
 
+.cake-club-subtitle {
+  font-family: var(--font-script);
+  font-size: 20px;
+  color: var(--coral);
+  font-weight: 700;
+}
+
+.gift-vault-divider {
+  margin: 20px 0 14px 0;
+  padding-top: 16px;
+  border-top: 2px dashed var(--border);
+}
+
+.gift-vault-divider .field-hint {
+  margin: 6px 0 0 0;
+}
+
+.upnext-section {
+  margin-bottom: 28px;
+}
+
+.upnext-card {
+  cursor: pointer;
+}
+
 .calendar-card {
   background: var(--surface);
   border: 2px solid var(--border);
@@ -541,7 +562,7 @@
 
 .cal-cell {
   min-height: 64px;
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -599,7 +620,7 @@
   background: var(--surface);
   border: 2px solid var(--border);
   border-left-width: 5px;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
@@ -705,7 +726,7 @@
   justify-content: space-between;
   background: var(--bg);
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 12px 14px;
 }
 
@@ -1030,7 +1051,7 @@
   align-items: center;
   background: var(--bg);
   border: 2px solid var(--border-strong);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 0 12px;
 }
 
@@ -1059,7 +1080,7 @@
 .converter-result {
   flex: 1;
   background: var(--pink-soft);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 10px 14px;
   font-weight: 700;
   color: var(--ink);
@@ -1083,7 +1104,7 @@
 .total-card {
   background: var(--surface);
   border: 2px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
@@ -1122,7 +1143,7 @@
   background: var(--surface);
   border: 2px solid var(--border);
   border-left-width: 5px;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 14px 18px;
   display: flex;
   justify-content: space-between;
@@ -1173,6 +1194,17 @@
   text-align: right;
 }
 
+.todo-priority-select {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  outline: none;
+}
+
 .todo-date-input {
   background: var(--surface);
   border: 2px solid var(--border);
@@ -1199,7 +1231,7 @@
   gap: 12px;
   background: var(--surface);
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 12px 14px;
 }
 
@@ -1296,7 +1328,7 @@
   align-items: center;
   justify-content: center;
   background: var(--bg);
-  border-radius: 12px;
+  border-radius: 16px;
   flex-shrink: 0;
 }
 
@@ -1304,7 +1336,7 @@
   flex: 1;
   background: #fff;
   border: 2px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 9px 12px;
   font-size: 16px;
   color: var(--ink);
@@ -1536,7 +1568,7 @@
   background: #fff;
   border: 2px solid var(--border);
   color: var(--ink-dim);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 9px 12px;
   font-size: 13px;
   font-weight: 700;
@@ -1671,9 +1703,27 @@
 
 /* ---------- Dashboard ---------- */
 .hero-panel {
+  position: relative;
   padding: 6px 0 28px;
-  border-bottom: 3px dashed var(--border-strong);
   margin-bottom: 24px;
+}
+
+.hero-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: 480px;
+  height: 10px;
+  background-image:
+    radial-gradient(circle, var(--pink) 4px, transparent 4.2px),
+    radial-gradient(circle, var(--coral) 4px, transparent 4.2px),
+    radial-gradient(circle, var(--butter) 4px, transparent 4.2px),
+    radial-gradient(circle, var(--baby) 4px, transparent 4.2px);
+  background-size: 40px 10px;
+  background-position: 0 0, 10px 0, 20px 0, 30px 0;
+  background-repeat: repeat-x;
 }
 
 .hero-eyebrow {
@@ -1737,23 +1787,6 @@
   letter-spacing: 0.12em;
   color: var(--olive);
   margin: 0 0 14px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.module-group-label::after {
-  content: '';
-  flex: 1;
-  height: 2px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--olive) 0,
-    var(--olive) 4px,
-    transparent 4px,
-    transparent 8px
-  );
-  opacity: 0.5;
 }
 
 .module-grid {

@@ -10,7 +10,7 @@ const emptyForm = {
   notes: '',
 }
 
-const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
+const CARD_COLORS = ['#D9A8B8', '#C98A72', '#AFC6DD', '#243B63', '#AFC6DD', '#E9C86A']
 
 function formatDate(d) {
   if (!d) return null
@@ -143,6 +143,10 @@ export default function PersonalFinances({ currency }) {
       .sort((a, b) => b.total - a.total)
   })()
   const maxCategoryTotal = categoryTotals[0]?.total || 1
+
+  const knownCategories = Array.from(
+    new Set(transactions.map((t) => t.category).filter(Boolean))
+  ).sort()
 
   const filtered = monthTransactions.filter((t) => {
     const q = search.toLowerCase()
@@ -329,7 +333,13 @@ export default function PersonalFinances({ currency }) {
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   placeholder="Groceries, salary, rent…"
+                  list="tx-category-options"
                 />
+                <datalist id="tx-category-options">
+                  {knownCategories.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="field">
                 <label>Notes</label>
