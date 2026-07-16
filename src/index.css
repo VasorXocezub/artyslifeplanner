@@ -1,29 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Caveat:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #FBF0F5;
+  --bg: #FDF1E4;
   --surface: #FFFFFF;
-  --sidebar-bg: #E9DEF5;
+  --sidebar-bg: #5A1730;
+  --sidebar-text: #F7E4E9;
 
-  --ink: #4A3B57;
-  --ink-dim: #8B7C99;
-  --ink-faint: #B4A9C2;
+  --ink: #4A1228;
+  --ink-dim: #8C5468;
+  --ink-faint: #C9A5B4;
 
-  --lavender: #B49BD9;
-  --lavender-soft: #DCD0EE;
-  --pink: #EE93BE;
-  --pink-soft: #F9D6E4;
-  --blue: #7FAEDB;
-  --blue-soft: #C9E0F0;
-  --mint: #92CDBB;
-  --mint-soft: #D2ECE3;
+  --pink: #E0457B;
+  --pink-soft: #F6C9DA;
+  --coral: #E8623C;
+  --coral-soft: #F7D2BF;
+  --olive: #8A9A5B;
+  --olive-dark: #6F7D46;
+  --maroon: #5A1730;
+  --maroon-soft: #E9C9D2;
 
-  --border: #EBDCEA;
-  --border-strong: #DCC5DE;
-  --danger: #E0728C;
+  --border: #F2DCC9;
+  --border-strong: #E8C4A8;
+  --danger: #C1425A;
 
-  --font-display: 'Plus Jakarta Sans', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --font-script: 'Caveat', cursive;
+  --font-body: 'Work Sans', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
@@ -36,7 +38,7 @@ body {
   background-size: 22px 22px;
   color: var(--ink);
   font-family: var(--font-body);
-  font-weight: 500;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 

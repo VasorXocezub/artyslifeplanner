@@ -18,7 +18,7 @@ function calcStreak(dateSet) {
   return streak
 }
 
-const CARD_COLORS = ['#EE93BE', '#B49BD9', '#7FAEDB', '#92CDBB']
+const CARD_COLORS = ['#E0457B', '#E8623C', '#8A9A5B', '#5A1730']
 
 export default function HabitsView() {
   const [habits, setHabits] = useState([])
