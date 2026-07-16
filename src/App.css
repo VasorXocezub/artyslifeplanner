@@ -135,18 +135,20 @@
 
 .btn-primary {
   background: var(--olive);
-  color: #fff;
-  border: none;
+  color: var(--ink);
+  border: 2px solid var(--ink);
   border-radius: 999px;
-  padding: 11px 20px;
+  padding: 10px 20px;
   font-size: 14px;
   font-weight: 700;
-  transition: background 0.15s ease, transform 0.1s ease;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-primary:hover {
   background: var(--olive-dark);
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .btn-ghost {
@@ -189,18 +191,18 @@
 .filter-pill-active {
   background: var(--pink);
   border-color: var(--pink);
-  color: #fff;
+  color: var(--ink);
 }
 
 .status-badge {
   display: inline-block;
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--ink);
   padding: 4px 10px;
   border-radius: 999px;
   margin-bottom: 10px;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  border: 1.5px solid var(--ink);
 }
 
 /* ---------- Card grid (window-chrome cards) ---------- */
@@ -217,7 +219,7 @@
   border-radius: 16px;
   padding: 30px 20px 16px;
   position: relative;
-  box-shadow: 0 3px 0 var(--border-strong), 0 8px 20px rgba(224, 69, 123, 0.18);
+  box-shadow: 4px 4px 0 var(--ink);
   border: 2px solid var(--border);
   cursor: pointer;
   transition: transform 0.14s ease, box-shadow 0.14s ease;
@@ -237,7 +239,7 @@
 
 .contact-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 3px 0 var(--border-strong), 0 12px 26px rgba(224, 69, 123, 0.26);
+  box-shadow: 6px 6px 0 var(--ink);
 }
 
 .contact-card .card-index {
@@ -328,7 +330,7 @@
   border-radius: 24px;
   padding: 30px 28px 22px;
   position: relative;
-  box-shadow: 0 24px 60px rgba(90, 23, 48, 0.35);
+  box-shadow: 8px 8px 0 var(--ink);
 }
 
 .modal::before {
@@ -465,7 +467,7 @@
 
 .cal-nav-btn:hover {
   background: var(--pink);
-  color: #fff;
+  color: var(--ink);
 }
 
 .cal-month-label {
@@ -576,6 +578,61 @@
   color: var(--ink-dim);
 }
 
+.category-breakdown {
+  margin-bottom: 24px;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-row-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.category-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.category-amount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.category-track {
+  height: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.category-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.allowance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.allowance-remaining {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 8px 0 0 0;
+}
+
 .totals-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -636,7 +693,7 @@
 
 .tx-row:hover {
   transform: translateX(2px);
-  box-shadow: 0 4px 12px rgba(224, 69, 123, 0.16);
+  box-shadow: 3px 3px 0 var(--ink);
 }
 
 .tx-main {
@@ -773,7 +830,7 @@
 
 .type-badge-build {
   background: var(--olive);
-  color: #fff;
+  color: var(--ink);
 }
 
 .type-badge-quit {
@@ -889,7 +946,7 @@
 
 .tick-btn-add {
   background: var(--pink);
-  color: #fff;
+  color: var(--ink);
 }
 
 .tick-btn-add:hover {
@@ -938,7 +995,7 @@
 .toggle-btn-active {
   background: var(--pink);
   border-color: var(--pink);
-  color: #fff;
+  color: var(--ink);
 }
 
 .field-row {
@@ -970,7 +1027,7 @@
 .day-cell-active {
   background: var(--coral);
   border-color: var(--coral);
-  color: #fff;
+  color: var(--ink);
 }
 
 .habit-add-row {
@@ -1037,7 +1094,7 @@
 .btn-check-done {
   background: var(--olive);
   border-color: var(--olive);
-  color: #fff;
+  color: var(--ink);
 }
 
 .btn-delete-small {
@@ -1137,7 +1194,7 @@
   border-radius: 18px;
   padding: 30px 20px 18px;
   overflow: hidden;
-  box-shadow: 0 3px 0 var(--border-strong), 0 6px 16px rgba(224, 69, 123, 0.14);
+  box-shadow: 4px 4px 0 var(--ink);
   transition: transform 0.14s ease, box-shadow 0.14s ease;
 }
 
@@ -1156,7 +1213,7 @@
 
 .module-card:not(.module-card-disabled):hover {
   transform: translateY(-3px);
-  box-shadow: 0 3px 0 var(--border-strong), 0 12px 24px rgba(224, 69, 123, 0.22);
+  box-shadow: 6px 6px 0 var(--ink);
 }
 
 .module-accent-bar {

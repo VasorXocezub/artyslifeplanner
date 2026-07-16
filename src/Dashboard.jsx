@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { formatZAR } from './lib/currency'
 
 const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Birthdays', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#EC87AE' },
+      { key: 'contacts', title: 'Birthdays', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#F2A8C4' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps 🌱', enabled: true, accent: '#C9527A' },
-      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#E8804A' },
+      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps 🌱', enabled: true, accent: '#1A1A1A' },
+      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#C7D92C' },
     ],
   },
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#9C2954' },
+      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#C9BFF0' },
     ],
   },
 ]
@@ -39,6 +40,8 @@ export default function Dashboard({ onNavigate }) {
     habitsTotal: 0,
     netBalance: 0,
     hasTransactions: false,
+    totalSaved: 0,
+    hasSavings: false,
   })
   const [loading, setLoading] = useState(true)
 
@@ -52,6 +55,7 @@ export default function Dashboard({ onNavigate }) {
     const { data: habitsData } = await supabase.from('habits').select('*')
     const { data: habitLogsData } = await supabase.from('habit_logs').select('*')
     const { data: transactionsData } = await supabase.from('transactions').select('*')
+    const { data: savingsData } = await supabase.from('savings_goals').select('*')
 
     if (error || !data) {
       setLoading(false)
@@ -92,7 +96,10 @@ export default function Dashboard({ onNavigate }) {
     }, 0)
     const hasTransactions = (transactionsData || []).length > 0
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions })
+    const totalSaved = (savingsData || []).reduce((acc, g) => acc + Number(g.current_amount || 0), 0)
+    const hasSavings = (savingsData || []).length > 0
+
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings })
     setLoading(false)
   }
 
@@ -115,38 +122,44 @@ export default function Dashboard({ onNavigate }) {
     <div>
       <div className="hero-panel">
         <p className="hero-eyebrow">{getGreeting()}</p>
-        <h1 className="hero-title">Welcome back.</h1>
+        <h1 className="hero-title">Welcome back, Arty.</h1>
         <p className="hero-date">{todayLabel}</p>
       </div>
 
       {!loading && (
         <div className="stat-strip">
           <div className="stat-pill">
-            <span className="stat-dot" style={{ background: '#EC87AE' }} />
+            <span className="stat-dot" style={{ background: '#F2A8C4' }} />
             {birthdayLabel()}
           </div>
           {stats.birthdaysThisMonth.length > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#E8804A' }} />
+              <span className="stat-dot" style={{ background: '#C7D92C' }} />
               🎉 {stats.birthdaysThisMonth.length} birthday{stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month
             </div>
           )}
           {stats.goalsInProgress > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#9C2954' }} />
+              <span className="stat-dot" style={{ background: '#C9BFF0' }} />
               🚀 {stats.goalsInProgress} goal{stats.goalsInProgress > 1 ? 's' : ''} in motion
             </div>
           )}
           {stats.habitsTotal > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#EC87AE' }} />
+              <span className="stat-dot" style={{ background: '#F2A8C4' }} />
               🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
             </div>
           )}
           {stats.hasTransactions && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#D4692F' : '#C13B5C' }} />
-              💸 {stats.netBalance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} net
+              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#8E9E1C' : '#E24B6B' }} />
+              💸 {formatZAR(stats.netBalance)} net
+            </div>
+          )}
+          {stats.hasSavings && (
+            <div className="stat-pill">
+              <span className="stat-dot" style={{ background: '#C9BFF0' }} />
+              🐷 {formatZAR(stats.totalSaved)} saved
             </div>
           )}
         </div>

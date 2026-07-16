@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './lib/supabase'
 
-const CARD_COLORS = ['#EC87AE', '#E8804A', '#9C2954', '#C9527A']
+const CARD_COLORS = ['#F2A8C4', '#C7D92C', '#C9BFF0', '#1A1A1A']
 
 const UNIT_LABELS = { none: 'times', steps: 'steps', calories: 'cal', time: 'min' }
 const PERIOD_LABELS = { day: 'day', week: 'week', month: 'month' }

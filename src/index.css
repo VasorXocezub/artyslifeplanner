@@ -1,31 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Space+Grotesk:wght@500;600;700;800&family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #F7EFDC;
+  --bg: #F3EFE3;
   --surface: #FFFFFF;
-  --sidebar-bg: #9C2954;
-  --sidebar-text: #FBE3ED;
+  --sidebar-bg: #1A1A1A;
+  --sidebar-text: #F3EFE3;
 
-  --ink: #6B1F3D;
-  --ink-dim: #A5647E;
-  --ink-faint: #CBA0B2;
+  --ink: #1A1A1A;
+  --ink-dim: #6B6B60;
+  --ink-faint: #A8A296;
 
-  --pink: #EC87AE;
-  --pink-soft: #F6C9DD;
-  --coral: #E8804A;
-  --coral-soft: #F5C7A5;
-  --olive: #E8804A;
-  --olive-dark: #D4692F;
-  --maroon: #9C2954;
-  --maroon-soft: #E8C3D3;
+  --pink: #F2A8C4;
+  --pink-soft: #F9D4E2;
+  --coral: #C7D92C;
+  --coral-soft: #E4EDA0;
+  --olive: #C9BFF0;
+  --olive-dark: #A99EDB;
+  --maroon: #1A1A1A;
+  --maroon-soft: #D8D4C8;
 
-  --border: #F2DCC9;
-  --border-strong: #E8C4A8;
-  --danger: #C13B5C;
+  --border: #1A1A1A;
+  --border-strong: #1A1A1A;
+  --danger: #E24B6B;
 
-  --font-brand: 'Pacifico', cursive;
-  --font-display: 'Baloo 2', sans-serif;
-  --font-script: 'Caveat', cursive;
+  --font-brand: 'Kaushan Script', cursive;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-script: 'Kaushan Script', cursive;
   --font-body: 'Work Sans', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
@@ -35,7 +35,7 @@
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: radial-gradient(var(--border) 1.2px, transparent 1.2px);
+  background-image: radial-gradient(#DFD9C5 1.2px, transparent 1.2px);
   background-size: 22px 22px;
   color: var(--ink);
   font-family: var(--font-body);
@@ -57,7 +57,7 @@ input, textarea, select {
 }
 
 ::selection {
-  background: var(--pink-soft);
+  background: var(--coral);
   color: var(--ink);
 }
 

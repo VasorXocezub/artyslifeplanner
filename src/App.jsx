@@ -20,9 +20,6 @@ function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">
-          Ledger<span className="brand-mark">.</span>
-        </div>
         <nav className="nav">
           {NAV_ITEMS.map((item) => (
             <button
