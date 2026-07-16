@@ -24,7 +24,7 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: '🎂 Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
+      { key: 'contacts', title: 'Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
     ],
   },
   {

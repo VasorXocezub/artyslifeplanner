@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 const TOGGLEABLE_MODULES = [
-  { key: 'contacts', label: '🎂 Cake Club', icon: '🎂' },
+  { key: 'contacts', label: 'Cake Club', icon: '🎂' },
   { key: 'goals', label: 'Goals', icon: '🌱' },
   { key: 'habits', label: 'Habits', icon: '🔥' },
   { key: 'finances', label: 'Finances', icon: '💸' },

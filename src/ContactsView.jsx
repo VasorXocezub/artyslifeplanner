@@ -173,7 +173,7 @@ export default function ContactsView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">🎂 Cake Club</h1>
+          <h1 className="view-title">Cake Club</h1>
           <p className="view-subtitle cake-club-subtitle">It's giving thoughtful queen. ✨</p>
         </div>
         <div className="toolbar">
