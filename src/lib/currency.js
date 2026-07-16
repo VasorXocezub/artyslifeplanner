@@ -7,6 +7,7 @@ export const CURRENCIES = [
   { code: 'CAD', locale: 'en-CA', label: 'CAD — Canadian Dollar ($)' },
   { code: 'NGN', locale: 'en-NG', label: 'NGN — Nigerian Naira (₦)' },
   { code: 'INR', locale: 'en-IN', label: 'INR — Indian Rupee (₹)' },
+  { code: 'PKR', locale: 'ur-PK', label: 'PKR — Pakistani Rupee (₨)' },
 ]
 
 export function formatMoney(n, currencyCode = 'ZAR') {

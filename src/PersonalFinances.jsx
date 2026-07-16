@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
-import { formatMoney } from './lib/currency'
+import { formatMoney, CURRENCIES } from './lib/currency'
 
 const emptyForm = {
   date: new Date().toISOString().split('T')[0],
@@ -31,6 +31,8 @@ export default function PersonalFinances({ currency }) {
   const [rate, setRate] = useState(null)
   const [rateError, setRateError] = useState(false)
   const [converterInput, setConverterInput] = useState('')
+  const [fromCurrency, setFromCurrency] = useState(currency || 'ZAR')
+  const [toCurrency, setToCurrency] = useState(currency === 'USD' ? 'EUR' : 'USD')
   const [viewMonth, setViewMonth] = useState(new Date())
 
   useEffect(() => {
@@ -38,15 +40,19 @@ export default function PersonalFinances({ currency }) {
   }, [])
 
   useEffect(() => {
-    if (currency === 'USD') return
-    fetchRate()
+    setFromCurrency(currency || 'ZAR')
   }, [currency])
+
+  useEffect(() => {
+    if (fromCurrency === toCurrency) return
+    fetchRate()
+  }, [fromCurrency, toCurrency])
 
   async function fetchRate() {
     setRateError(false)
     setRate(null)
     try {
-      const res = await fetch(`https://api.frankfurter.dev/v2/rate/${currency}/USD`)
+      const res = await fetch(`https://api.frankfurter.dev/v2/rate/${fromCurrency}/${toCurrency}`)
       const data = await res.json()
       if (data?.rate) setRate(data.rate)
       else setRateError(true)
@@ -218,39 +224,56 @@ export default function PersonalFinances({ currency }) {
         <p className="module-group-label">TOTAL SPENT — {monthLabel.toUpperCase()}</p>
         <p className="converter-total">{formatMoney(totals.expenses, currency)}</p>
 
-        {currency !== 'USD' && (
-          <>
-            <div className="converter-divider" />
+        <div className="converter-divider" />
 
-            <p className="module-group-label">{currency} → USD CONVERTER</p>
-            <div className="converter-row">
-              <div className="converter-input-group">
-                <input
-                  type="number"
-                  className="converter-input"
-                  placeholder={totals.expenses.toFixed(2)}
-                  value={converterInput}
-                  onChange={(e) => setConverterInput(e.target.value)}
-                />
-              </div>
-              <span className="converter-arrow">→</span>
-              <div className="converter-result">
-                {rate
-                  ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-                      (parseFloat(converterInput) || totals.expenses) * rate
-                    )
-                  : rateError
-                  ? '—'
-                  : 'Loading…'}
-              </div>
-            </div>
-            {rate && (
-              <p className="converter-rate-note">1 USD ≈ {formatMoney(1 / rate, currency)}</p>
-            )}
-            {rateError && (
-              <p className="converter-rate-note">Couldn't fetch live rates right now.</p>
-            )}
-          </>
+        <p className="module-group-label">CURRENCY CONVERTER</p>
+        <div className="converter-currency-row">
+          <select
+            className="converter-currency-select"
+            value={fromCurrency}
+            onChange={(e) => setFromCurrency(e.target.value)}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code}</option>
+            ))}
+          </select>
+          <span className="converter-arrow">→</span>
+          <select
+            className="converter-currency-select"
+            value={toCurrency}
+            onChange={(e) => setToCurrency(e.target.value)}
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code}</option>
+            ))}
+          </select>
+        </div>
+        <div className="converter-row">
+          <div className="converter-input-group">
+            <input
+              type="number"
+              className="converter-input"
+              placeholder={totals.expenses.toFixed(2)}
+              value={converterInput}
+              onChange={(e) => setConverterInput(e.target.value)}
+            />
+          </div>
+          <span className="converter-arrow">→</span>
+          <div className="converter-result">
+            {fromCurrency === toCurrency
+              ? formatMoney(parseFloat(converterInput) || totals.expenses, toCurrency)
+              : rate
+              ? formatMoney((parseFloat(converterInput) || totals.expenses) * rate, toCurrency)
+              : rateError
+              ? '—'
+              : 'Loading…'}
+          </div>
+        </div>
+        {fromCurrency !== toCurrency && rate && (
+          <p className="converter-rate-note">1 {fromCurrency} ≈ {formatMoney(rate, toCurrency)}</p>
+        )}
+        {fromCurrency !== toCurrency && rateError && (
+          <p className="converter-rate-note">Couldn't fetch live rates right now.</p>
         )}
       </div>
 
