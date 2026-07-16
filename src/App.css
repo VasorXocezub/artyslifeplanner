@@ -675,6 +675,157 @@
   text-align: right;
 }
 
+.habit-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.type-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.type-badge-build {
+  background: var(--olive);
+  color: #fff;
+}
+
+.type-badge-quit {
+  background: var(--maroon);
+  color: #fff;
+}
+
+.habit-schedule {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  margin: 2px 0 2px 0;
+}
+
+.habit-dates {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin: 0 0 10px 0;
+}
+
+.habit-status-note {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  margin: 0 0 4px 0;
+}
+
+.progress-row {
+  margin: 10px 0 4px 0;
+}
+
+.progress-track {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.log-value-row {
+  display: flex;
+  gap: 6px;
+}
+
+.log-value-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+}
+
+.log-value-input:focus {
+  border-color: var(--pink);
+}
+
+.log-value-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+}
+
+.toggle-group {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-btn {
+  flex: 1;
+  background: #fff;
+  border: 2px solid var(--border);
+  color: var(--ink-dim);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.toggle-btn-active {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: #fff;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.day-cell {
+  background: #fff;
+  border: 2px solid var(--border);
+  color: var(--ink-dim);
+  border-radius: 8px;
+  padding: 6px 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.day-cell-active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: #fff;
+}
+
 .habit-add-row {
   display: flex;
   gap: 10px;
