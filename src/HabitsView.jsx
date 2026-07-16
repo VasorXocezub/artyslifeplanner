@@ -20,6 +20,7 @@ const emptyForm = {
   end_date: '',
   goal_period: 'day',
   unit_type: 'none',
+  log_style: 'checkbox',
   target_value: '',
   target_count: '1',
   task_days_mode: 'every_day',
@@ -215,6 +216,7 @@ export default function HabitsView() {
       end_date: habit.end_date || '',
       goal_period: habit.goal_period || 'day',
       unit_type: habit.unit_type || 'none',
+      log_style: habit.log_style || 'checkbox',
       target_value: habit.target_value != null ? String(habit.target_value) : '',
       target_count: habit.target_count != null ? String(habit.target_count) : '1',
       task_days_mode: habit.task_days_mode || 'every_day',
@@ -262,6 +264,7 @@ export default function HabitsView() {
       end_date: form.end_date || null,
       goal_period: form.goal_period,
       unit_type: form.unit_type,
+      log_style: form.unit_type === 'none' ? form.log_style : null,
       target_value: form.unit_type !== 'none' ? parseFloat(form.target_value) || null : null,
       target_count: form.unit_type === 'none' ? parseInt(form.target_count, 10) || 1 : null,
       task_days_mode: form.task_days_mode,
@@ -293,6 +296,19 @@ export default function HabitsView() {
       return
     }
     closeModal()
+    fetchAll()
+  }
+
+  async function toggleDoneToday(habit) {
+    const logs = logsByHabit[habit.id] || []
+    const existing = logs.find((l) => l.logged_date === todayStr)
+    if (existing) {
+      const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
+      if (error) { setError(error.message); return }
+    } else {
+      const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null })
+      if (error) { setError(error.message); return }
+    }
     fetchAll()
   }
 
@@ -427,22 +443,31 @@ export default function HabitsView() {
                 {!h.ended && !h.notStarted && (
                   <div className="habit-actions">
                     {h.unit_type === 'none' ? (
-                      <div className={`tick-stepper ${h.todayCount >= (h.target_count || 1) ? 'tick-stepper-done' : ''}`}>
+                      h.log_style === 'counter' ? (
+                        <div className={`tick-stepper ${h.todayCount >= (h.target_count || 1) ? 'tick-stepper-done' : ''}`}>
+                          <button
+                            type="button"
+                            className="tick-btn"
+                            onClick={() => decrementToday(h)}
+                            disabled={h.todayCount === 0}
+                          >
+                            −
+                          </button>
+                          <span className="tick-count">
+                            {h.todayCount >= (h.target_count || 1) ? '✓ ' : ''}{h.todayCount} today
+                          </span>
+                          <button type="button" className="tick-btn tick-btn-add" onClick={() => incrementToday(h)}>
+                            +
+                          </button>
+                        </div>
+                      ) : (
                         <button
-                          type="button"
-                          className="tick-btn"
-                          onClick={() => decrementToday(h)}
-                          disabled={h.todayCount === 0}
+                          className={`btn-check ${h.todayCount > 0 ? 'btn-check-done' : ''}`}
+                          onClick={() => toggleDoneToday(h)}
                         >
-                          −
+                          {h.todayCount > 0 ? '✓ Nailed it today' : 'Mark done today'}
                         </button>
-                        <span className="tick-count">
-                          {h.todayCount >= (h.target_count || 1) ? '✓ ' : ''}{h.todayCount} today
-                        </span>
-                        <button type="button" className="tick-btn tick-btn-add" onClick={() => incrementToday(h)}>
-                          +
-                        </button>
-                      </div>
+                      )
                     ) : (
                       <div className="log-value-row">
                         <input
@@ -573,6 +598,28 @@ export default function HabitsView() {
                   </select>
                 </div>
               </div>
+
+              {form.unit_type === 'none' && (
+                <div className="field">
+                  <label>How do you want to log it?</label>
+                  <div className="toggle-group">
+                    <button
+                      type="button"
+                      className={`toggle-btn ${form.log_style === 'checkbox' ? 'toggle-btn-active' : ''}`}
+                      onClick={() => setForm({ ...form, log_style: 'checkbox' })}
+                    >
+                      ✓ Mark as done
+                    </button>
+                    <button
+                      type="button"
+                      className={`toggle-btn ${form.log_style === 'counter' ? 'toggle-btn-active' : ''}`}
+                      onClick={() => setForm({ ...form, log_style: 'counter' })}
+                    >
+                      🔢 Add value (tally)
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {form.unit_type === 'none' ? (
                 <div className="field">
