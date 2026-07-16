@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import { formatZAR } from './lib/currency'
+import { formatMoney } from './lib/currency'
 
 const MODULES = [
   {
@@ -157,13 +157,13 @@ export default function Dashboard({ onNavigate, user }) {
           {stats.hasTransactions && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#2E5A96' : '#D64545' }} />
-              💸 {formatZAR(stats.netBalance)} net
+              💸 {formatMoney(stats.netBalance, user?.user_metadata?.currency)} net
             </div>
           )}
           {stats.hasSavings && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: '#A8CFEA' }} />
-              🐷 {formatZAR(stats.totalSaved)} saved
+              🐷 {formatMoney(stats.totalSaved, user?.user_metadata?.currency)} saved
             </div>
           )}
           {stats.todosOpen > 0 && (

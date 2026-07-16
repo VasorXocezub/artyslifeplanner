@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
-import { formatZAR } from './lib/currency'
+import { formatMoney } from './lib/currency'
 
 const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
 
@@ -10,7 +10,7 @@ function formatDate(d) {
   return date.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function BusinessTracker() {
+export default function BusinessTracker({ currency }) {
   const [expenses, setExpenses] = useState([])
   const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -184,11 +184,11 @@ export default function BusinessTracker() {
                     />
                   </div>
                   <span className="progress-label">
-                    {formatZAR(spentThisMonth)} spent of {formatZAR(allowance)} this month
+                    {formatMoney(spentThisMonth, currency)} spent of {formatMoney(allowance, currency)} this month
                   </span>
                 </div>
                 <p className={`allowance-remaining ${remaining < 0 ? 'total-negative' : 'total-positive'}`}>
-                  {remaining >= 0 ? formatZAR(remaining) + ' left' : formatZAR(Math.abs(remaining)) + ' over budget'}
+                  {remaining >= 0 ? formatMoney(remaining, currency) + ' left' : formatMoney(Math.abs(remaining), currency) + ' over budget'}
                 </p>
               </>
             )}
@@ -213,7 +213,7 @@ export default function BusinessTracker() {
                   </div>
                   <div className="tx-side">
                     <span className="tx-date">{formatDate(e.date)}</span>
-                    <span className="tx-amount total-negative">−{formatZAR(Number(e.amount))}</span>
+                    <span className="tx-amount total-negative">−{formatMoney(Number(e.amount), currency)}</span>
                   </div>
                 </div>
               ))}
@@ -228,7 +228,7 @@ export default function BusinessTracker() {
             <h2>{editingId ? 'Edit expense' : 'New business expense'}</h2>
             <form onSubmit={handleSave}>
               <div className="field">
-                <label>Amount (R)</label>
+                <label>Amount ({currency})</label>
                 <input
                   autoFocus
                   type="number"

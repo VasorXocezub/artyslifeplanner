@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
-import { formatZAR } from './lib/currency'
+import { formatMoney } from './lib/currency'
 
 const emptyForm = { name: '', amount: '', category: '', frequency: 'monthly', next_due: '' }
 const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
@@ -18,7 +18,7 @@ function formatDate(d) {
   return date.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function RecurringExpenses() {
+export default function RecurringExpenses({ currency }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -146,11 +146,11 @@ export default function RecurringExpenses() {
         <div className="totals-row">
           <div className="total-card">
             <span className="total-label">Per month</span>
-            <span className="total-value total-negative">{formatZAR(monthlyTotal)}</span>
+            <span className="total-value total-negative">{formatMoney(monthlyTotal, currency)}</span>
           </div>
           <div className="total-card">
             <span className="total-label">Per year</span>
-            <span className="total-value total-negative">{formatZAR(yearlyTotal)}</span>
+            <span className="total-value total-negative">{formatMoney(yearlyTotal, currency)}</span>
           </div>
         </div>
       )}
@@ -180,7 +180,7 @@ export default function RecurringExpenses() {
 
               {item.category && <p className="habit-schedule">{item.category}</p>}
 
-              <p className="converter-total recurring-amount">{formatZAR(item.amount)}</p>
+              <p className="converter-total recurring-amount">{formatMoney(item.amount, currency)}</p>
 
               {item.next_due && (
                 <p className="habit-dates">Next due {formatDate(item.next_due)}</p>
@@ -188,7 +188,7 @@ export default function RecurringExpenses() {
 
               {item.frequency !== 'monthly' && (
                 <p className="progress-label recurring-monthly-note">
-                  ≈ {formatZAR(toMonthly(Number(item.amount), item.frequency))} / month
+                  ≈ {formatMoney(toMonthly(Number(item.amount), item.frequency), currency)} / month
                 </p>
               )}
 
@@ -223,7 +223,7 @@ export default function RecurringExpenses() {
               </div>
               <div className="field-row">
                 <div className="field">
-                  <label>Amount (R)</label>
+                  <label>Amount ({currency})</label>
                   <input
                     type="number"
                     step="0.01"

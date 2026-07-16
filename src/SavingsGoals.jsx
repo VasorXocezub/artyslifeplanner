@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
-import { formatZAR } from './lib/currency'
+import { formatMoney } from './lib/currency'
 
 const emptyForm = { name: '', icon: '💰', target_amount: '', current_amount: '0' }
 const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
 const ICON_OPTIONS = ['💰', '✈️', '🏠', '🚗', '🎓', '💍', '🛍️', '🏝️', '💻', '🐶', '🎉', '🩺']
 
-export default function SavingsGoals() {
+export default function SavingsGoals({ currency }) {
   const [goals, setGoals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -125,7 +125,7 @@ export default function SavingsGoals() {
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            {goals.length === 0 ? 'Every big goal starts with R0 ✨' : `${formatZAR(totalSaved)} saved across ${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}
+            {goals.length === 0 ? 'Every big goal starts with 0 ✨' : `${formatMoney(totalSaved, currency)} saved across ${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}
           </p>
         </div>
         <div className="toolbar">
@@ -137,11 +137,11 @@ export default function SavingsGoals() {
         <div className="totals-row">
           <div className="total-card">
             <span className="total-label">Total saved</span>
-            <span className="total-value total-positive">{formatZAR(totalSaved)}</span>
+            <span className="total-value total-positive">{formatMoney(totalSaved, currency)}</span>
           </div>
           <div className="total-card">
             <span className="total-label">Total target</span>
-            <span className="total-value">{formatZAR(totalTarget)}</span>
+            <span className="total-value">{formatMoney(totalTarget, currency)}</span>
           </div>
         </div>
       )}
@@ -180,7 +180,7 @@ export default function SavingsGoals() {
                     />
                   </div>
                   <span className="progress-label">
-                    {formatZAR(g.current_amount)} / {formatZAR(g.target_amount)} ({pct}%)
+                    {formatMoney(g.current_amount, currency)} / {formatMoney(g.target_amount, currency)} ({pct}%)
                   </span>
                 </div>
 
@@ -245,7 +245,7 @@ export default function SavingsGoals() {
               </div>
               <div className="field-row">
                 <div className="field">
-                  <label>Target (R)</label>
+                  <label>Target ({currency})</label>
                   <input
                     type="number"
                     min="0"
@@ -257,7 +257,7 @@ export default function SavingsGoals() {
                   />
                 </div>
                 <div className="field">
-                  <label>Already saved (R)</label>
+                  <label>Already saved ({currency})</label>
                   <input
                     type="number"
                     min="0"

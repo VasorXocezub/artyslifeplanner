@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
-import { formatZAR } from './lib/currency'
+import { formatMoney } from './lib/currency'
 
 const emptyForm = {
   date: new Date().toISOString().split('T')[0],
@@ -18,7 +18,7 @@ function formatDate(d) {
   return date.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function PersonalFinances() {
+export default function PersonalFinances({ currency }) {
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -28,21 +28,27 @@ export default function PersonalFinances() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
-  const [zarToUsd, setZarToUsd] = useState(null)
+  const [rate, setRate] = useState(null)
   const [rateError, setRateError] = useState(false)
   const [converterInput, setConverterInput] = useState('')
   const [viewMonth, setViewMonth] = useState(new Date())
 
   useEffect(() => {
     fetchTransactions()
-    fetchRate()
   }, [])
 
+  useEffect(() => {
+    if (currency === 'USD') return
+    fetchRate()
+  }, [currency])
+
   async function fetchRate() {
+    setRateError(false)
+    setRate(null)
     try {
-      const res = await fetch('https://api.frankfurter.dev/v2/rate/ZAR/USD')
+      const res = await fetch(`https://api.frankfurter.dev/v2/rate/${currency}/USD`)
       const data = await res.json()
-      if (data?.rate) setZarToUsd(data.rate)
+      if (data?.rate) setRate(data.rate)
       else setRateError(true)
     } catch {
       setRateError(true)
@@ -210,54 +216,57 @@ export default function PersonalFinances() {
 
       <div className="calendar-card converter-card">
         <p className="module-group-label">TOTAL SPENT — {monthLabel.toUpperCase()}</p>
-        <p className="converter-total">{formatZAR(totals.expenses)}</p>
+        <p className="converter-total">{formatMoney(totals.expenses, currency)}</p>
 
-        <div className="converter-divider" />
+        {currency !== 'USD' && (
+          <>
+            <div className="converter-divider" />
 
-        <p className="module-group-label">ZAR → USD CONVERTER</p>
-        <div className="converter-row">
-          <div className="converter-input-group">
-            <span className="converter-prefix">R</span>
-            <input
-              type="number"
-              className="converter-input"
-              placeholder={totals.expenses.toFixed(2)}
-              value={converterInput}
-              onChange={(e) => setConverterInput(e.target.value)}
-            />
-          </div>
-          <span className="converter-arrow">→</span>
-          <div className="converter-result">
-            {zarToUsd
-              ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-                  (parseFloat(converterInput) || totals.expenses) * zarToUsd
-                )
-              : rateError
-              ? '—'
-              : 'Loading…'}
-          </div>
-        </div>
-        {zarToUsd && (
-          <p className="converter-rate-note">1 USD ≈ R{(1 / zarToUsd).toFixed(2)}</p>
-        )}
-        {rateError && (
-          <p className="converter-rate-note">Couldn't fetch live rates right now.</p>
+            <p className="module-group-label">{currency} → USD CONVERTER</p>
+            <div className="converter-row">
+              <div className="converter-input-group">
+                <input
+                  type="number"
+                  className="converter-input"
+                  placeholder={totals.expenses.toFixed(2)}
+                  value={converterInput}
+                  onChange={(e) => setConverterInput(e.target.value)}
+                />
+              </div>
+              <span className="converter-arrow">→</span>
+              <div className="converter-result">
+                {rate
+                  ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                      (parseFloat(converterInput) || totals.expenses) * rate
+                    )
+                  : rateError
+                  ? '—'
+                  : 'Loading…'}
+              </div>
+            </div>
+            {rate && (
+              <p className="converter-rate-note">1 USD ≈ {formatMoney(1 / rate, currency)}</p>
+            )}
+            {rateError && (
+              <p className="converter-rate-note">Couldn't fetch live rates right now.</p>
+            )}
+          </>
         )}
       </div>
 
       <div className="totals-row">
         <div className="total-card">
           <span className="total-label">Income</span>
-          <span className="total-value total-positive">{formatZAR(totals.income)}</span>
+          <span className="total-value total-positive">{formatMoney(totals.income, currency)}</span>
         </div>
         <div className="total-card">
           <span className="total-label">Expenses</span>
-          <span className="total-value total-negative">{formatZAR(totals.expenses)}</span>
+          <span className="total-value total-negative">{formatMoney(totals.expenses, currency)}</span>
         </div>
         <div className="total-card">
           <span className="total-label">Net</span>
           <span className={`total-value ${net >= 0 ? 'total-positive' : 'total-negative'}`}>
-            {formatZAR(net)}
+            {formatMoney(net, currency)}
           </span>
         </div>
       </div>
@@ -270,7 +279,7 @@ export default function PersonalFinances() {
               <div className="category-row" key={c.category}>
                 <div className="category-row-top">
                   <span className="category-name">{c.category}</span>
-                  <span className="category-amount">{formatZAR(c.total)}</span>
+                  <span className="category-amount">{formatMoney(c.total, currency)}</span>
                 </div>
                 <div className="category-track">
                   <div
@@ -325,7 +334,7 @@ export default function PersonalFinances() {
               <div className="tx-side">
                 <span className="tx-date">{formatDate(t.date)}</span>
                 <span className={`tx-amount ${t.type === 'income' ? 'total-positive' : 'total-negative'}`}>
-                  {t.type === 'income' ? '+' : '−'}{formatZAR(Number(t.amount))}
+                  {t.type === 'income' ? '+' : '−'}{formatMoney(Number(t.amount), currency)}
                 </span>
               </div>
             </div>
@@ -349,7 +358,7 @@ export default function PersonalFinances() {
                 </select>
               </div>
               <div className="field">
-                <label>Amount (R)</label>
+                <label>Amount ({currency})</label>
                 <input
                   autoFocus
                   type="number"
