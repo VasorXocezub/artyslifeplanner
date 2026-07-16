@@ -14,7 +14,7 @@ const MODULES = [
     items: [
       { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps 🌱', enabled: true, accent: '#1B3A5C' },
       { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#EF7B4D' },
-      { key: 'todos', title: 'To-Do', desc: 'One thing at a time 📋', enabled: true, accent: '#F2B6C6' },
+      { key: 'todos', title: 'To-Do', desc: 'One thing at a time 📋', enabled: true, accent: '#F2C955' },
     ],
   },
   {
@@ -138,7 +138,7 @@ export default function Dashboard({ onNavigate, user }) {
           </div>
           {stats.birthdaysThisMonth.length > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#EF7B4D' }} />
+              <span className="stat-dot" style={{ background: '#F2C955' }} />
               🎉 {stats.birthdaysThisMonth.length} birthday{stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month
             </div>
           )}
@@ -150,7 +150,7 @@ export default function Dashboard({ onNavigate, user }) {
           )}
           {stats.habitsTotal > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#F2B6C6' }} />
+              <span className="stat-dot" style={{ background: '#EF7B4D' }} />
               🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
             </div>
           )}
@@ -162,13 +162,13 @@ export default function Dashboard({ onNavigate, user }) {
           )}
           {stats.hasSavings && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#3D6FB4' }} />
+              <span className="stat-dot" style={{ background: '#A8CFEA' }} />
               🐷 {formatZAR(stats.totalSaved)} saved
             </div>
           )}
           {stats.todosOpen > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#EF7B4D' }} />
+              <span className="stat-dot" style={{ background: '#1B3A5C' }} />
               📋 {stats.todosOpen} to-do{stats.todosOpen > 1 ? 's' : ''} open
             </div>
           )}

@@ -77,10 +77,11 @@
 .sidebar-footer {
   margin-top: auto;
   font-family: var(--font-script);
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 700;
-  color: #C989A3;
-  line-height: 1.4;
+  color: var(--sidebar-text);
+  opacity: 0.85;
+  line-height: 1.35;
 }
 
 /* ---------- Main ---------- */
