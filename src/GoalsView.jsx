@@ -16,7 +16,7 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS = {
-  not_started: '#3D6FB4',
+  not_started: '#A8CFEA',
   in_progress: '#EF7B4D',
   done: '#F2B6C6',
 }

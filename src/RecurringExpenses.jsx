@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
-const emptyForm = { name: '', amount: '', category: '', frequency: 'monthly', next_due: '' }
+const emptyForm = { name: '', amount: '', category: '', frequency: 'monthly', next_due: '', start_date: '', end_date: '' }
 const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C', '#A8CFEA', '#F2C955']
 const FREQUENCY_LABELS = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }
 
@@ -58,6 +58,8 @@ export default function RecurringExpenses({ currency }) {
       category: item.category || '',
       frequency: item.frequency || 'monthly',
       next_due: item.next_due || '',
+      start_date: item.start_date || '',
+      end_date: item.end_date || '',
     })
     setModalOpen(true)
   }
@@ -80,6 +82,8 @@ export default function RecurringExpenses({ currency }) {
       category: form.category.trim() || null,
       frequency: form.frequency,
       next_due: form.next_due || null,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
     }
 
     let error
@@ -125,7 +129,14 @@ export default function RecurringExpenses({ currency }) {
     fetchItems()
   }
 
-  const activeItems = items.filter((i) => i.active)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const activeItems = items.filter((i) => {
+    if (!i.active) return false
+    if (i.start_date && new Date(i.start_date + 'T00:00:00') > today) return false
+    if (i.end_date && new Date(i.end_date + 'T00:00:00') < today) return false
+    return true
+  })
   const monthlyTotal = activeItems.reduce((acc, i) => acc + toMonthly(Number(i.amount), i.frequency), 0)
   const yearlyTotal = monthlyTotal * 12
 
@@ -167,7 +178,10 @@ export default function RecurringExpenses({ currency }) {
 
       {!loading && !error && items.length > 0 && (
         <div className="card-grid">
-          {items.map((item, i) => (
+          {items.map((item, i) => {
+            const ended = item.end_date && new Date(item.end_date + 'T00:00:00') < today
+            const notStarted = item.start_date && new Date(item.start_date + 'T00:00:00') > today
+            return (
             <div
               className={`contact-card habit-card ${!item.active ? 'recurring-paused' : ''}`}
               key={item.id}
@@ -186,6 +200,17 @@ export default function RecurringExpenses({ currency }) {
                 <p className="habit-dates">Next due {formatDate(item.next_due)}</p>
               )}
 
+              {(item.start_date || item.end_date) && (
+                <p className="habit-dates">
+                  {item.start_date ? formatDate(item.start_date) : '…'}
+                  {' – '}
+                  {item.end_date ? formatDate(item.end_date) : 'ongoing'}
+                </p>
+              )}
+
+              {ended && <p className="habit-status-note">Ended</p>}
+              {notStarted && <p className="habit-status-note">Starts {formatDate(item.start_date)}</p>}
+
               {item.frequency !== 'monthly' && (
                 <p className="progress-label recurring-monthly-note">
                   ≈ {formatMoney(toMonthly(Number(item.amount), item.frequency), currency)} / month
@@ -202,7 +227,8 @@ export default function RecurringExpenses({ currency }) {
                 <button className="btn-delete-small" onClick={() => openEdit(item)}>Edit</button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -262,6 +288,25 @@ export default function RecurringExpenses({ currency }) {
                   onChange={(e) => setForm({ ...form, next_due: e.target.value })}
                 />
               </div>
+              <div className="field-row">
+                <div className="field">
+                  <label>Start date (optional)</label>
+                  <input
+                    type="date"
+                    value={form.start_date}
+                    onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>End date (optional)</label>
+                  <input
+                    type="date"
+                    value={form.end_date}
+                    onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <p className="field-hint">Leave both blank for an ongoing expense — only fill these in if it's temporary, like a short-term subscription.</p>
               <div className="modal-actions">
                 <div>
                   {editingId && (

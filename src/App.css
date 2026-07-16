@@ -273,8 +273,9 @@
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
-  line-height: 1.3;
-  margin: 0 0 2px 0;
+  line-height: 1.35;
+  margin: 0;
+  word-break: break-word;
   color: var(--ink);
 }
 
@@ -921,6 +922,25 @@
   border-color: var(--olive);
 }
 
+.converter-swap-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--pink-soft);
+  border: none;
+  color: var(--ink);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.converter-swap-btn:hover {
+  background: var(--pink);
+  color: #fff;
+}
+
 .converter-row {
   display: flex;
   align-items: center;
@@ -1268,7 +1288,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 .type-badge {
@@ -1281,8 +1301,9 @@
 }
 
 .type-badge-build {
-  background: var(--olive);
+  background: var(--baby);
   color: var(--ink);
+  font-weight: 800;
 }
 
 .type-badge-quit {
@@ -1294,7 +1315,7 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--ink-dim);
-  margin: 2px 0 2px 0;
+  margin: 0 0 2px 0;
 }
 
 .habit-dates {
@@ -1448,6 +1469,13 @@
   background: var(--pink);
   border-color: var(--pink);
   color: var(--ink);
+}
+
+.field-hint {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: -6px 0 14px 0;
+  line-height: 1.4;
 }
 
 .field-row {
