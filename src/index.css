@@ -1,29 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Caveat:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #FDF1E4;
+  --bg: #F7EFDC;
   --surface: #FFFFFF;
-  --sidebar-bg: #5A1730;
-  --sidebar-text: #F7E4E9;
+  --sidebar-bg: #9C2954;
+  --sidebar-text: #FBE3ED;
 
-  --ink: #4A1228;
-  --ink-dim: #8C5468;
-  --ink-faint: #C9A5B4;
+  --ink: #6B1F3D;
+  --ink-dim: #A5647E;
+  --ink-faint: #CBA0B2;
 
-  --pink: #E0457B;
-  --pink-soft: #F6C9DA;
-  --coral: #E8623C;
-  --coral-soft: #F7D2BF;
-  --olive: #8A9A5B;
-  --olive-dark: #6F7D46;
-  --maroon: #5A1730;
-  --maroon-soft: #E9C9D2;
+  --pink: #EC87AE;
+  --pink-soft: #F6C9DD;
+  --coral: #E8804A;
+  --coral-soft: #F5C7A5;
+  --olive: #E8804A;
+  --olive-dark: #D4692F;
+  --maroon: #9C2954;
+  --maroon-soft: #E8C3D3;
 
   --border: #F2DCC9;
   --border-strong: #E8C4A8;
-  --danger: #C1425A;
+  --danger: #C13B5C;
 
-  --font-display: 'Playfair Display', serif;
+  --font-brand: 'Pacifico', cursive;
+  --font-display: 'Baloo 2', sans-serif;
   --font-script: 'Caveat', cursive;
   --font-body: 'Work Sans', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;

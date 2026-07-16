@@ -5,20 +5,20 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Birthdays', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#E0457B' },
+      { key: 'contacts', title: 'Birthdays', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#EC87AE' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps 🌱', enabled: true, accent: '#5A1730' },
-      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#E8623C' },
+      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps 🌱', enabled: true, accent: '#C9527A' },
+      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#E8804A' },
     ],
   },
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#8A9A5B' },
+      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#9C2954' },
     ],
   },
 ]
@@ -122,30 +122,30 @@ export default function Dashboard({ onNavigate }) {
       {!loading && (
         <div className="stat-strip">
           <div className="stat-pill">
-            <span className="stat-dot" style={{ background: '#E0457B' }} />
+            <span className="stat-dot" style={{ background: '#EC87AE' }} />
             {birthdayLabel()}
           </div>
           {stats.birthdaysThisMonth.length > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#E8623C' }} />
+              <span className="stat-dot" style={{ background: '#E8804A' }} />
               🎉 {stats.birthdaysThisMonth.length} birthday{stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month
             </div>
           )}
           {stats.goalsInProgress > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#8A9A5B' }} />
+              <span className="stat-dot" style={{ background: '#9C2954' }} />
               🚀 {stats.goalsInProgress} goal{stats.goalsInProgress > 1 ? 's' : ''} in motion
             </div>
           )}
           {stats.habitsTotal > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#E0457B' }} />
+              <span className="stat-dot" style={{ background: '#EC87AE' }} />
               🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
             </div>
           )}
           {stats.hasTransactions && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#6F7D46' : '#C1425A' }} />
+              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#D4692F' : '#C13B5C' }} />
               💸 {stats.netBalance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} net
             </div>
           )}
