@@ -208,6 +208,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
+  align-items: stretch;
 }
 
 .contact-card {
@@ -730,13 +731,13 @@
 
 .drag-handle {
   position: absolute;
-  top: 10px;
-  right: 12px;
-  font-size: 18px;
+  top: 6px;
+  right: 10px;
+  font-size: 15px;
   color: var(--ink-faint);
   cursor: grab;
   line-height: 1;
-  padding: 6px 8px;
+  padding: 5px 6px;
   border-radius: 8px;
   user-select: none;
 }
@@ -918,6 +919,9 @@
 
 .habit-card {
   padding-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .streak-row {
@@ -944,6 +948,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .btn-check {
