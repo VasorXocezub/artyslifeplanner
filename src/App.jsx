@@ -21,7 +21,6 @@ const NAV_ITEMS = [
 function App() {
   const [view, setView] = useState('home')
   const [session, setSession] = useState(undefined)
-  const [passwordRecovery, setPasswordRecovery] = useState(false)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
 
@@ -30,8 +29,7 @@ function App() {
       setSession(data.session)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
-      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true)
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
     })
 
@@ -58,10 +56,6 @@ function App() {
         <p className="loading">Loading…</p>
       </div>
     )
-  }
-
-  if (passwordRecovery) {
-    return <Auth initialMode="reset" onResetDone={() => setPasswordRecovery(false)} />
   }
 
   if (!session) {
