@@ -14,10 +14,20 @@ const ERAS = [
 ]
 
 const ROTATING_MESSAGES = [
-  "Today's a good day to make Future You proud.",
-  'Tiny progress still counts.',
-  "You're booked, busy and moisturized.",
-  'Protect your peace. Drink water. Reply later.',
+  "I'm literally just a girl.",
+  "Keepin' It Cute Today.",
+  'You Can Do Great Things!',
+  'Romanticise Your Everyday.',
+  'Be a little kinder to yourself.',
+  'Make your heart the prettiest thing about you.',
+  'I refuse to lose my whimsy.',
+  'Manifest Your Dreams!',
+  'Strong Girls Club',
+  'Keep On Smiling',
+  'In My Happy Girl Era',
+  'Girl, you already have what it takes!',
+  "Don't forget to celebrate the little wins!",
+  'You are capable of amazing things!',
 ]
 
 const MODULES = [
@@ -152,7 +162,6 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   return (
     <div>
       <div className="hero-panel">
-        <span className="hero-rotating-msg" key={msgIndex}>{ROTATING_MESSAGES[msgIndex]}</span>
         <h1 className="hero-title">{getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
         <WeatherWidget />
         <div className="era-picker">
@@ -163,6 +172,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
             ))}
           </select>
         </div>
+        <p className="hero-rotating-msg" key={msgIndex}>{ROTATING_MESSAGES[msgIndex]}</p>
       </div>
 
       {!loading && (

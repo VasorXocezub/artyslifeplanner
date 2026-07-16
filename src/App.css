@@ -31,8 +31,8 @@
 
 .brand {
   font-family: var(--font-brand);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 400;
   color: var(--sidebar-text);
 }
 
@@ -111,8 +111,8 @@
 .sidebar-footer {
   margin-top: auto;
   font-family: var(--font-script);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 400;
   color: var(--sidebar-text);
   opacity: 0.85;
   line-height: 1.35;
@@ -293,8 +293,8 @@
 
 .contact-name {
   font-family: var(--font-script);
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 25px;
+  font-weight: 400;
   line-height: 1.3;
   margin: 0;
   color: var(--ink);
@@ -486,9 +486,9 @@
 
 .cake-club-subtitle {
   font-family: var(--font-script);
-  font-size: 20px;
+  font-size: 23px;
   color: var(--coral);
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .gift-vault-divider {
@@ -1709,86 +1709,56 @@
 /* ---------- Dashboard ---------- */
 .hero-panel {
   position: relative;
-  padding: 28px 32px 32px;
+  padding: 30px 34px 26px;
   margin-bottom: 24px;
   border-radius: 24px;
   background: linear-gradient(120deg, var(--coral-soft) 0%, var(--pink-soft) 55%, var(--peach-soft) 100%);
   box-shadow: 0 4px 18px rgba(30, 92, 87, 0.1);
 }
 
-.hero-rotating-msg {
-  position: absolute;
-  top: 26px;
-  right: 32px;
-  max-width: none;
-  white-space: nowrap;
-  text-align: right;
-  font-family: var(--font-script);
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--coral);
-  animation: heroMsgFade 0.6s ease;
-}
-
-@keyframes heroMsgFade {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+.hero-title {
+  font-family: var(--font-brand);
+  font-size: 46px;
+  font-weight: 400;
+  margin: 0 0 10px 0;
+  color: var(--ink);
 }
 
 .weather-widget {
-  margin: 4px 0 0 0;
-}
-
-.weather-date-line {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
-.weather-day {
-  font-family: var(--font-display);
-  font-size: 18px;
+.hero-subline {
+  font-family: var(--font-body);
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink);
+  margin: 0;
 }
 
-.weather-date {
-  font-size: 14px;
-  font-weight: 600;
+.weather-line {
   color: var(--ink-dim);
-}
-
-.weather-stats-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.weather-chip {
-  background: var(--surface);
-  border: 2px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.weather-location-btn {
+.weather-location-link {
   background: none;
   border: none;
   color: var(--coral);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: underline;
-  padding: 4px 2px;
+  padding: 0;
+  margin-left: 4px;
 }
 
 .weather-location-editor {
-  margin-top: 12px;
+  margin-top: 10px;
   background: var(--surface);
   border: 2px solid var(--border-strong);
   border-radius: 16px;
@@ -1839,10 +1809,10 @@
 }
 
 .era-picker {
-  margin-top: 16px;
-  display: inline-flex;
-  flex-direction: column;
-  gap: 4px;
+  margin: 6px 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .era-picker label {
@@ -1854,34 +1824,30 @@
 }
 
 .era-picker select {
-  background: var(--surface);
-  border: 2px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 9px 16px;
-  font-size: 13px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--coral);
+  border-radius: 0;
+  padding: 2px 4px 3px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ink);
   outline: none;
 }
 
-.era-picker select:focus {
-  border-color: var(--coral);
-}
-
-.hero-eyebrow {
-  font-family: var(--font-script);
-  font-size: 22px;
-  color: var(--coral);
+.hero-rotating-msg {
+  font-family: var(--font-quote);
+  font-size: 24px;
   font-weight: 400;
-  margin: 0 0 2px 0;
+  line-height: 1.3;
+  color: var(--coral);
+  margin: 4px 0 0 0;
+  animation: heroMsgFade 0.6s ease;
 }
 
-.hero-title {
-  font-family: var(--font-brand);
-  font-size: 40px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: var(--ink);
+@keyframes heroMsgFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-date {

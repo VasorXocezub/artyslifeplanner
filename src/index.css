@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Yeseva+One&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Loved+by+the+King&family=Yeseva+One&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   --bg: #FAF6F0;
@@ -32,8 +32,9 @@
   --border-soft: #F1EAE0;
   --danger: #B85C4E;
 
-  --font-brand: 'Dancing Script', cursive;
-  --font-script: 'Dancing Script', cursive;
+  --font-brand: 'Homemade Apple', cursive;
+  --font-script: 'Homemade Apple', cursive;
+  --font-quote: 'Loved by the King', cursive;
   --font-display: 'Yeseva One', serif;
   --font-body: 'Montserrat', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;

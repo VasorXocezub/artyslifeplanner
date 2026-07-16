@@ -77,7 +77,6 @@ export default function WeatherWidget() {
 
   const now = new Date()
   const dayName = now.toLocaleDateString('en-US', { weekday: 'long' })
-  const dateStr = now.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })
 
   const temp = weather?.current?.temperature_2m
   const code = weather?.current?.weather_code
@@ -90,19 +89,25 @@ export default function WeatherWidget() {
 
   return (
     <div className="weather-widget">
-      <div className="weather-date-line">
-        <span className="weather-day">{dayName}</span>
-        <span className="weather-date">{dateStr}</span>
-      </div>
+      <p className="hero-subline">
+        {dayName}{season ? ` • ${season}` : ''}
+      </p>
 
-      <div className="weather-stats-row">
-        {icon && season && <span className="weather-chip">{icon} {season}</span>}
-        {temp != null && <span className="weather-chip">🌡️ {Math.round(temp)}°</span>}
-        {sunsetTime && <span className="weather-chip">🌙 Sunset {sunsetTime}</span>}
-        <button className="weather-location-btn" onClick={() => setEditing(!editing)}>
-          📍 {location ? location.name : 'Set your location'}
-        </button>
-      </div>
+      {location ? (
+        <p className="hero-subline weather-line">
+          {icon && `${icon} `}{temp != null ? `${Math.round(temp)}°` : '—'}
+          {sunsetTime && <> &nbsp;·&nbsp; 🌙 Sunset {sunsetTime}</>}
+          <button type="button" className="weather-location-link" onClick={() => setEditing(!editing)}>
+            📍 {location.name}
+          </button>
+        </p>
+      ) : (
+        <p className="hero-subline weather-line">
+          <button type="button" className="weather-location-link" onClick={() => setEditing(!editing)}>
+            📍 Set your location for accurate weather
+          </button>
+        </p>
+      )}
 
       {editing && (
         <div className="weather-location-editor">
