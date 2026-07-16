@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #FBF0F5;
+  --surface: #FFFFFF;
+  --sidebar-bg: #E9DEF5;
+
+  --ink: #4A3B57;
+  --ink-dim: #8B7C99;
+  --ink-faint: #B4A9C2;
+
+  --lavender: #B49BD9;
+  --lavender-soft: #DCD0EE;
+  --pink: #EE93BE;
+  --pink-soft: #F9D6E4;
+  --blue: #7FAEDB;
+  --blue-soft: #C9E0F0;
+  --mint: #92CDBB;
+  --mint-soft: #D2ECE3;
+
+  --border: #EBDCEA;
+  --border-strong: #DCC5DE;
+  --danger: #E0728C;
+
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--border) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+input, textarea, select {
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--pink-soft);
+  color: var(--ink);
+}
+
+a { color: inherit; }
