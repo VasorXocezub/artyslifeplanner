@@ -74,8 +74,7 @@ function progressFor(habit, logs, refDate) {
   const { start, end } = getPeriodBounds(habit.goal_period, refDate)
   const periodLogs = logsInRange(logs, start, end)
   if (habit.unit_type === 'none') {
-    const count = new Set(periodLogs.map((l) => l.logged_date)).size
-    return { value: count, target: habit.target_count || 1 }
+    return { value: periodLogs.length, target: habit.target_count || 1 }
   }
   const sum = periodLogs.reduce((acc, l) => acc + Number(l.value || 0), 0)
   return { value: sum, target: habit.target_value || 0 }
@@ -297,16 +296,20 @@ export default function HabitsView() {
     fetchAll()
   }
 
-  async function markDoneToday(habit) {
+  async function incrementToday(habit) {
+    const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null })
+    if (error) { setError(error.message); return }
+    fetchAll()
+  }
+
+  async function decrementToday(habit) {
     const logs = logsByHabit[habit.id] || []
-    const existing = logs.find((l) => l.logged_date === todayStr)
-    if (existing) {
-      const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
-      if (error) { setError(error.message); return }
-    } else {
-      const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null })
-      if (error) { setError(error.message); return }
-    }
+    const todaysLogs = logs
+      .filter((l) => l.logged_date === todayStr)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    if (todaysLogs.length === 0) return
+    const { error } = await supabase.from('habit_logs').delete().eq('id', todaysLogs[0].id)
+    if (error) { setError(error.message); return }
     fetchAll()
   }
 
@@ -332,10 +335,10 @@ export default function HabitsView() {
       const logs = logsByHabit[h.id] || []
       const progress = progressFor(h, logs, new Date())
       const streak = calcStreak(h, logs)
-      const doneToday = logs.some((l) => l.logged_date === todayStr)
+      const todayCount = logs.filter((l) => l.logged_date === todayStr).length
       const ended = h.end_date && parseLocalDate(h.end_date) < today
       const notStarted = h.start_date && parseLocalDate(h.start_date) > today
-      return { ...h, progress, streak, doneToday, ended, notStarted }
+      return { ...h, progress, streak, todayCount, ended, notStarted }
     })
   }, [habits, logsByHabit])
 
@@ -424,12 +427,22 @@ export default function HabitsView() {
                 {!h.ended && !h.notStarted && (
                   <div className="habit-actions">
                     {h.unit_type === 'none' ? (
-                      <button
-                        className={`btn-check ${h.doneToday ? 'btn-check-done' : ''}`}
-                        onClick={() => markDoneToday(h)}
-                      >
-                        {h.doneToday ? '✓ Nailed it today' : 'Mark done today'}
-                      </button>
+                      <div className={`tick-stepper ${h.todayCount >= (h.target_count || 1) ? 'tick-stepper-done' : ''}`}>
+                        <button
+                          type="button"
+                          className="tick-btn"
+                          onClick={() => decrementToday(h)}
+                          disabled={h.todayCount === 0}
+                        >
+                          −
+                        </button>
+                        <span className="tick-count">
+                          {h.todayCount >= (h.target_count || 1) ? '✓ ' : ''}{h.todayCount} today
+                        </span>
+                        <button type="button" className="tick-btn tick-btn-add" onClick={() => incrementToday(h)}>
+                          +
+                        </button>
+                      </div>
                     ) : (
                       <div className="log-value-row">
                         <input

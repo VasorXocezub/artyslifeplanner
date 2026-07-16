@@ -852,6 +852,73 @@
   padding: 8px 16px;
 }
 
+.tick-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 6px 8px;
+}
+
+.tick-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tick-btn:hover:not(:disabled) {
+  background: var(--pink-soft);
+}
+
+.tick-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.tick-btn-add {
+  background: var(--pink);
+  color: #fff;
+}
+
+.tick-btn-add:hover {
+  background: #C93868;
+}
+
+.tick-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tick-stepper-done {
+  border-color: var(--olive);
+  background: #F3F6EC;
+}
+
+.tick-stepper-done .tick-count {
+  color: var(--olive-dark);
+}
+
+.tick-stepper-done .tick-btn-add {
+  background: var(--olive);
+}
+
+.tick-stepper-done .tick-btn-add:hover {
+  background: var(--olive-dark);
+}
+
 .toggle-group {
   display: flex;
   gap: 8px;
