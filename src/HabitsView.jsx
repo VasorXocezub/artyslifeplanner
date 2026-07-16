@@ -411,7 +411,7 @@ export default function HabitsView() {
                   ⠿⠿
                 </span>
                 <div className="habit-header-row">
-                  <h3 className="contact-name">{h.icon || '✨'} {h.name}</h3>
+                  <h3 className="contact-name" title={h.name}>{h.icon || '✨'} {h.name}</h3>
                   <span className={`type-badge ${h.type === 'quit' ? 'type-badge-quit' : 'type-badge-build'}`}>
                     {h.type === 'quit' ? '🚫 Quit' : '🌱 Build'}
                   </span>

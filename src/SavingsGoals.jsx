@@ -168,7 +168,7 @@ export default function SavingsGoals({ currency }) {
                 style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
               >
                 <div className="habit-header-row">
-                  <h3 className="contact-name">{g.icon} {g.name}</h3>
+                  <h3 className="contact-name" title={g.name}>{g.icon} {g.name}</h3>
                   {reached && <span className="type-badge type-badge-build">🎉 Manifested!</span>}
                 </div>
 

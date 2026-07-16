@@ -187,7 +187,7 @@ export default function GoalsView() {
               <span className="status-badge" style={{ background: STATUS_COLORS[g.status] }}>
                 {STATUS_LABELS[g.status]}
               </span>
-              <h3 className="contact-name">{g.title}</h3>
+              <h3 className="contact-name" title={g.title}>{g.title}</h3>
               {g.category && <p className="contact-relationship">{g.category}</p>}
               <div className="contact-meta">
                 {g.target_date && (

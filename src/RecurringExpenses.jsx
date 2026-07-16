@@ -188,7 +188,7 @@ export default function RecurringExpenses({ currency }) {
               style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
             >
               <div className="habit-header-row">
-                <h3 className="contact-name">{item.name}</h3>
+                <h3 className="contact-name" title={item.name}>{item.name}</h3>
                 <span className="type-badge type-badge-build">{FREQUENCY_LABELS[item.frequency]}</span>
               </div>
 
