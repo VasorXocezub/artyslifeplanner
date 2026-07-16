@@ -1,3 +1,10 @@
+export function getReadingGoal() {
+  return parseInt(localStorage.getItem('readingGoal') || '25', 10)
+}
+export function setReadingGoal(n) {
+  localStorage.setItem('readingGoal', String(n))
+}
+
 export function getDisplayName() {
   return localStorage.getItem('displayName') || ''
 }
@@ -26,6 +33,17 @@ export function getEra() {
 }
 export function setEra(era) {
   localStorage.setItem('era', era)
+}
+
+export function getHiddenFinanceTabs() {
+  try {
+    return JSON.parse(localStorage.getItem('hiddenFinanceTabs') || '[]')
+  } catch {
+    return []
+  }
+}
+export function setHiddenFinanceTabs(arr) {
+  localStorage.setItem('hiddenFinanceTabs', JSON.stringify(arr))
 }
 
 export function getHiddenModules() {

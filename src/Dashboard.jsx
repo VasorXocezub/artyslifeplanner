@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/currency'
-import { getEra, setEra as saveEra } from './lib/localPrefs'
+import { getEra, setEra as saveEra, getReadingGoal } from './lib/localPrefs'
 import WeatherWidget from './WeatherWidget'
 
 const ERAS = [
@@ -46,9 +46,16 @@ const MODULES = [
     ],
   },
   {
+    group: 'READING',
+    items: [
+      { key: 'booknook', title: 'Book Nook', desc: 'I\'d rather be reading 📖', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
+    ],
+  },
+  {
     group: 'MONEY',
     items: [
       { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#1E5C57', tint: '#F7EFDF' },
+      { key: 'shopping', title: 'Shopping List', desc: 'Groceries + wishlist, cutely 🛍️', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
     ],
   },
 ]
@@ -88,6 +95,9 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     totalSaved: 0,
     hasSavings: false,
     todosOpen: 0,
+    shoppingOpen: 0,
+    currentlyReadingBook: null,
+    booksReadThisYear: 0,
   })
   const [loading, setLoading] = useState(true)
 
@@ -103,6 +113,8 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const { data: transactionsData } = await supabase.from('transactions').select('*')
     const { data: savingsData } = await supabase.from('savings_goals').select('*')
     const { data: todosData } = await supabase.from('todos').select('*').eq('completed', false)
+    const { data: shoppingData } = await supabase.from('shopping_items').select('*').eq('completed', false)
+    const { data: booksData } = await supabase.from('books').select('*')
 
     if (error || !data) {
       setLoading(false)
@@ -146,8 +158,17 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const totalSaved = (savingsData || []).reduce((acc, g) => acc + Number(g.current_amount || 0), 0)
     const hasSavings = (savingsData || []).length > 0
     const todosOpen = (todosData || []).length
+    const shoppingOpen = (shoppingData || []).length
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen })
+    const readingBook = (booksData || []).find((b) => b.status === 'reading')
+    const currentlyReadingBook = readingBook
+      ? { title: readingBook.title, pct: readingBook.pages ? Math.min(100, Math.round((Number(readingBook.current_page || 0) / readingBook.pages) * 100)) : 0 }
+      : null
+    const booksReadThisYear = (booksData || []).filter(
+      (b) => b.status === 'finished' && b.finish_date && new Date(b.finish_date + 'T00:00:00').getFullYear() === now.getFullYear()
+    ).length
+
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, currentlyReadingBook, booksReadThisYear })
     setLoading(false)
   }
 
@@ -219,6 +240,12 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
               📋 {stats.todosOpen} to-do{stats.todosOpen > 1 ? 's' : ''} open
             </div>
           )}
+          {!hiddenModules.includes('shopping') && stats.shoppingOpen > 0 && (
+            <div className="stat-pill">
+              <span className="stat-dot" style={{ background: '#B896C9' }} />
+              🛍️ {stats.shoppingOpen} on your list
+            </div>
+          )}
         </div>
       )}
 
@@ -239,7 +266,23 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
                 >
                   <span className="module-accent-bar" />
                   <h3>{m.title}</h3>
-                  <p>{m.desc}</p>
+                  {m.key === 'booknook' ? (
+                    <div className="booknook-preview">
+                      {stats.currentlyReadingBook ? (
+                        <>
+                          <p className="booknook-preview-label">Currently Reading</p>
+                          <p className="booknook-preview-title">{stats.currentlyReadingBook.title}</p>
+                          <p className="booknook-preview-pct">{stats.currentlyReadingBook.pct}%</p>
+                        </>
+                      ) : (
+                        <p className="booknook-preview-title">{m.desc}</p>
+                      )}
+                      <p className="booknook-preview-label">Goal</p>
+                      <p className="booknook-preview-goal">{stats.booksReadThisYear} / {getReadingGoal()} Books</p>
+                    </div>
+                  ) : (
+                    <p>{m.desc}</p>
+                  )}
                   <span className="module-link">{m.enabled ? 'Open →' : 'Coming soon'}</span>
                 </button>
               ))}

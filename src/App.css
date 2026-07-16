@@ -484,6 +484,327 @@
   font-weight: 700;
 }
 
+.goal-era-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  margin: 0 0 8px 0;
+}
+
+.goal-divider {
+  height: 2px;
+  background: var(--border);
+  margin: 12px 0;
+}
+
+.goal-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.goal-stat-label {
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+
+.goal-stat-value {
+  color: var(--ink);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.goal-reward {
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 12px 0 0 0;
+}
+
+.goal-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.goal-badge-chip {
+  background: var(--pink-soft);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.booknook-preview {
+  margin: 6px 0 14px 0;
+}
+
+.booknook-preview-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  margin: 8px 0 1px 0;
+}
+
+.booknook-preview-label:first-child {
+  margin-top: 0;
+}
+
+.booknook-preview-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.booknook-preview-pct {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--card-accent);
+  margin: 0;
+}
+
+.booknook-preview-goal {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.booknook-progress-card {
+  margin-bottom: 24px;
+}
+
+.booknook-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.booknook-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.booknook-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.booknook-stat-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.booknook-stat-small {
+  font-size: 15px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booknook-goal-edit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.shelf-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.shelf-book {
+  font-size: 18px;
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+.shelf-book-filled {
+  opacity: 1;
+  filter: none;
+}
+
+.library-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 4px 14px 14px 4px;
+  padding: 18px 18px 16px 22px;
+  position: relative;
+  box-shadow: 0 3px 10px rgba(30, 92, 87, 0.08);
+}
+
+.bookmark-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  background: var(--coral);
+  border-radius: 4px 0 0 0;
+}
+
+.library-card-small {
+  cursor: pointer;
+  border-style: dashed;
+}
+
+.finished-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.booknook-rating {
+  font-size: 13px;
+  margin: 2px 0;
+}
+
+.quote-stationery {
+  font-family: var(--font-script);
+  font-size: 15px;
+  color: var(--ink-dim);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+.year-shelf-card {
+  text-align: center;
+}
+
+.year-shelf-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.reading-journey {
+  position: relative;
+  padding-left: 20px;
+  border-left: 3px dashed var(--border-strong);
+}
+
+.journey-item {
+  position: relative;
+  padding-bottom: 20px;
+}
+
+.journey-dot {
+  position: absolute;
+  left: -26px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--coral);
+  border: 2px solid var(--surface);
+}
+
+.journey-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  margin: 0;
+}
+
+.journey-date {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 2px 0 0 0;
+}
+
+.goals-summary-card {
+  margin-bottom: 20px;
+}
+
+.goals-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.goals-summary-row:last-child {
+  border-bottom: none;
+}
+
+.goals-summary-label {
+  font-weight: 700;
+  color: var(--ink-dim);
+}
+
+.goals-summary-value {
+  font-weight: 700;
+  color: var(--ink);
+  text-align: right;
+}
+
+.goal-era {
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 700;
+}
+
+.goal-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.goal-badge {
+  background: var(--pink-soft);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.goal-reward {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 10px 0;
+}
+
 .cake-club-subtitle {
   font-family: var(--font-script);
   font-size: 23px;
@@ -716,6 +1037,34 @@
 
 .recurring-monthly-note {
   margin: 2px 0 10px 0;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.settings-inline-form .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.settings-subspace-label {
+  margin-top: 20px;
+}
+
+.settings-save-spaces {
+  margin-top: 16px;
+}
+
+.settings-logout-btn {
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .settings-module-list {
@@ -1240,6 +1589,24 @@
   padding: 12px 14px;
 }
 
+.shopping-checkbox {
+  border-color: var(--pink);
+}
+
+.shopping-checkbox:hover {
+  background: var(--pink-soft);
+  border-color: var(--coral);
+}
+
+.shopping-price-input {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.shopping-total-row {
+  margin-bottom: 20px;
+}
+
 .todo-checkbox {
   width: 22px;
   height: 22px;
@@ -1470,8 +1837,18 @@
   color: var(--ink-dim);
 }
 
+.savings-withdraw-btn {
+  flex-shrink: 0;
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--danger);
+  font-weight: 700;
+}
+
 .log-value-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -1590,6 +1967,18 @@
   color: var(--ink-dim);
   margin: -6px 0 14px 0;
   line-height: 1.4;
+}
+
+.savings-toggle-label {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .field-row {

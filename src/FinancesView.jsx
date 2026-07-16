@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { getCurrency, setCurrency as saveCurrency } from './lib/localPrefs'
+import { useEffect, useState } from 'react'
+import { getCurrency, setCurrency as saveCurrency, getHiddenFinanceTabs } from './lib/localPrefs'
 import { CURRENCIES } from './lib/currency'
 import PersonalFinances from './PersonalFinances'
 import BusinessTracker from './BusinessTracker'
@@ -16,8 +16,20 @@ const TABS = [
 ]
 
 export default function FinancesView() {
-  const [tab, setTab] = useState('personal')
+  const [hiddenTabs, setHiddenTabs] = useState(getHiddenFinanceTabs())
+  const visibleTabs = TABS.filter((t) => !hiddenTabs.includes(t.key))
+  const [tab, setTab] = useState(() => {
+    const hidden = getHiddenFinanceTabs()
+    const firstVisible = TABS.find((t) => !hidden.includes(t.key))
+    return firstVisible ? firstVisible.key : 'personal'
+  })
   const [currency, setCurrency] = useState(getCurrency())
+
+  useEffect(() => {
+    if (hiddenTabs.includes(tab) && visibleTabs.length > 0) {
+      setTab(visibleTabs[0].key)
+    }
+  }, [hiddenTabs, tab, visibleTabs])
 
   function handleCurrencyChange(e) {
     const newCurrency = e.target.value
@@ -42,7 +54,7 @@ export default function FinancesView() {
       </div>
 
       <div className="filter-row">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.key}
             className={`filter-pill ${tab === t.key ? 'filter-pill-active' : ''}`}

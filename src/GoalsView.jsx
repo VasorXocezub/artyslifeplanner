@@ -12,18 +12,46 @@ const emptyForm = {
   current_value: '',
   target_value: '',
   unit: '',
+  reward: '',
 }
 
 const STATUS_LABELS = {
-  not_started: 'Not started yet',
-  in_progress: 'In motion ✨',
-  done: 'Slayed 💅',
+  not_started: '🌱 Not Started',
+  in_progress: '🚀 In Motion',
+  done: '👑 Slayed',
 }
 
 const STATUS_COLORS = {
   not_started: '#1E5C57',
   in_progress: '#1E5C57',
   done: '#B896C9',
+}
+
+const ERA_ICONS = [
+  [['health', 'wellness', 'fitness', 'gym', 'weight'], '🌿'],
+  [['career', 'work', 'business', 'job'], '💼'],
+  [['travel', 'adventure', 'trip'], '✈️'],
+  [['finance', 'money', 'save', 'saving'], '💰'],
+  [['love', 'relationship', 'dating'], '💕'],
+  [['home', 'house', 'move'], '🏠'],
+  [['learn', 'education', 'study', 'course'], '📚'],
+  [['creative', 'art', 'design', 'craft'], '🎨'],
+]
+
+function getEraIcon(category) {
+  if (!category) return '✨'
+  const lower = category.toLowerCase()
+  for (const [keywords, icon] of ERA_ICONS) {
+    if (keywords.some((k) => lower.includes(k))) return icon
+  }
+  return '✨'
+}
+
+function formatEraLabel(category) {
+  if (!category) return null
+  const trimmed = category.trim()
+  const hasEra = /era$/i.test(trimmed)
+  return `${getEraIcon(category)} ${trimmed}${hasEra ? '' : ' Era'}`
 }
 
 function formatDate(d) {
@@ -49,6 +77,38 @@ function effectiveStatus(goal) {
   if (pct >= 100) return 'done'
   if (pct <= 0) return 'not_started'
   return 'in_progress'
+}
+
+function effectivePct(goal) {
+  if (goal.goal_type === 'progress') return computeProgress(goal).pct
+  const status = effectiveStatus(goal)
+  if (status === 'done') return 100
+  if (status === 'in_progress') return 50
+  return 0
+}
+
+function progressStage(pct) {
+  if (pct >= 100) return { label: 'Bloomed', icon: '👑' }
+  if (pct >= 75) return { label: 'Thriving', icon: '🌳' }
+  if (pct >= 25) return { label: 'Growing', icon: '🌿' }
+  return { label: 'Seedling', icon: '🌱' }
+}
+
+function computeBadges(goal) {
+  const badges = []
+  const createdAt = goal.created_at ? new Date(goal.created_at) : null
+  const daysSince = createdAt ? Math.floor((Date.now() - createdAt.getTime()) / 86400000) : 0
+  const status = effectiveStatus(goal)
+  const pct = effectivePct(goal)
+
+  if (status !== 'not_started') {
+    if (daysSince >= 7) badges.push({ icon: '🏅', label: 'First Week' })
+    if (daysSince >= 14) badges.push({ icon: '🔥', label: '14-Day Streak' })
+    if (daysSince >= 30) badges.push({ icon: '🌸', label: 'Consistent Queen' })
+  }
+  if (pct >= 50) badges.push({ icon: '🎯', label: 'Halfway There' })
+  if (pct >= 100) badges.push({ icon: '👑', label: 'Dream Achieved' })
+  return badges
 }
 
 export default function GoalsView() {
@@ -99,6 +159,7 @@ export default function GoalsView() {
       current_value: goal.current_value != null ? String(goal.current_value) : '',
       target_value: goal.target_value != null ? String(goal.target_value) : '',
       unit: goal.unit || '',
+      reward: goal.reward || '',
     })
     setModalOpen(true)
   }
@@ -127,6 +188,7 @@ export default function GoalsView() {
       current_value: isProgress ? parseFloat(form.current_value) || parseFloat(form.start_value) || 0 : null,
       target_value: isProgress ? parseFloat(form.target_value) || 0 : null,
       unit: isProgress ? form.unit.trim() || null : null,
+      reward: form.reward.trim() || null,
     }
 
     let error
@@ -188,14 +250,32 @@ export default function GoalsView() {
     return matchesSearch && matchesStatus
   })
 
+  const counts = {
+    all: goals.length,
+    not_started: goals.filter((g) => effectiveStatus(g) === 'not_started').length,
+    in_progress: goals.filter((g) => effectiveStatus(g) === 'in_progress').length,
+    done: goals.filter((g) => effectiveStatus(g) === 'done').length,
+  }
+
+  const activeGoals = goals.filter((g) => effectiveStatus(g) !== 'done')
+  const closestToFinish = activeGoals
+    .filter((g) => g.goal_type === 'progress')
+    .map((g) => ({ goal: g, pct: computeProgress(g).pct }))
+    .sort((a, b) => b.pct - a.pct)[0]
+
+  const eraCounts = {}
+  activeGoals.forEach((g) => {
+    if (!g.category) return
+    eraCounts[g.category] = (eraCounts[g.category] || 0) + 1
+  })
+  const topEra = Object.entries(eraCounts).sort((a, b) => b[1] - a[1])[0]
+
   return (
     <div>
       <div className="view-header">
         <div>
           <h1 className="view-title">Goals</h1>
-          <p className="view-subtitle">
-            {goals.length === 0 ? 'A blank slate, full of potential ✨' : `${goals.length} ${goals.length === 1 ? 'dream' : 'dreams'} in motion, let's gooo`}
-          </p>
+          <p className="view-subtitle cake-club-subtitle">Dreams don't chase themselves. ✨</p>
         </div>
         <div className="toolbar">
           <input
@@ -208,16 +288,56 @@ export default function GoalsView() {
         </div>
       </div>
 
+      {goals.length > 0 && (
+        <div className="calendar-card goals-summary-card">
+          <div className="goals-summary-row">
+            <span className="goals-summary-label">✨ Active Dreams</span>
+            <span className="goals-summary-value">{activeGoals.length}</span>
+          </div>
+          {closestToFinish && (
+            <div className="goals-summary-row">
+              <span className="goals-summary-label">🔥 Closest to Finish</span>
+              <span className="goals-summary-value">{closestToFinish.goal.title} ({closestToFinish.pct}%)</span>
+            </div>
+          )}
+          <div className="goals-summary-row">
+            <span className="goals-summary-label">🏆 Dreams Slayed</span>
+            <span className="goals-summary-value">{counts.done}</span>
+          </div>
+          {topEra && (
+            <div className="goals-summary-row">
+              <span className="goals-summary-label">🌸 Current Era</span>
+              <span className="goals-summary-value">{getEraIcon(topEra[0])} {topEra[0]}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="filter-row">
-        {['all', 'not_started', 'in_progress', 'done'].map((s) => (
-          <button
-            key={s}
-            className={`filter-pill ${statusFilter === s ? 'filter-pill-active' : ''}`}
-            onClick={() => setStatusFilter(s)}
-          >
-            {s === 'all' ? 'All' : STATUS_LABELS[s]}
-          </button>
-        ))}
+        <button
+          className={`filter-pill ${statusFilter === 'all' ? 'filter-pill-active' : ''}`}
+          onClick={() => setStatusFilter('all')}
+        >
+          ✨ All ({counts.all})
+        </button>
+        <button
+          className={`filter-pill ${statusFilter === 'not_started' ? 'filter-pill-active' : ''}`}
+          onClick={() => setStatusFilter('not_started')}
+        >
+          🌱 Not Started ({counts.not_started})
+        </button>
+        <button
+          className={`filter-pill ${statusFilter === 'in_progress' ? 'filter-pill-active' : ''}`}
+          onClick={() => setStatusFilter('in_progress')}
+        >
+          🚀 In Motion ({counts.in_progress})
+        </button>
+        <button
+          className={`filter-pill ${statusFilter === 'done' ? 'filter-pill-active' : ''}`}
+          onClick={() => setStatusFilter('done')}
+        >
+          👑 Slayed ({counts.done})
+        </button>
       </div>
 
       {loading && <p className="loading">Rounding up your ambitions… 🌟</p>}
@@ -235,7 +355,10 @@ export default function GoalsView() {
           {filtered.map((g) => {
             const status = effectiveStatus(g)
             const isProgress = g.goal_type === 'progress'
-            const { pct } = isProgress ? computeProgress(g) : { pct: 0 }
+            const pct = effectivePct(g)
+            const stage = progressStage(pct)
+            const badges = computeBadges(g)
+            const eraLabel = formatEraLabel(g.category)
             return (
               <div
                 className="contact-card"
@@ -243,16 +366,11 @@ export default function GoalsView() {
                 style={{ borderTopColor: STATUS_COLORS[status] || '#B896C9' }}
               >
                 <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
-                  {!isProgress && (
-                    <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>
-                      {STATUS_LABELS[status]}
-                    </span>
-                  )}
-                  {isProgress && pct >= 100 && (
-                    <span className="type-badge type-badge-build">🎉 Reached!</span>
-                  )}
+                  <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>
+                    {STATUS_LABELS[status]}
+                  </span>
                   <h3 className="contact-name" title={g.title}>{g.title}</h3>
-                  {g.category && <p className="contact-relationship">{g.category}</p>}
+                  {eraLabel && <p className="contact-relationship goal-era">{eraLabel}</p>}
                   {g.target_date && (
                     <div className="contact-meta">
                       <div><span className="label">Target</span>{formatDate(g.target_date)}</div>
@@ -261,32 +379,47 @@ export default function GoalsView() {
                   {g.notes && <p className="contact-notes">{g.notes}</p>}
                 </div>
 
-                {isProgress && (
-                  <>
-                    <div className="progress-row">
-                      <div className="progress-track">
-                        <div
-                          className="progress-fill"
-                          style={{ width: `${pct}%`, background: STATUS_COLORS[status] }}
-                        />
-                      </div>
-                      <span className="progress-label">
-                        {g.current_value} / {g.target_value} {g.unit || ''} ({pct}%)
+                <div className="progress-row">
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${pct}%`, background: STATUS_COLORS[status] }}
+                    />
+                  </div>
+                  <span className="progress-label">
+                    {stage.icon} {stage.label}
+                    {isProgress && ` — ${g.current_value} / ${g.target_value} ${g.unit || ''}`}
+                    {' '}({pct}%)
+                  </span>
+                </div>
+
+                {badges.length > 0 && (
+                  <div className="goal-badges-row">
+                    {badges.map((b) => (
+                      <span className="goal-badge" key={b.label} title={b.label}>
+                        {b.icon} {b.label}
                       </span>
-                    </div>
-                    <div className="log-value-row">
-                      <input
-                        type="number"
-                        className="log-value-input"
-                        placeholder="Update current value"
-                        value={progressInputs[g.id] || ''}
-                        onChange={(e) => setProgressInputs((v) => ({ ...v, [g.id]: e.target.value }))}
-                        onKeyDown={(e) => e.key === 'Enter' && updateProgress(g)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <button className="btn-check log-value-btn" onClick={() => updateProgress(g)}>Update</button>
-                    </div>
-                  </>
+                    ))}
+                  </div>
+                )}
+
+                {g.reward && (
+                  <p className="goal-reward">🎁 Reward: {g.reward}</p>
+                )}
+
+                {isProgress && (
+                  <div className="log-value-row">
+                    <input
+                      type="number"
+                      className="log-value-input"
+                      placeholder="Update current value"
+                      value={progressInputs[g.id] || ''}
+                      onChange={(e) => setProgressInputs((v) => ({ ...v, [g.id]: e.target.value }))}
+                      onKeyDown={(e) => e.key === 'Enter' && updateProgress(g)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <button className="btn-check log-value-btn" onClick={() => updateProgress(g)}>Update</button>
+                  </div>
                 )}
               </div>
             )
@@ -310,11 +443,11 @@ export default function GoalsView() {
                 />
               </div>
               <div className="field">
-                <label>Category</label>
+                <label>Era / Category</label>
                 <input
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  placeholder="Health, career, finances…"
+                  placeholder="Wellness, Career, Adventure…"
                   list="goal-category-options"
                 />
                 <datalist id="goal-category-options">
@@ -409,6 +542,16 @@ export default function GoalsView() {
                   onChange={(e) => setForm({ ...form, target_date: e.target.value })}
                 />
               </div>
+
+              <div className="field">
+                <label>🎁 Reward when you get there</label>
+                <input
+                  value={form.reward}
+                  onChange={(e) => setForm({ ...form, reward: e.target.value })}
+                  placeholder="New shoes, a spa day, that trip…"
+                />
+              </div>
+
               <div className="field">
                 <label>Notes</label>
                 <textarea

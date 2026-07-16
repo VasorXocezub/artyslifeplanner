@@ -8,6 +8,8 @@ const emptyForm = {
   category: '',
   type: 'expense',
   notes: '',
+  is_savings: false,
+  savings_goal_id: '',
 }
 
 const CARD_COLORS = ['#B896C9', '#1E5C57', '#1E5C57', '#1E5C57', '#1E5C57', '#8FC2BE']
@@ -29,10 +31,17 @@ export default function PersonalFinances({ currency }) {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [viewMonth, setViewMonth] = useState(new Date())
+  const [savingsGoals, setSavingsGoals] = useState([])
 
   useEffect(() => {
     fetchTransactions()
+    fetchSavingsGoals()
   }, [])
+
+  async function fetchSavingsGoals() {
+    const { data } = await supabase.from('savings_goals').select('*').order('created_at', { ascending: true })
+    setSavingsGoals(data || [])
+  }
 
   async function fetchTransactions() {
     setLoading(true)
@@ -61,6 +70,8 @@ export default function PersonalFinances({ currency }) {
       category: tx.category || '',
       type: tx.type || 'expense',
       notes: tx.notes || '',
+      is_savings: !!tx.savings_goal_id,
+      savings_goal_id: tx.savings_goal_id || '',
     })
     setModalOpen(true)
   }
@@ -77,12 +88,15 @@ export default function PersonalFinances({ currency }) {
     if (!form.date || isNaN(parsedAmount)) return
     setSaving(true)
 
+    const isSavingsContribution = form.is_savings && form.savings_goal_id
+
     const payload = {
       date: form.date,
       amount: Math.abs(parsedAmount),
-      category: form.category.trim() || null,
+      category: isSavingsContribution ? 'Savings' : (form.category.trim() || null),
       type: form.type,
       notes: form.notes.trim() || null,
+      savings_goal_id: isSavingsContribution ? form.savings_goal_id : null,
     }
 
     let error
@@ -93,6 +107,16 @@ export default function PersonalFinances({ currency }) {
       ;({ error } = await supabase.from('transactions').insert({ ...payload, user_id }))
     }
 
+    if (!error && isSavingsContribution && !editingId) {
+      const goal = savingsGoals.find((g) => g.id === form.savings_goal_id)
+      if (goal) {
+        await supabase
+          .from('savings_goals')
+          .update({ current_amount: Number(goal.current_amount) + Math.abs(parsedAmount) })
+          .eq('id', goal.id)
+      }
+    }
+
     setSaving(false)
     if (error) {
       setError(error.message)
@@ -100,6 +124,7 @@ export default function PersonalFinances({ currency }) {
     }
     closeModal()
     fetchTransactions()
+    fetchSavingsGoals()
   }
 
   async function handleDelete() {
@@ -300,6 +325,7 @@ export default function PersonalFinances({ currency }) {
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  disabled={form.is_savings}
                 >
                   <option value="expense">Expense</option>
                   <option value="income">Income</option>
@@ -334,6 +360,7 @@ export default function PersonalFinances({ currency }) {
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   placeholder="Groceries, salary, rent…"
                   list="tx-category-options"
+                  disabled={form.is_savings}
                 />
                 <datalist id="tx-category-options">
                   {knownCategories.map((c) => (
@@ -341,6 +368,39 @@ export default function PersonalFinances({ currency }) {
                   ))}
                 </datalist>
               </div>
+
+              {savingsGoals.length > 0 && !editingId && (
+                <div className="field">
+                  <label className="savings-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={form.is_savings}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          is_savings: e.target.checked,
+                          type: e.target.checked ? 'expense' : form.type,
+                          savings_goal_id: e.target.checked ? form.savings_goal_id : '',
+                        })
+                      }
+                    />
+                    {' '}💰 This is a savings contribution
+                  </label>
+                  {form.is_savings && (
+                    <select
+                      value={form.savings_goal_id}
+                      onChange={(e) => setForm({ ...form, savings_goal_id: e.target.value })}
+                      required
+                      style={{ marginTop: 8 }}
+                    >
+                      <option value="">Which goal?</option>
+                      {savingsGoals.map((g) => (
+                        <option key={g.id} value={g.id}>{g.icon} {g.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
               <div className="field">
                 <label>Notes</label>
                 <textarea

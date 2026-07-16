@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { getHiddenModules, setHiddenModules } from './lib/localPrefs'
 import Auth from './Auth'
-import Settings from './Settings'
+import SettingsView from './SettingsView'
 import Dashboard from './Dashboard'
 import ContactsView from './ContactsView'
 import GoalsView from './GoalsView'
 import HabitsView from './HabitsView'
 import FinancesView from './FinancesView'
 import TodoView from './TodoView'
+import ShoppingListView from './ShoppingListView'
+import BookNookView from './BookNookView'
 import './App.css'
 
 const NAV_ITEMS = [
@@ -18,14 +20,13 @@ const NAV_ITEMS = [
   { key: 'habits', label: 'Habits', num: '03', enabled: true },
   { key: 'finances', label: 'Finances', num: '04', enabled: true },
   { key: 'todos', label: 'To-Do', num: '05', enabled: true },
+  { key: 'shopping', label: 'Shopping List', num: '06', enabled: true },
+  { key: 'booknook', label: 'Book Nook', num: '07', enabled: true },
 ]
 
 function App() {
   const [view, setView] = useState('home')
   const [session, setSession] = useState(undefined)
-  const [editingName, setEditingName] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
 
   useEffect(() => {
@@ -46,15 +47,6 @@ function App() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
-  }
-
-  async function handleSaveName() {
-    if (!nameInput.trim()) return
-    const { data, error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } })
-    if (!error && data.user) {
-      setSession((s) => ({ ...s, user: data.user }))
-      setEditingName(false)
-    }
   }
 
   function handleSaveModules(newHidden) {
@@ -96,39 +88,13 @@ function App() {
           your whole life,<br />
           organized (mostly) ✨
         </div>
-        <div className="sidebar-account">
-          {editingName ? (
-            <div className="name-edit-row">
-              <input
-                className="name-edit-input"
-                autoFocus
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Your name"
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-              />
-              <button className="name-edit-save" onClick={handleSaveName}>Save</button>
-            </div>
-          ) : (
-            <>
-              {session.user.user_metadata?.full_name || 'you'}
-              {' · '}
-              <button
-                className="name-edit-trigger"
-                onClick={() => {
-                  setNameInput(session.user.user_metadata?.full_name || '')
-                  setEditingName(true)
-                }}
-              >
-                edit name
-              </button>
-            </>
-          )}
-        </div>
-        <button className="sidebar-settings-trigger" onClick={() => setSettingsOpen(true)}>
-          ⚙ Modules
+        <button
+          className={`nav-item sidebar-settings-nav ${view === 'settings' ? 'active' : ''}`}
+          onClick={() => setView('settings')}
+        >
+          <span className="num">⚙</span>
+          Settings
         </button>
-        <button className="sidebar-logout" onClick={handleLogout}>Log out</button>
       </aside>
       <main className="main">
         {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
@@ -137,14 +103,17 @@ function App() {
         {view === 'habits' && <HabitsView />}
         {view === 'finances' && <FinancesView />}
         {view === 'todos' && <TodoView />}
+        {view === 'shopping' && <ShoppingListView />}
+        {view === 'booknook' && <BookNookView />}
+        {view === 'settings' && (
+          <SettingsView
+            session={session}
+            hiddenModules={hiddenModules}
+            onSaveModules={handleSaveModules}
+            onLogout={handleLogout}
+          />
+        )}
       </main>
-      {settingsOpen && (
-        <Settings
-          hiddenModules={hiddenModules}
-          onSave={handleSaveModules}
-          onClose={() => setSettingsOpen(false)}
-        />
-      )}
     </div>
   )
 }

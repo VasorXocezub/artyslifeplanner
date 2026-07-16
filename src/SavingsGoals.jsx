@@ -117,6 +117,40 @@ export default function SavingsGoals({ currency }) {
     fetchGoals()
   }
 
+  async function withdrawFunds(goal) {
+    const raw = addFundsInputs[goal.id]
+    const amount = parseFloat(raw)
+    if (!raw || isNaN(amount)) return
+    const newAmount = Math.max(0, Number(goal.current_amount) - amount)
+
+    const { error: goalError } = await supabase
+      .from('savings_goals')
+      .update({ current_amount: newAmount })
+      .eq('id', goal.id)
+    if (goalError) {
+      setError(goalError.message)
+      return
+    }
+
+    const user_id = await getUserId()
+    const { error: txError } = await supabase.from('transactions').insert({
+      date: new Date().toISOString().split('T')[0],
+      amount: Math.abs(amount),
+      type: 'income',
+      category: 'Savings Withdrawal',
+      notes: `Withdrawn from ${goal.name}`,
+      savings_goal_id: goal.id,
+      user_id,
+    })
+    if (txError) {
+      setError(txError.message)
+      return
+    }
+
+    setAddFundsInputs((v) => ({ ...v, [goal.id]: '' }))
+    fetchGoals()
+  }
+
   const totalSaved = goals.reduce((acc, g) => acc + Number(g.current_amount), 0)
   const totalTarget = goals.reduce((acc, g) => acc + Number(g.target_amount), 0)
 
@@ -189,12 +223,13 @@ export default function SavingsGoals({ currency }) {
                     <input
                       type="number"
                       className="log-value-input"
-                      placeholder="+ amount"
+                      placeholder="amount"
                       value={addFundsInputs[g.id] || ''}
                       onChange={(e) => setAddFundsInputs((v) => ({ ...v, [g.id]: e.target.value }))}
                       onKeyDown={(e) => e.key === 'Enter' && addFunds(g)}
                     />
-                    <button className="btn-check log-value-btn" onClick={() => addFunds(g)}>Add</button>
+                    <button className="btn-check log-value-btn" onClick={() => addFunds(g)}>+ Add</button>
+                    <button className="btn-delete-small savings-withdraw-btn" onClick={() => withdrawFunds(g)}>Withdraw</button>
                   </div>
                   <button className="btn-delete-small" onClick={() => openEdit(g)}>Edit</button>
                 </div>

@@ -118,6 +118,7 @@ export default function HabitsView() {
   const [saving, setSaving] = useState(false)
   const [valueInputs, setValueInputs] = useState({})
   const [draggedId, setDraggedId] = useState(null)
+  const [, setTick] = useState(0)
 
   const todayStr = toISO(new Date())
   const today = new Date()
@@ -125,6 +126,13 @@ export default function HabitsView() {
 
   useEffect(() => {
     fetchAll()
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1)
+    }, 60000)
+    return () => clearInterval(interval)
   }, [])
 
   async function fetchAll() {
