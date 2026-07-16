@@ -2,11 +2,13 @@ import { useState } from 'react'
 import PersonalFinances from './PersonalFinances'
 import BusinessTracker from './BusinessTracker'
 import SavingsGoals from './SavingsGoals'
+import RecurringExpenses from './RecurringExpenses'
 
 const TABS = [
   { key: 'personal', label: 'Personal' },
   { key: 'business', label: 'Business' },
   { key: 'savings', label: 'Savings' },
+  { key: 'recurring', label: 'Recurring' },
 ]
 
 export default function FinancesView() {
@@ -35,6 +37,7 @@ export default function FinancesView() {
       {tab === 'personal' && <PersonalFinances />}
       {tab === 'business' && <BusinessTracker />}
       {tab === 'savings' && <SavingsGoals />}
+      {tab === 'recurring' && <RecurringExpenses />}
     </div>
   )
 }

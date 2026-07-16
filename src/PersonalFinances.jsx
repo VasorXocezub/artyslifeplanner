@@ -28,10 +28,26 @@ export default function PersonalFinances() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [zarToUsd, setZarToUsd] = useState(null)
+  const [rateError, setRateError] = useState(false)
+  const [converterInput, setConverterInput] = useState('')
+  const [viewMonth, setViewMonth] = useState(new Date())
 
   useEffect(() => {
     fetchTransactions()
+    fetchRate()
   }, [])
+
+  async function fetchRate() {
+    try {
+      const res = await fetch('https://api.frankfurter.dev/v2/rate/ZAR/USD')
+      const data = await res.json()
+      if (data?.rate) setZarToUsd(data.rate)
+      else setRateError(true)
+    } catch {
+      setRateError(true)
+    }
+  }
 
   async function fetchTransactions() {
     setLoading(true)
@@ -114,7 +130,12 @@ export default function PersonalFinances() {
     fetchTransactions()
   }
 
-  const totals = transactions.reduce(
+  const monthTransactions = transactions.filter((t) => {
+    const d = new Date(t.date + 'T00:00:00')
+    return d.getMonth() === viewMonth.getMonth() && d.getFullYear() === viewMonth.getFullYear()
+  })
+
+  const totals = monthTransactions.reduce(
     (acc, t) => {
       if (t.type === 'income') acc.income += Number(t.amount)
       else acc.expenses += Number(t.amount)
@@ -126,7 +147,7 @@ export default function PersonalFinances() {
 
   const categoryTotals = (() => {
     const map = {}
-    for (const t of transactions) {
+    for (const t of monthTransactions) {
       if (t.type !== 'expense') continue
       const cat = t.category || 'Uncategorized'
       map[cat] = (map[cat] || 0) + Number(t.amount)
@@ -137,7 +158,7 @@ export default function PersonalFinances() {
   })()
   const maxCategoryTotal = categoryTotals[0]?.total || 1
 
-  const filtered = transactions.filter((t) => {
+  const filtered = monthTransactions.filter((t) => {
     const q = search.toLowerCase()
     const matchesSearch =
       (t.category || '').toLowerCase().includes(q) ||
@@ -146,12 +167,22 @@ export default function PersonalFinances() {
     return matchesSearch && matchesType
   })
 
+  const monthLabel = viewMonth.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
+  const isCurrentMonth =
+    viewMonth.getMonth() === new Date().getMonth() && viewMonth.getFullYear() === new Date().getFullYear()
+
+  function goToMonth(delta) {
+    setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + delta, 1))
+  }
+
   return (
     <div>
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            {transactions.length === 0 ? 'A squeaky clean ledger 🧾' : `${transactions.length} ${transactions.length === 1 ? 'entry' : 'entries'} logged`}
+            {transactions.length === 0
+              ? 'A squeaky clean ledger 🧾'
+              : `${monthTransactions.length} ${monthTransactions.length === 1 ? 'entry' : 'entries'} in ${monthLabel}`}
           </p>
         </div>
         <div className="toolbar">
@@ -163,6 +194,54 @@ export default function PersonalFinances() {
           />
           <button className="btn-primary" onClick={openAdd}>+ Add transaction</button>
         </div>
+      </div>
+
+      <div className="month-nav-row">
+        <button className="cal-nav-btn" onClick={() => goToMonth(-1)}>‹</button>
+        <span className="cal-month-label">{monthLabel}</span>
+        <button className="cal-nav-btn" onClick={() => goToMonth(1)}>›</button>
+        {!isCurrentMonth && (
+          <button className="btn-ghost month-jump-btn" onClick={() => setViewMonth(new Date())}>
+            Jump to this month
+          </button>
+        )}
+      </div>
+
+      <div className="calendar-card converter-card">
+        <p className="module-group-label">TOTAL SPENT — {monthLabel.toUpperCase()}</p>
+        <p className="converter-total">{formatZAR(totals.expenses)}</p>
+
+        <div className="converter-divider" />
+
+        <p className="module-group-label">ZAR → USD CONVERTER</p>
+        <div className="converter-row">
+          <div className="converter-input-group">
+            <span className="converter-prefix">R</span>
+            <input
+              type="number"
+              className="converter-input"
+              placeholder={totals.expenses.toFixed(2)}
+              value={converterInput}
+              onChange={(e) => setConverterInput(e.target.value)}
+            />
+          </div>
+          <span className="converter-arrow">→</span>
+          <div className="converter-result">
+            {zarToUsd
+              ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+                  (parseFloat(converterInput) || totals.expenses) * zarToUsd
+                )
+              : rateError
+              ? '—'
+              : 'Loading…'}
+          </div>
+        </div>
+        {zarToUsd && (
+          <p className="converter-rate-note">1 USD ≈ R{(1 / zarToUsd).toFixed(2)}</p>
+        )}
+        {rateError && (
+          <p className="converter-rate-note">Couldn't fetch live rates right now.</p>
+        )}
       </div>
 
       <div className="totals-row">
