@@ -13,7 +13,7 @@ import './App.css'
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
-  { key: 'contacts', label: '🎂 Cake Club', num: '01', enabled: true },
+  { key: 'contacts', label: 'Cake Club', num: '01', enabled: true },
   { key: 'goals', label: 'Goals', num: '02', enabled: true },
   { key: 'habits', label: 'Habits', num: '03', enabled: true },
   { key: 'finances', label: 'Finances', num: '04', enabled: true },

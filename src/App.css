@@ -142,8 +142,13 @@
 }
 
 .view-subtitle {
-  color: var(--ink-dim);
+  display: inline-block;
+  color: var(--text-primary);
   font-size: 14px;
+  font-weight: 700;
+  background: var(--surface);
+  padding: 5px 12px;
+  border-radius: 999px;
   margin: 0;
 }
 
@@ -1729,6 +1734,108 @@
 @keyframes heroMsgFade {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.weather-widget {
+  margin: 4px 0 0 0;
+}
+
+.weather-date-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.weather-day {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.weather-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+.weather-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-chip {
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.weather-location-btn {
+  background: none;
+  border: none;
+  color: var(--coral);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 4px 2px;
+}
+
+.weather-location-editor {
+  margin-top: 12px;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: 16px;
+  padding: 14px;
+  max-width: 360px;
+}
+
+.weather-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.weather-search-row input {
+  flex: 1;
+  background: var(--bg);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+}
+
+.weather-search-row input:focus {
+  border-color: var(--coral);
+}
+
+.weather-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.weather-result-row {
+  text-align: left;
+  background: var(--bg);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.weather-result-row:hover {
+  background: var(--coral-soft);
 }
 
 .era-picker {

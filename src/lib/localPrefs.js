@@ -10,6 +10,17 @@ export function getCurrency() {
 export function setCurrency(code) {
   localStorage.setItem('currency', code)
 }
+export function getLocation() {
+  try {
+    return JSON.parse(localStorage.getItem('location') || 'null')
+  } catch {
+    return null
+  }
+}
+export function setLocation(loc) {
+  localStorage.setItem('location', JSON.stringify(loc))
+}
+
 export function getEra() {
   return localStorage.getItem('era') || 'soft_life'
 }

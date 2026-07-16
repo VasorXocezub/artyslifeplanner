@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import { getEra, setEra as saveEra } from './lib/localPrefs'
+import WeatherWidget from './WeatherWidget'
 
 const ERAS = [
   { key: 'rich_girl', label: '💅 Rich Girl Era' },
@@ -140,13 +141,6 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     setLoading(false)
   }
 
-  const todayLabel = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-
   function birthdayLabel() {
     if (!stats.nextBirthday) return '🎂 No birthdays saved yet'
     const { name, daysAway } = stats.nextBirthday
@@ -160,7 +154,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       <div className="hero-panel">
         <span className="hero-rotating-msg" key={msgIndex}>{ROTATING_MESSAGES[msgIndex]}</span>
         <h1 className="hero-title">{getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
-        <p className="hero-date">{todayLabel}</p>
+        <WeatherWidget />
         <div className="era-picker">
           <label>Current era</label>
           <select value={era} onChange={handleEraChange}>
