@@ -7,6 +7,11 @@ const emptyForm = {
   target_date: '',
   status: 'not_started',
   notes: '',
+  goal_type: 'simple',
+  start_value: '',
+  current_value: '',
+  target_value: '',
+  unit: '',
 }
 
 const STATUS_LABELS = {
@@ -27,6 +32,25 @@ function formatDate(d) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function computeProgress(goal) {
+  const start = Number(goal.start_value)
+  const current = Number(goal.current_value)
+  const target = Number(goal.target_value)
+  if (isNaN(start) || isNaN(current) || isNaN(target) || start === target) {
+    return { pct: 0 }
+  }
+  const pct = ((current - start) / (target - start)) * 100
+  return { pct: Math.max(0, Math.min(100, Math.round(pct))) }
+}
+
+function effectiveStatus(goal) {
+  if (goal.goal_type !== 'progress') return goal.status || 'not_started'
+  const { pct } = computeProgress(goal)
+  if (pct >= 100) return 'done'
+  if (pct <= 0) return 'not_started'
+  return 'in_progress'
+}
+
 export default function GoalsView() {
   const [goals, setGoals] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,6 +61,7 @@ export default function GoalsView() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [progressInputs, setProgressInputs] = useState({})
 
   useEffect(() => {
     fetchGoals()
@@ -69,6 +94,11 @@ export default function GoalsView() {
       target_date: goal.target_date || '',
       status: goal.status || 'not_started',
       notes: goal.notes || '',
+      goal_type: goal.goal_type || 'simple',
+      start_value: goal.start_value != null ? String(goal.start_value) : '',
+      current_value: goal.current_value != null ? String(goal.current_value) : '',
+      target_value: goal.target_value != null ? String(goal.target_value) : '',
+      unit: goal.unit || '',
     })
     setModalOpen(true)
   }
@@ -84,12 +114,19 @@ export default function GoalsView() {
     if (!form.title.trim()) return
     setSaving(true)
 
+    const isProgress = form.goal_type === 'progress'
+
     const payload = {
       title: form.title.trim(),
       category: form.category.trim() || null,
       target_date: form.target_date || null,
       status: form.status,
       notes: form.notes.trim() || null,
+      goal_type: form.goal_type,
+      start_value: isProgress ? parseFloat(form.start_value) || 0 : null,
+      current_value: isProgress ? parseFloat(form.current_value) || parseFloat(form.start_value) || 0 : null,
+      target_value: isProgress ? parseFloat(form.target_value) || 0 : null,
+      unit: isProgress ? form.unit.trim() || null : null,
     }
 
     let error
@@ -123,6 +160,20 @@ export default function GoalsView() {
     fetchGoals()
   }
 
+  async function updateProgress(goal) {
+    const raw = progressInputs[goal.id]
+    if (raw === undefined || raw === '') return
+    const value = parseFloat(raw)
+    if (isNaN(value)) return
+    const { error } = await supabase.from('goals').update({ current_value: value }).eq('id', goal.id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setProgressInputs((v) => ({ ...v, [goal.id]: '' }))
+    fetchGoals()
+  }
+
   const knownCategories = Array.from(
     new Set(goals.map((g) => g.category).filter(Boolean))
   ).sort()
@@ -133,7 +184,7 @@ export default function GoalsView() {
       g.title.toLowerCase().includes(q) ||
       (g.category || '').toLowerCase().includes(q) ||
       (g.notes || '').toLowerCase().includes(q)
-    const matchesStatus = statusFilter === 'all' || g.status === statusFilter
+    const matchesStatus = statusFilter === 'all' || effectiveStatus(g) === statusFilter
     return matchesSearch && matchesStatus
   })
 
@@ -181,26 +232,65 @@ export default function GoalsView() {
 
       {!loading && !error && filtered.length > 0 && (
         <div className="card-grid">
-          {filtered.map((g) => (
-            <div
-              className="contact-card"
-              key={g.id}
-              onClick={() => openEdit(g)}
-              style={{ borderTopColor: STATUS_COLORS[g.status] || '#B896C9' }}
-            >
-              <span className="status-badge" style={{ background: STATUS_COLORS[g.status] }}>
-                {STATUS_LABELS[g.status]}
-              </span>
-              <h3 className="contact-name" title={g.title}>{g.title}</h3>
-              {g.category && <p className="contact-relationship">{g.category}</p>}
-              <div className="contact-meta">
-                {g.target_date && (
-                  <div><span className="label">Target</span>{formatDate(g.target_date)}</div>
+          {filtered.map((g) => {
+            const status = effectiveStatus(g)
+            const isProgress = g.goal_type === 'progress'
+            const { pct } = isProgress ? computeProgress(g) : { pct: 0 }
+            return (
+              <div
+                className="contact-card"
+                key={g.id}
+                style={{ borderTopColor: STATUS_COLORS[status] || '#B896C9' }}
+              >
+                <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
+                  {!isProgress && (
+                    <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>
+                      {STATUS_LABELS[status]}
+                    </span>
+                  )}
+                  {isProgress && pct >= 100 && (
+                    <span className="type-badge type-badge-build">🎉 Reached!</span>
+                  )}
+                  <h3 className="contact-name" title={g.title}>{g.title}</h3>
+                  {g.category && <p className="contact-relationship">{g.category}</p>}
+                  {g.target_date && (
+                    <div className="contact-meta">
+                      <div><span className="label">Target</span>{formatDate(g.target_date)}</div>
+                    </div>
+                  )}
+                  {g.notes && <p className="contact-notes">{g.notes}</p>}
+                </div>
+
+                {isProgress && (
+                  <>
+                    <div className="progress-row">
+                      <div className="progress-track">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${pct}%`, background: STATUS_COLORS[status] }}
+                        />
+                      </div>
+                      <span className="progress-label">
+                        {g.current_value} / {g.target_value} {g.unit || ''} ({pct}%)
+                      </span>
+                    </div>
+                    <div className="log-value-row">
+                      <input
+                        type="number"
+                        className="log-value-input"
+                        placeholder="Update current value"
+                        value={progressInputs[g.id] || ''}
+                        onChange={(e) => setProgressInputs((v) => ({ ...v, [g.id]: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && updateProgress(g)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <button className="btn-check log-value-btn" onClick={() => updateProgress(g)}>Update</button>
+                    </div>
+                  </>
                 )}
               </div>
-              {g.notes && <p className="contact-notes">{g.notes}</p>}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -233,6 +323,84 @@ export default function GoalsView() {
                   ))}
                 </datalist>
               </div>
+
+              <div className="field">
+                <label>How do you want to track it?</label>
+                <div className="toggle-group">
+                  <button
+                    type="button"
+                    className={`toggle-btn ${form.goal_type === 'simple' ? 'toggle-btn-active' : ''}`}
+                    onClick={() => setForm({ ...form, goal_type: 'simple' })}
+                  >
+                    ✓ Simple status
+                  </button>
+                  <button
+                    type="button"
+                    className={`toggle-btn ${form.goal_type === 'progress' ? 'toggle-btn-active' : ''}`}
+                    onClick={() => setForm({ ...form, goal_type: 'progress' })}
+                  >
+                    📊 Progress bar
+                  </button>
+                </div>
+              </div>
+
+              {form.goal_type === 'simple' ? (
+                <div className="field">
+                  <label>Status</label>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  >
+                    <option value="not_started">Not started</option>
+                    <option value="in_progress">In progress</option>
+                    <option value="done">Done</option>
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <p className="field-hint">e.g. weight loss: start 80, target 70, unit kg. Or savings: start 0, target 5000, unit R.</p>
+                  <div className="field-row">
+                    <div className="field">
+                      <label>Start value</label>
+                      <input
+                        type="number"
+                        value={form.start_value}
+                        onChange={(e) => setForm({ ...form, start_value: e.target.value })}
+                        placeholder="e.g. 80"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Target value</label>
+                      <input
+                        type="number"
+                        value={form.target_value}
+                        onChange={(e) => setForm({ ...form, target_value: e.target.value })}
+                        placeholder="e.g. 70"
+                      />
+                    </div>
+                  </div>
+                  <div className="field-row">
+                    <div className="field">
+                      <label>Current value</label>
+                      <input
+                        type="number"
+                        value={form.current_value}
+                        onChange={(e) => setForm({ ...form, current_value: e.target.value })}
+                        placeholder="Defaults to start value"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Unit</label>
+                      <input
+                        value={form.unit}
+                        onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                        placeholder="kg, R, pages…"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="field">
                 <label>Target date</label>
                 <input
@@ -240,17 +408,6 @@ export default function GoalsView() {
                   value={form.target_date}
                   onChange={(e) => setForm({ ...form, target_date: e.target.value })}
                 />
-              </div>
-              <div className="field">
-                <label>Status</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                >
-                  <option value="not_started">Not started</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="done">Done</option>
-                </select>
               </div>
               <div className="field">
                 <label>Notes</label>
