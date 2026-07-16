@@ -22,6 +22,8 @@ function App() {
   const [view, setView] = useState('home')
   const [session, setSession] = useState(undefined)
   const [passwordRecovery, setPasswordRecovery] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState('')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -38,6 +40,15 @@ function App() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
+  }
+
+  async function handleSaveName() {
+    if (!nameInput.trim()) return
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } })
+    if (!error && data.user) {
+      setSession((s) => ({ ...s, user: data.user }))
+      setEditingName(false)
+    }
   }
 
   // Still checking for an existing session
@@ -78,11 +89,39 @@ function App() {
           your whole life,<br />
           organized (mostly) ✨
         </div>
-        <div className="sidebar-account">{session.user.email}</div>
+        <div className="sidebar-account">
+          {editingName ? (
+            <div className="name-edit-row">
+              <input
+                className="name-edit-input"
+                autoFocus
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Your name"
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+              />
+              <button className="name-edit-save" onClick={handleSaveName}>Save</button>
+            </div>
+          ) : (
+            <>
+              {session.user.user_metadata?.full_name || session.user.email}
+              {' · '}
+              <button
+                className="name-edit-trigger"
+                onClick={() => {
+                  setNameInput(session.user.user_metadata?.full_name || '')
+                  setEditingName(true)
+                }}
+              >
+                {session.user.user_metadata?.full_name ? 'edit name' : 'set your name'}
+              </button>
+            </>
+          )}
+        </div>
         <button className="sidebar-logout" onClick={handleLogout}>Log out</button>
       </aside>
       <main className="main">
-        {view === 'home' && <Dashboard onNavigate={setView} />}
+        {view === 'home' && <Dashboard onNavigate={setView} user={session.user} />}
         {view === 'contacts' && <ContactsView />}
         {view === 'goals' && <GoalsView />}
         {view === 'habits' && <HabitsView />}

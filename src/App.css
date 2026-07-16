@@ -717,6 +717,49 @@
   margin-bottom: 6px;
 }
 
+.name-edit-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.name-edit-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 5px 8px;
+  color: var(--sidebar-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.name-edit-input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.name-edit-save {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: var(--sidebar-text);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.name-edit-trigger {
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  opacity: 0.9;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 0;
+}
+
 .sidebar-logout {
   background: none;
   border: none;

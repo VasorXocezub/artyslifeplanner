@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 
 export default function Auth({ initialMode = 'login', onResetDone }) {
   const [mode, setMode] = useState(initialMode)
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -24,7 +25,11 @@ export default function Auth({ initialMode = 'login', onResetDone }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setError(error.message)
     } else {
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name.trim() } },
+      })
       if (error) {
         setError(error.message)
       } else {
@@ -145,11 +150,23 @@ export default function Auth({ initialMode = 'login', onResetDone }) {
         </p>
 
         <form onSubmit={handleLoginOrSignup}>
+          {mode === 'signup' && (
+            <div className="field">
+              <label>Name</label>
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="What should we call you?"
+                required
+              />
+            </div>
+          )}
           <div className="field">
             <label>Email</label>
             <input
               type="email"
-              autoFocus
+              autoFocus={mode === 'login'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"

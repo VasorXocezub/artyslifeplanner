@@ -32,7 +32,7 @@ function getGreeting() {
   return 'Good evening'
 }
 
-export default function Dashboard({ onNavigate }) {
+export default function Dashboard({ onNavigate, user }) {
   const [stats, setStats] = useState({
     nextBirthday: null,
     birthdaysThisMonth: [],
@@ -126,7 +126,7 @@ export default function Dashboard({ onNavigate }) {
     <div>
       <div className="hero-panel">
         <p className="hero-eyebrow">{getGreeting()}</p>
-        <h1 className="hero-title">Welcome back, Arty.</h1>
+        <h1 className="hero-title">Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
         <p className="hero-date">{todayLabel}</p>
       </div>
 
