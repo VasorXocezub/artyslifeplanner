@@ -21,13 +21,15 @@ const NAV_ITEMS = [
 function App() {
   const [view, setView] = useState('home')
   const [session, setSession] = useState(undefined)
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true)
       setSession(newSession)
     })
 
@@ -45,6 +47,10 @@ function App() {
         <p className="loading">Loading…</p>
       </div>
     )
+  }
+
+  if (passwordRecovery) {
+    return <Auth initialMode="reset" onResetDone={() => setPasswordRecovery(false)} />
   }
 
   if (!session) {
