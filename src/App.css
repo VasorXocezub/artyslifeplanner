@@ -12,7 +12,21 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  border-right: 3px dashed var(--border-strong);
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -11px;
+  bottom: 0;
+  width: 22px;
+  background-image: radial-gradient(circle 11px at 11px 11px, var(--sidebar-bg) 11px, transparent 11.5px);
+  background-size: 22px 22px;
+  background-repeat: repeat-y;
+  pointer-events: none;
 }
 
 .brand {
@@ -1459,23 +1473,24 @@
 
 .btn-check {
   background: var(--surface);
-  border: 2px solid var(--border-strong);
-  color: var(--ink);
+  border: 2px solid var(--olive);
+  color: var(--olive);
   border-radius: 999px;
   padding: 10px 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .btn-check:hover {
-  border-color: var(--coral);
+  background: var(--maroon-soft);
 }
 
 .btn-check-done {
   background: var(--olive);
   border-color: var(--olive);
-  color: var(--ink);
+  color: #fff;
+  font-weight: 800;
 }
 
 .btn-delete-small {
