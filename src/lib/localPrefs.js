@@ -10,6 +10,13 @@ export function getCurrency() {
 export function setCurrency(code) {
   localStorage.setItem('currency', code)
 }
+export function getEra() {
+  return localStorage.getItem('era') || 'soft_life'
+}
+export function setEra(era) {
+  localStorage.setItem('era', era)
+}
+
 export function getHiddenModules() {
   try {
     return JSON.parse(localStorage.getItem('hiddenModules') || '[]')

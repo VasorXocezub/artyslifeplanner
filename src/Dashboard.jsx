@@ -1,6 +1,23 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/currency'
+import { getEra, setEra as saveEra } from './lib/localPrefs'
+
+const ERAS = [
+  { key: 'rich_girl', label: '💅 Rich Girl Era' },
+  { key: 'soft_life', label: '✨ Soft Life Era' },
+  { key: 'revenge_body', label: '🔥 Revenge Body Era' },
+  { key: 'passport', label: '🌍 Passport Era' },
+  { key: 'peace', label: '🧘 Peace Era' },
+  { key: 'empire', label: '🚀 Empire Era' },
+]
+
+const ROTATING_MESSAGES = [
+  "Today's a good day to make Future You proud.",
+  'Tiny progress still counts.',
+  "You're booked, busy and moisturized.",
+  'Protect your peace. Drink water. Reply later.',
+]
 
 const MODULES = [
   {
@@ -33,6 +50,22 @@ function getGreeting() {
 }
 
 export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
+  const [era, setEraState] = useState(getEra())
+  const [msgIndex, setMsgIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIndex((i) => (i + 1) % ROTATING_MESSAGES.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  function handleEraChange(e) {
+    const value = e.target.value
+    setEraState(value)
+    saveEra(value)
+  }
+
   const [stats, setStats] = useState({
     nextBirthday: null,
     birthdaysThisMonth: [],
@@ -125,8 +158,17 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   return (
     <div>
       <div className="hero-panel">
+        <span className="hero-rotating-msg" key={msgIndex}>{ROTATING_MESSAGES[msgIndex]}</span>
         <h1 className="hero-title">{getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
         <p className="hero-date">{todayLabel}</p>
+        <div className="era-picker">
+          <label>Current era</label>
+          <select value={era} onChange={handleEraChange}>
+            {ERAS.map((e) => (
+              <option key={e.key} value={e.key}>{e.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {!loading && (
