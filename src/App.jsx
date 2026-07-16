@@ -20,6 +20,7 @@ function App() {
   return (
     <div className="app">
       <aside className="sidebar">
+        <div className="sidebar-stickers">🌸 ✨ 🌼</div>
         <nav className="nav">
           {NAV_ITEMS.map((item) => (
             <button

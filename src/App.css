@@ -100,8 +100,8 @@
 
 .view-title {
   font-family: var(--font-display);
-  font-size: 42px;
-  font-weight: 400;
+  font-size: 38px;
+  font-weight: 700;
   margin: 0 0 6px 0;
   color: var(--ink);
 }
@@ -134,21 +134,21 @@
 }
 
 .btn-primary {
-  background: var(--olive);
-  color: var(--ink);
-  border: 2px solid var(--ink);
+  background: var(--pink);
+  color: #fff;
+  border: none;
   border-radius: 999px;
-  padding: 10px 20px;
+  padding: 11px 20px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 3px 10px rgba(107, 27, 61, 0.18);
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-primary:hover {
-  background: var(--olive-dark);
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--ink);
+  background: #EA88AA;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(107, 27, 61, 0.22);
 }
 
 .btn-ghost {
@@ -219,7 +219,7 @@
   border-radius: 16px;
   padding: 30px 20px 16px;
   position: relative;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 0 4px 14px rgba(107, 27, 61, 0.12);
   border: 2px solid var(--border);
   cursor: pointer;
   transition: transform 0.14s ease, box-shadow 0.14s ease;
@@ -239,7 +239,7 @@
 
 .contact-card:hover {
   transform: translateY(-3px);
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: 0 8px 22px rgba(107, 27, 61, 0.16);
 }
 
 .contact-card .card-index {
@@ -253,8 +253,8 @@
 
 .contact-name {
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 700;
   margin: 0 0 2px 0;
   color: var(--ink);
 }
@@ -291,6 +291,36 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.sidebar-stickers {
+  font-size: 20px;
+  letter-spacing: 4px;
+  text-align: center;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+}
+
+.hero-panel {
+  position: relative;
+}
+
+.hero-sticker {
+  position: absolute;
+  font-size: 30px;
+  filter: drop-shadow(0 3px 4px rgba(107, 27, 61, 0.2));
+  pointer-events: none;
+}
+
+.hero-sticker-1 {
+  top: -6px;
+  left: 190px;
+  transform: rotate(12deg);
+}
+
+.hero-sticker-2 {
+  top: 30px;
+  left: 420px;
+  transform: rotate(-10deg);
 }
 
 .empty-state {
@@ -330,7 +360,7 @@
   border-radius: 24px;
   padding: 30px 28px 22px;
   position: relative;
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 0 20px 50px rgba(107, 27, 61, 0.25);
 }
 
 .modal::before {
@@ -347,8 +377,8 @@
 
 .modal h2 {
   font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 400;
+  font-size: 28px;
+  font-weight: 700;
   margin: 12px 0 18px 0;
   color: var(--ink);
 }
@@ -472,8 +502,8 @@
 
 .cal-month-label {
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--ink);
   min-width: 160px;
   text-align: center;
@@ -660,8 +690,8 @@
 
 .total-value {
   font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 400;
+  font-size: 30px;
+  font-weight: 700;
 }
 
 .total-positive {
@@ -693,7 +723,7 @@
 
 .tx-row:hover {
   transform: translateX(2px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 0 3px 10px rgba(107, 27, 61, 0.10);
 }
 
 .tx-main {
@@ -1057,8 +1087,8 @@
 
 .streak-number {
   font-family: var(--font-display);
-  font-size: 42px;
-  font-weight: 400;
+  font-size: 38px;
+  font-weight: 700;
   color: var(--ink);
 }
 
@@ -1194,7 +1224,7 @@
   border-radius: 18px;
   padding: 30px 20px 18px;
   overflow: hidden;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 0 4px 14px rgba(107, 27, 61, 0.12);
   transition: transform 0.14s ease, box-shadow 0.14s ease;
 }
 
@@ -1213,7 +1243,7 @@
 
 .module-card:not(.module-card-disabled):hover {
   transform: translateY(-3px);
-  box-shadow: 6px 6px 0 var(--ink);
+  box-shadow: 0 8px 22px rgba(107, 27, 61, 0.16);
 }
 
 .module-accent-bar {
@@ -1222,8 +1252,8 @@
 
 .module-card h3 {
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 700;
   margin: 6px 0 4px 0;
   color: var(--ink);
 }

@@ -1,32 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Meow+Script&family=Shadows+Into+Light&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #F3EFE3;
+  --bg: #FDF3EC;
   --surface: #FFFFFF;
-  --sidebar-bg: #1A1A1A;
-  --sidebar-text: #F3EFE3;
+  --sidebar-bg: #F2A0BC;
+  --sidebar-text: #FFFFFF;
 
-  --ink: #1A1A1A;
-  --ink-dim: #6B6B60;
-  --ink-faint: #A8A296;
+  --ink: #6B1B3D;
+  --ink-dim: #A6607F;
+  --ink-faint: #D7A9BE;
 
-  --pink: #F2A8C4;
-  --pink-soft: #F9D4E2;
-  --coral: #C7D92C;
-  --coral-soft: #E4EDA0;
-  --olive: #C9BFF0;
-  --olive-dark: #A99EDB;
-  --maroon: #1A1A1A;
-  --maroon-soft: #D8D4C8;
+  --pink: #F2A0BC;
+  --pink-soft: #FBD3E1;
+  --coral: #C9622E;
+  --coral-soft: #EFC29F;
+  --olive: #7C8B3F;
+  --olive-dark: #64702F;
+  --maroon: #6B1B3D;
+  --maroon-soft: #E3C3D2;
 
-  --border: #1A1A1A;
-  --border-strong: #1A1A1A;
-  --danger: #E24B6B;
+  --border: #F5DCE6;
+  --border-strong: #EFC6D8;
+  --danger: #C9445F;
 
-  --font-brand: 'Meow Script', cursive;
-  --font-display: 'Meow Script', cursive;
-  --font-script: 'Meow Script', cursive;
-  --font-body: 'Shadows Into Light', cursive;
+  --font-brand: 'Baloo 2', sans-serif;
+  --font-display: 'Baloo 2', sans-serif;
+  --font-script: 'Baloo 2', sans-serif;
+  --font-body: 'Inter', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
@@ -35,8 +35,8 @@
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: radial-gradient(#DFD9C5 1.2px, transparent 1.2px);
-  background-size: 22px 22px;
+  background-image: radial-gradient(var(--border) 1.4px, transparent 1.4px);
+  background-size: 24px 24px;
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 400;
@@ -57,7 +57,7 @@ input, textarea, select {
 }
 
 ::selection {
-  background: var(--coral);
+  background: var(--pink-soft);
   color: var(--ink);
 }
 

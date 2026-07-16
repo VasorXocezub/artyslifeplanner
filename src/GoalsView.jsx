@@ -16,9 +16,9 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS = {
-  not_started: '#C9BFF0',
-  in_progress: '#C7D92C',
-  done: '#F2A8C4',
+  not_started: '#7C8B3F',
+  in_progress: '#C9622E',
+  done: '#F2A0BC',
 }
 
 function formatDate(d) {
@@ -181,7 +181,7 @@ export default function GoalsView() {
               className="contact-card"
               key={g.id}
               onClick={() => openEdit(g)}
-              style={{ borderTopColor: STATUS_COLORS[g.status] || '#F2A8C4' }}
+              style={{ borderTopColor: STATUS_COLORS[g.status] || '#F2A0BC' }}
             >
               <span className="status-badge" style={{ background: STATUS_COLORS[g.status] }}>
                 {STATUS_LABELS[g.status]}
