@@ -125,8 +125,7 @@ export default function Dashboard({ onNavigate, user }) {
   return (
     <div>
       <div className="hero-panel">
-        <p className="hero-eyebrow">{getGreeting()}</p>
-        <h1 className="hero-title">Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
+        <h1 className="hero-title">{getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
         <p className="hero-date">{todayLabel}</p>
       </div>
 

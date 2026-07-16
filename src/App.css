@@ -50,37 +50,40 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 11px 14px;
+  border-radius: 999px;
   background: none;
   border: none;
-  color: #D9A9BB;
+  color: rgba(245, 238, 221, 0.7);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 14px;
   text-align: left;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.1s ease;
 }
 
 .nav-item .num {
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 11px;
-  color: #A8748A;
+  color: rgba(245, 238, 221, 0.4);
 }
 
 .nav-item.active {
   color: var(--ink);
-  background: var(--surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: var(--baby);
+  font-weight: 800;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transform: translateX(2px);
 }
 
 .nav-item.active .num {
-  color: var(--pink);
+  color: var(--olive);
 }
 
 .nav-item:not(.active):hover {
-  color: var(--sidebar-text);
+  color: #fff;
+  background: rgba(168, 207, 234, 0.18);
 }
 
 .nav-item[disabled] {
