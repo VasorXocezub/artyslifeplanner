@@ -1,41 +1,41 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Yeseva+One&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Yeseva+One&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #FAFAF9;
+  --bg: #FAF6F0;
   --surface: #FFFFFF;
-  --sidebar-bg: #003B7B;
-  --sidebar-text: #F5F8FC;
+  --sidebar-bg: #1E5C57;
+  --sidebar-text: #F4EFE7;
 
-  --ink: #23262B;
-  --text-primary: #3F4550;
-  --ink-dim: #6B7280;
-  --ink-faint: #9CA3AF;
+  --ink: #1E5C57;
+  --text-primary: #3A342E;
+  --ink-dim: #756E64;
+  --ink-faint: #A39C90;
 
-  --pink: #6BACF2;
-  --pink-soft: #DCEBFB;
-  --coral: #BA0000;
-  --coral-soft: #F5D6D6;
-  --olive: #0050A7;
-  --olive-dark: #003B7B;
-  --maroon: #003B7B;
-  --maroon-soft: #DCEBFB;
-  --baby: #A4D9E9;
-  --butter: #DF011A;
-  --butter-soft: #F9D2D6;
-  --lavender: #6BACF2;
-  --lavender-soft: #DCEBFB;
-  --peach: #A4D9E9;
-  --peach-soft: #E8F5FA;
+  --pink: #B896C9;
+  --pink-soft: #F0E8F5;
+  --coral: #1E5C57;
+  --coral-soft: #E3F0EE;
+  --olive: #8FC2BE;
+  --olive-dark: #1E5C57;
+  --maroon: #3A342E;
+  --maroon-soft: #EFEAE3;
+  --baby: #E4CBA0;
+  --butter: #B896C9;
+  --butter-soft: #F0E8F5;
+  --lavender: #B896C9;
+  --lavender-soft: #F0E8F5;
+  --peach: #E4CBA0;
+  --peach-soft: #F7EFDF;
 
-  --border: #E7E5E0;
-  --border-strong: #E0DDD6;
-  --border-soft: #EFEDE8;
-  --danger: #BA0000;
+  --border: #E9E0D2;
+  --border-strong: #E2D6C0;
+  --border-soft: #F1EAE0;
+  --danger: #B85C4E;
 
   --font-brand: 'Dancing Script', cursive;
   --font-script: 'Dancing Script', cursive;
   --font-display: 'Yeseva One', serif;
-  --font-body: 'Inter', sans-serif;
+  --font-body: 'Montserrat', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
@@ -44,8 +44,8 @@
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22180%22%20height%3D%22180%22%3E%0A%3Cg%20fill%3D%22none%22%20stroke-width%3D%221.4%22%20opacity%3D%220.22%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%0A%3Cg%20stroke%3D%22%230050A7%22%20transform%3D%22translate%2830%2C30%29%22%3E%0A%3Cpath%20d%3D%22M0%2C0%20L-16%2C-13%20Q-24%2C0%20-16%2C13%20Z%22/%3E%0A%3Cpath%20d%3D%22M0%2C0%20L16%2C-13%20Q24%2C0%2016%2C13%20Z%22/%3E%0A%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%223.2%22%20fill%3D%22%230050A7%22%20stroke%3D%22none%22/%3E%0A%3Cpath%20d%3D%22M-3%2C3%20L-9%2C20%20L-3%2C15%20Z%22/%3E%0A%3Cpath%20d%3D%22M3%2C3%20L9%2C20%20L3%2C15%20Z%22/%3E%0A%3C/g%3E%0A%3Cg%20stroke%3D%22%23DF011A%22%20transform%3D%22translate%28120%2C60%29%22%3E%0A%3Cpath%20d%3D%22M0%2C0%20L-16%2C-13%20Q-24%2C0%20-16%2C13%20Z%22/%3E%0A%3Cpath%20d%3D%22M0%2C0%20L16%2C-13%20Q24%2C0%2016%2C13%20Z%22/%3E%0A%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%223.2%22%20fill%3D%22%23DF011A%22%20stroke%3D%22none%22/%3E%0A%3Cpath%20d%3D%22M-3%2C3%20L-9%2C20%20L-3%2C15%20Z%22/%3E%0A%3Cpath%20d%3D%22M3%2C3%20L9%2C20%20L3%2C15%20Z%22/%3E%0A%3C/g%3E%0A%3Cg%20stroke%3D%22%23A4D9E9%22%20transform%3D%22translate%2860%2C120%29%22%3E%0A%3Cpath%20d%3D%22M0%2C0%20L-16%2C-13%20Q-24%2C0%20-16%2C13%20Z%22/%3E%0A%3Cpath%20d%3D%22M0%2C0%20L16%2C-13%20Q24%2C0%2016%2C13%20Z%22/%3E%0A%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%223.2%22%20fill%3D%22%23A4D9E9%22%20stroke%3D%22none%22/%3E%0A%3Cpath%20d%3D%22M-3%2C3%20L-9%2C20%20L-3%2C15%20Z%22/%3E%0A%3Cpath%20d%3D%22M3%2C3%20L9%2C20%20L3%2C15%20Z%22/%3E%0A%3C/g%3E%0A%3Cg%20stroke%3D%22%23003B7B%22%20transform%3D%22translate%28150%2C145%29%22%3E%0A%3Cpath%20d%3D%22M0%2C0%20L-16%2C-13%20Q-24%2C0%20-16%2C13%20Z%22/%3E%0A%3Cpath%20d%3D%22M0%2C0%20L16%2C-13%20Q24%2C0%2016%2C13%20Z%22/%3E%0A%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%223.2%22%20fill%3D%22%23003B7B%22%20stroke%3D%22none%22/%3E%0A%3Cpath%20d%3D%22M-3%2C3%20L-9%2C20%20L-3%2C15%20Z%22/%3E%0A%3Cpath%20d%3D%22M3%2C3%20L9%2C20%20L3%2C15%20Z%22/%3E%0A%3C/g%3E%0A%3C/g%3E%0A%3C/svg%3E");
-  background-size: 180px 180px;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22190%22%20height%3D%22190%22%3E%0A%3Cg%20fill%3D%22none%22%20stroke-width%3D%221.3%22%20opacity%3D%220.13%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%0A%3Cg%20stroke%3D%22%231E5C57%22%20transform%3D%22translate%2830%2C30%29%22%3E%0A%3Crect%20x%3D%22-14%22%20y%3D%22-9%22%20width%3D%2228%22%20height%3D%2218%22%20rx%3D%224%22/%3E%0A%3Ccircle%20cx%3D%220%22%20cy%3D%220%22%20r%3D%225%22/%3E%0A%3C/g%3E%0A%3Cg%20stroke%3D%22%23B896C9%22%20transform%3D%22translate%28120%2C55%29%20rotate%28-20%29%22%3E%0A%3Cpath%20d%3D%22M-12%2C-14%20C-12%2C0%20-12%2C10%200%2C10%20C12%2C10%2012%2C0%2012%2C-14%22%20/%3E%0A%3Ccircle%20cx%3D%22-12%22%20cy%3D%22-16%22%20r%3D%222.6%22%20fill%3D%22%23B896C9%22%20stroke%3D%22none%22/%3E%0A%3Ccircle%20cx%3D%2212%22%20cy%3D%22-16%22%20r%3D%222.6%22%20fill%3D%22%23B896C9%22%20stroke%3D%22none%22/%3E%0A%3C/g%3E%0A%3Cg%20stroke%3D%22%231E5C57%22%20transform%3D%22translate%2860%2C120%29%22%20stroke-width%3D%221.6%22%3E%0A%3Cpath%20d%3D%22M0%2C-12%20L0%2C12%20M-5%2C-8%20C-5%2C-8%205%2C-8%205%2C-4%20C5%2C0%20-5%2C0%20-5%2C4%20C-5%2C8%205%2C8%205%2C8%22/%3E%0A%3C/g%3E%0A%3Cg%20fill%3D%22%23E4CBA0%22%20stroke%3D%22none%22%20transform%3D%22translate%28155%2C140%29%22%3E%0A%3Cpath%20d%3D%22M0%2C-7%20L2%2C-2%20L7%2C0%20L2%2C2%20L0%2C7%20L-2%2C2%20L-7%2C0%20L-2%2C-2%20Z%22/%3E%0A%3C/g%3E%0A%3Cg%20fill%3D%22%238FC2BE%22%20stroke%3D%22none%22%20transform%3D%22translate%2895%2C25%29%22%3E%0A%3Cpath%20d%3D%22M0%2C-4%20L1.2%2C-1.2%20L4%2C0%20L1.2%2C1.2%20L0%2C4%20L-1.2%2C1.2%20L-4%2C0%20L-1.2%2C-1.2%20Z%22/%3E%0A%3C/g%3E%0A%3C/g%3E%0A%3C/svg%3E");
+  background-size: 190px 190px;
   color: var(--text-primary);
   font-family: var(--font-body);
   font-weight: 400;

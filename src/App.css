@@ -83,7 +83,7 @@
 
 .nav-item:not(.active):hover {
   color: #fff;
-  background: rgba(107, 172, 242, 0.18);
+  background: rgba(30, 92, 87, 0.18);
 }
 
 .nav-item[disabled] {
@@ -92,7 +92,7 @@
 }
 
 .sidebar-settings-trigger {
-  background: rgba(107, 172, 242, 0.15);
+  background: rgba(30, 92, 87, 0.15);
   border: none;
   color: var(--sidebar-text);
   opacity: 0.85;
@@ -105,7 +105,7 @@
 
 .sidebar-settings-trigger:hover {
   opacity: 1;
-  background: rgba(107, 172, 242, 0.25);
+  background: rgba(30, 92, 87, 0.25);
 }
 
 .sidebar-footer {
@@ -176,14 +176,14 @@
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(186, 0, 0, 0.25);
+  box-shadow: 0 3px 10px rgba(30, 92, 87, 0.25);
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-primary:hover {
-  background: #8A0000;
+  background: #164641;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(186, 0, 0, 0.3);
+  box-shadow: 0 4px 14px rgba(30, 92, 87, 0.3);
 }
 
 .btn-ghost {
@@ -1555,7 +1555,7 @@
 }
 
 .tick-stepper-done .tick-btn-add:hover {
-  background: #8A0000;
+  background: #164641;
 }
 
 .toggle-group {
