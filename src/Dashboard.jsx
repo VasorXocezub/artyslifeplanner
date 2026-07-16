@@ -6,21 +6,21 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: '🎂 Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
+      { key: 'contacts', title: '🎂 Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#F5A8C0', tint: '#FDF0F1' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps ✨', enabled: true, accent: '#243B63', tint: '#F6F4FA' },
-      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#C98A72', tint: '#FBF3EF' },
-      { key: 'todos', title: 'To-Do', desc: 'One thing at a time, bestie 📋', enabled: true, accent: '#E9C86A', tint: '#FCF8EC' },
+      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps ✨', enabled: true, accent: '#3A3A3A', tint: '#FCF3EE' },
+      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#E31E24', tint: '#FBF3EF' },
+      { key: 'todos', title: 'To-Do', desc: 'One thing at a time, bestie 📋', enabled: true, accent: '#E9C86A', tint: '#FBEFE7' },
     ],
   },
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#AFC6DD', tint: '#F3F7FB' },
+      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#3A3A3A', tint: '#F0EFEE' },
     ],
   },
 ]
@@ -133,7 +133,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
         <div className="stat-strip">
           {!hiddenModules.includes('contacts') && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#D9A8B8' }} />
+              <span className="stat-dot" style={{ background: '#F5A8C0' }} />
               {birthdayLabel()}
             </div>
           )}
@@ -145,31 +145,31 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
           )}
           {!hiddenModules.includes('goals') && stats.goalsInProgress > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#AFC6DD' }} />
+              <span className="stat-dot" style={{ background: '#3A3A3A' }} />
               🚀 {stats.goalsInProgress} goal{stats.goalsInProgress > 1 ? 's' : ''} in motion
             </div>
           )}
           {!hiddenModules.includes('habits') && stats.habitsTotal > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#C98A72' }} />
+              <span className="stat-dot" style={{ background: '#E31E24' }} />
               🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
             </div>
           )}
           {!hiddenModules.includes('finances') && stats.hasTransactions && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#1B2E4A' : '#C98A72' }} />
+              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#2A2A2A' : '#E31E24' }} />
               💸 {formatMoney(stats.netBalance, user?.user_metadata?.currency)} net
             </div>
           )}
           {!hiddenModules.includes('finances') && stats.hasSavings && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#AFC6DD' }} />
+              <span className="stat-dot" style={{ background: '#3A3A3A' }} />
               🐷 {formatMoney(stats.totalSaved, user?.user_metadata?.currency)} saved
             </div>
           )}
           {!hiddenModules.includes('todos') && stats.todosOpen > 0 && (
             <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#243B63' }} />
+              <span className="stat-dot" style={{ background: '#3A3A3A' }} />
               📋 {stats.todosOpen} to-do{stats.todosOpen > 1 ? 's' : ''} open
             </div>
           )}

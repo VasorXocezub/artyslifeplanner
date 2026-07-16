@@ -78,7 +78,7 @@
 }
 
 .nav-item.active .num {
-  color: var(--olive);
+  color: var(--coral);
 }
 
 .nav-item:not(.active):hover {
@@ -169,21 +169,21 @@
 }
 
 .btn-primary {
-  background: var(--pink);
+  background: var(--coral);
   color: #fff;
   border: none;
   border-radius: 999px;
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(107, 27, 61, 0.18);
+  box-shadow: 0 3px 10px rgba(227, 30, 36, 0.25);
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-primary:hover {
-  background: #EA88AA;
+  background: #C4181D;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(107, 27, 61, 0.22);
+  box-shadow: 0 4px 14px rgba(227, 30, 36, 0.3);
 }
 
 .btn-ghost {
@@ -751,7 +751,7 @@
 }
 
 .settings-toggle-on {
-  background: var(--olive);
+  background: var(--coral);
 }
 
 .settings-toggle-knob {
@@ -960,7 +960,7 @@
 }
 
 .currency-picker select:focus {
-  border-color: var(--olive);
+  border-color: var(--coral);
 }
 
 .month-nav-row {
@@ -1017,7 +1017,7 @@
 }
 
 .converter-currency-select:focus {
-  border-color: var(--olive);
+  border-color: var(--coral);
 }
 
 .converter-swap-btn {
@@ -1216,7 +1216,7 @@
 }
 
 .todo-date-input:focus {
-  border-color: var(--olive);
+  border-color: var(--coral);
 }
 
 .todo-list {
@@ -1251,12 +1251,12 @@
 }
 
 .todo-checkbox:hover {
-  border-color: var(--olive);
+  border-color: var(--coral);
 }
 
 .todo-checkbox-checked {
-  background: var(--olive);
-  border-color: var(--olive);
+  background: var(--coral);
+  border-color: var(--coral);
 }
 
 .todo-text {
@@ -1542,20 +1542,20 @@
 }
 
 .tick-stepper-done {
-  border-color: var(--olive);
-  background: #F3F6EC;
+  border-color: var(--coral);
+  background: var(--coral-soft);
 }
 
 .tick-stepper-done .tick-count {
-  color: var(--olive-dark);
+  color: var(--coral);
 }
 
 .tick-stepper-done .tick-btn-add {
-  background: var(--olive);
+  background: var(--coral);
 }
 
 .tick-stepper-done .tick-btn-add:hover {
-  background: var(--olive-dark);
+  background: #C4181D;
 }
 
 .toggle-group {
@@ -1667,8 +1667,8 @@
 
 .btn-check {
   background: var(--surface);
-  border: 2px solid var(--olive);
-  color: var(--olive);
+  border: 2px solid var(--coral);
+  color: var(--coral);
   border-radius: 999px;
   padding: 10px 14px;
   font-size: 13px;
@@ -1681,8 +1681,8 @@
 }
 
 .btn-check-done {
-  background: var(--olive);
-  border-color: var(--olive);
+  background: var(--coral);
+  border-color: var(--coral);
   color: #fff;
   font-weight: 800;
 }
@@ -1785,7 +1785,7 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.12em;
-  color: var(--olive);
+  color: var(--coral);
   margin: 0 0 14px 0;
 }
 

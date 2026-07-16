@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 
 const PRIORITIES = [
-  { key: 'right_now', label: '🔥 Right Now', color: '#C98A72' },
-  { key: 'next_up', label: '🌱 Next Up', color: '#AFC5A5' },
-  { key: 'later', label: '🌙 Later', color: '#C7BDD9' },
+  { key: 'right_now', label: '🔥 Right Now', color: '#E31E24' },
+  { key: 'next_up', label: '🌱 Next Up', color: '#F0C9B0' },
+  { key: 'later', label: '🌙 Later', color: '#FBDCE0' },
 ]
 const PRIORITY_ORDER = { right_now: 0, next_up: 1, later: 2 }
 
