@@ -368,7 +368,7 @@ export default function HabitsView() {
         <div>
           <h1 className="view-title">Habits</h1>
           <p className="view-subtitle">
-            {habits.length === 0 ? 'Ready to build something? ✨' : `${habits.length} ${habits.length === 1 ? 'habit' : 'habits'} in the works`}
+            {habits.length === 0 ? 'Ready to make some waves? 🌊' : `${habits.length} ${habits.length === 1 ? 'habit' : 'habits'} riding the tide`}
           </p>
         </div>
         <div className="toolbar">
@@ -376,13 +376,13 @@ export default function HabitsView() {
         </div>
       </div>
 
-      {loading && <p className="loading">Warming up your streaks… 🔥</p>}
+      {loading && <p className="loading">Charting your streaks… 🔥</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && habits.length === 0 && (
         <div className="empty-state">
-          <h3>No habits yet — every streak starts at zero 🔥</h3>
-          <p>Add the first thing you want to build (or quit).</p>
+          <h3>No habits yet — every streak starts at the shore 🌊</h3>
+          <p>Add the first thing you want to build (or quit) — let's get iconic.</p>
         </div>
       )}
 
@@ -438,7 +438,7 @@ export default function HabitsView() {
 
                 <div className="streak-row">
                   <span className="streak-number">{h.streak > 0 ? '🔥' : ''}{h.streak}</span>
-                  <span className="streak-label">{periodLabel}{h.streak === 1 ? '' : 's'} strong</span>
+                  <span className="streak-label">{periodLabel}{h.streak === 1 ? '' : 's'} strong, icon behavior 💅</span>
                 </div>
 
                 {h.ended && <p className="habit-status-note">Ended</p>}
@@ -469,7 +469,7 @@ export default function HabitsView() {
                           className={`btn-check ${h.todayCount > 0 ? 'btn-check-done' : ''}`}
                           onClick={() => toggleDoneToday(h)}
                         >
-                          {h.todayCount > 0 ? '✓ Nailed it today' : 'Mark done today'}
+                          {h.todayCount > 0 ? '✓ Slayed it today 💅' : 'Mark done today, bestie'}
                         </button>
                       )
                     ) : (

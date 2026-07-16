@@ -145,7 +145,7 @@ export default function RecurringExpenses({ currency }) {
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            {items.length === 0 ? 'Nothing on repeat yet 🔁' : `${activeItems.length} active of ${items.length} logged`}
+            {items.length === 0 ? 'Nothing on the tide schedule yet 🌊' : `${activeItems.length} riding the current tide, ${items.length} logged`}
           </p>
         </div>
         <div className="toolbar">
@@ -166,13 +166,13 @@ export default function RecurringExpenses({ currency }) {
         </div>
       )}
 
-      {loading && <p className="loading">Counting your coins… 💸</p>}
+      {loading && <p className="loading">Counting your doubloons… 🏴‍☠️</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && items.length === 0 && (
         <div className="empty-state">
-          <h3>No recurring expenses yet 🔁</h3>
-          <p>Add subscriptions, rent, or bills that repeat on a schedule.</p>
+          <h3>Nothing on repeat yet ⚓</h3>
+          <p>Add subscriptions, rent, or bills that keep rolling in like the tide.</p>
         </div>
       )}
 
@@ -222,7 +222,7 @@ export default function RecurringExpenses({ currency }) {
                   className={`btn-check ${item.active ? 'btn-check-done' : ''}`}
                   onClick={() => toggleActive(item)}
                 >
-                  {item.active ? '✓ Active' : 'Paused — tap to resume'}
+                  {item.active ? '✓ Active, no notes' : 'Paused — tap to resume'}
                 </button>
                 <button className="btn-delete-small" onClick={() => openEdit(item)}>Edit</button>
               </div>

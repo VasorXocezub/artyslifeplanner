@@ -95,7 +95,7 @@ export default function TodoView() {
         <div>
           <h1 className="view-title">To-Do</h1>
           <p className="view-subtitle">
-            {openTodos.length === 0 ? 'Nothing on your plate ✨' : `${openTodos.length} ${openTodos.length === 1 ? 'thing' : 'things'} to do`}
+            {openTodos.length === 0 ? 'Deck is clear ⚓' : `${openTodos.length} ${openTodos.length === 1 ? 'thing' : 'things'} on deck`}
           </p>
         </div>
       </div>
@@ -118,13 +118,13 @@ export default function TodoView() {
         </button>
       </form>
 
-      {loading && <p className="loading">Rounding up your tasks… 📋</p>}
+      {loading && <p className="loading">Rounding up the crew's tasks… 🧭</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && openTodos.length === 0 && completedTodos.length === 0 && (
         <div className="empty-state">
-          <h3>Nothing here yet ✨</h3>
-          <p>Add your first task above.</p>
+          <h3>All hands, nothing to do ⚓</h3>
+          <p>Add your first task above — let's get the ship moving, bestie.</p>
         </div>
       )}
 

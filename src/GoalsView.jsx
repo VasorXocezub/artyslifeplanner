@@ -10,9 +10,9 @@ const emptyForm = {
 }
 
 const STATUS_LABELS = {
-  not_started: 'Not started',
-  in_progress: 'In progress',
-  done: 'Done',
+  not_started: 'Not started yet',
+  in_progress: 'In motion ✨',
+  done: 'Slayed 💅',
 }
 
 const STATUS_COLORS = {
@@ -139,7 +139,7 @@ export default function GoalsView() {
         <div>
           <h1 className="view-title">Goals</h1>
           <p className="view-subtitle">
-            {goals.length === 0 ? 'A blank slate, full of potential ✨' : `${goals.length} ${goals.length === 1 ? 'dream' : 'dreams'} in motion`}
+            {goals.length === 0 ? 'Anchors up, nothing charted yet ⚓' : `${goals.length} ${goals.length === 1 ? 'dream' : 'dreams'} under sail`}
           </p>
         </div>
         <div className="toolbar">
@@ -165,13 +165,13 @@ export default function GoalsView() {
         ))}
       </div>
 
-      {loading && <p className="loading">Rounding up your ambitions… 🌱</p>}
+      {loading && <p className="loading">Charting your ambitions… 🧭</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && filtered.length === 0 && (
         <div className="empty-state">
-          <h3>{goals.length === 0 ? 'Nothing here yet — big things start small ✨' : 'No matches'}</h3>
-          <p>{goals.length === 0 ? 'Add the first thing you\'re dreaming about.' : 'Try a different search or filter.'}</p>
+          <h3>{goals.length === 0 ? 'Clear horizon — big things start small ✨' : 'No matches'}</h3>
+          <p>{goals.length === 0 ? 'Add the first thing you\'re setting sail toward — you got this, captain.' : 'Try a different search or filter.'}</p>
         </div>
       )}
 

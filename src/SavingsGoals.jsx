@@ -125,7 +125,7 @@ export default function SavingsGoals({ currency }) {
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            {goals.length === 0 ? 'Every big goal starts with 0 ✨' : `${formatMoney(totalSaved, currency)} saved across ${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}
+            {goals.length === 0 ? 'Every treasure chest starts empty ⚓' : `${formatMoney(totalSaved, currency)} in the treasure chest across ${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}
           </p>
         </div>
         <div className="toolbar">
@@ -146,13 +146,13 @@ export default function SavingsGoals({ currency }) {
         </div>
       )}
 
-      {loading && <p className="loading">Counting your coins… 💸</p>}
+      {loading && <p className="loading">Counting your doubloons… 🏴‍☠️</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && goals.length === 0 && (
         <div className="empty-state">
-          <h3>No savings goals yet ✨</h3>
-          <p>Add something you're saving toward — a trip, a home, anything.</p>
+          <h3>No treasure charted yet ⚓</h3>
+          <p>Add something you're saving toward — a trip, a home, anything worth the voyage. Manifest it ✨</p>
         </div>
       )}
 
@@ -169,7 +169,7 @@ export default function SavingsGoals({ currency }) {
               >
                 <div className="habit-header-row">
                   <h3 className="contact-name">{g.icon} {g.name}</h3>
-                  {reached && <span className="type-badge type-badge-build">🎉 Done</span>}
+                  {reached && <span className="type-badge type-badge-build">🎉 Manifested!</span>}
                 </div>
 
                 <div className="progress-row">

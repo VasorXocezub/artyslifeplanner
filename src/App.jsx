@@ -92,8 +92,8 @@ function App() {
           ⚙ Modules
         </button>
         <div className="sidebar-footer">
-          your whole life,<br />
-          organized (mostly) ✨
+          smooth sailing,<br />
+          all hands on deck ⚓
         </div>
         <div className="sidebar-account">
           {editingName ? (

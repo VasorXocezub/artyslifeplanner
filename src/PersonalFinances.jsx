@@ -167,7 +167,7 @@ export default function PersonalFinances({ currency }) {
         <div>
           <p className="view-subtitle">
             {transactions.length === 0
-              ? 'A squeaky clean ledger 🧾'
+              ? 'Smooth sailing — a squeaky clean ledger ⚓'
               : `${monthTransactions.length} ${monthTransactions.length === 1 ? 'entry' : 'entries'} in ${monthLabel}`}
           </p>
         </div>
@@ -252,12 +252,12 @@ export default function PersonalFinances({ currency }) {
         ))}
       </div>
 
-      {loading && <p className="loading">Counting your coins… 💸</p>}
+      {loading && <p className="loading">Counting your doubloons… 🏴‍☠️</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && filtered.length === 0 && (
         <div className="empty-state">
-          <h3>{transactions.length === 0 ? 'Nothing logged yet — a fresh start 🧾' : 'No matches'}</h3>
+          <h3>{transactions.length === 0 ? 'Clear horizon — nothing logged yet 🌅' : 'No matches'}</h3>
           <p>{transactions.length === 0 ? 'Log your first income or expense.' : 'Try a different search or filter.'}</p>
         </div>
       )}
