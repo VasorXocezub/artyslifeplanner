@@ -1,98 +1,73 @@
 import { useState } from 'react'
 import { supabase } from './lib/supabase'
 
+function usernameToEmail(username) {
+  const clean = username.trim().toLowerCase().replace(/[^a-z0-9_.]/g, '')
+  return `${clean}@artys-planner.local`
+}
+
 export default function Auth() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [mode, setMode] = useState('login')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [linkSent, setLinkSent] = useState(false)
 
-  async function handleGoogleSignIn() {
-    setError(null)
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    })
-  }
-
-  async function handleSendLink(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: name.trim() },
-      },
-    })
+    const email = usernameToEmail(username)
 
-    setLoading(false)
-    if (error) {
-      setError(error.message)
+    if (mode === 'login') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) setError('Wrong username or password.')
     } else {
-      setLinkSent(true)
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: username.trim() } },
+      })
+      if (error) {
+        if (error.message.toLowerCase().includes('already')) {
+          setError('That username is taken. Try another, or log in instead.')
+        } else {
+          setError(error.message)
+        }
+      }
     }
-  }
-
-  if (linkSent) {
-    return (
-      <div className="auth-screen">
-        <div className="auth-card">
-          <h1 className="auth-title">Check your email</h1>
-          <p className="auth-subtitle">
-            We sent a login link to <strong>{email}</strong>. Click it to get in — no password needed.
-          </p>
-          <button
-            type="button"
-            className="auth-toggle"
-            onClick={() => setLinkSent(false)}
-          >
-            Use a different email
-          </button>
-        </div>
-      </div>
-    )
+    setLoading(false)
   }
 
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <h1 className="auth-title">Welcome</h1>
-        <p className="auth-subtitle">Log in or sign up — no password to remember.</p>
+        <h1 className="auth-title">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
+        <p className="auth-subtitle">
+          {mode === 'login' ? 'Log in to your own private space.' : 'Pick a username and password — everything you add stays yours.'}
+        </p>
 
-        <button type="button" className="google-signin-btn" onClick={handleGoogleSignIn}>
-          <svg width="18" height="18" viewBox="0 0 18 18">
-            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
-            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
-            <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/>
-            <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
-          </svg>
-          Continue with Google
-        </button>
-
-        <div className="auth-divider"><span>or</span></div>
-
-        <form onSubmit={handleSendLink}>
+        <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>Name</label>
+            <label>Username</label>
             <input
               autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="What should we call you?"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. arty"
               required
+              minLength={3}
             />
           </div>
           <div className="field">
-            <label>Email</label>
+            <label>Password</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              minLength={6}
               required
             />
           </div>
@@ -100,9 +75,20 @@ export default function Auth() {
           {error && <p className="error-msg">{error}</p>}
 
           <button className="btn-primary auth-submit" type="submit" disabled={loading}>
-            {loading ? 'Sending…' : 'Email me a login link'}
+            {loading ? 'Please wait…' : mode === 'login' ? 'Log in' : 'Sign up'}
           </button>
         </form>
+
+        <button
+          type="button"
+          className="auth-toggle"
+          onClick={() => {
+            setMode(mode === 'login' ? 'signup' : 'login')
+            setError(null)
+          }}
+        >
+          {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+        </button>
       </div>
     </div>
   )

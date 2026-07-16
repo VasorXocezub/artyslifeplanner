@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { getDisplayName, setDisplayName, getHiddenModules, setHiddenModules } from './lib/localPrefs'
+import { supabase } from './lib/supabase'
+import { getHiddenModules, setHiddenModules } from './lib/localPrefs'
+import Auth from './Auth'
 import Settings from './Settings'
 import Dashboard from './Dashboard'
 import ContactsView from './ContactsView'
@@ -20,21 +22,39 @@ const NAV_ITEMS = [
 
 function App() {
   const [view, setView] = useState('home')
+  const [session, setSession] = useState(undefined)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
-  const [displayName, setDisplayNameState] = useState(getDisplayName())
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     if (hiddenModules.includes(view)) setView('home')
   }, [hiddenModules, view])
 
-  function handleSaveName() {
+  async function handleLogout() {
+    await supabase.auth.signOut()
+  }
+
+  async function handleSaveName() {
     if (!nameInput.trim()) return
-    setDisplayName(nameInput.trim())
-    setDisplayNameState(nameInput.trim())
-    setEditingName(false)
+    const { data, error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } })
+    if (!error && data.user) {
+      setSession((s) => ({ ...s, user: data.user }))
+      setEditingName(false)
+    }
   }
 
   function handleSaveModules(newHidden) {
@@ -42,7 +62,18 @@ function App() {
     setHiddenModulesState(newHidden)
   }
 
-  const localUser = { user_metadata: { full_name: displayName } }
+  // Still checking for an existing session
+  if (session === undefined) {
+    return (
+      <div className="auth-screen">
+        <p className="loading">Loading…</p>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Auth />
+  }
 
   return (
     <div className="app">
@@ -80,16 +111,16 @@ function App() {
             </div>
           ) : (
             <>
-              {displayName || 'you'}
+              {session.user.user_metadata?.full_name || 'you'}
               {' · '}
               <button
                 className="name-edit-trigger"
                 onClick={() => {
-                  setNameInput(displayName)
+                  setNameInput(session.user.user_metadata?.full_name || '')
                   setEditingName(true)
                 }}
               >
-                {displayName ? 'edit name' : 'set your name'}
+                edit name
               </button>
             </>
           )}
@@ -97,9 +128,10 @@ function App() {
         <button className="sidebar-settings-trigger" onClick={() => setSettingsOpen(true)}>
           ⚙ Modules
         </button>
+        <button className="sidebar-logout" onClick={handleLogout}>Log out</button>
       </aside>
       <main className="main">
-        {view === 'home' && <Dashboard onNavigate={setView} user={localUser} hiddenModules={hiddenModules} />}
+        {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
         {view === 'contacts' && <ContactsView />}
         {view === 'goals' && <GoalsView />}
         {view === 'habits' && <HabitsView />}
