@@ -41,7 +41,7 @@ export default function CurrencyConverter({ currency }) {
     <div>
       <div className="view-header">
         <div>
-          <p className="view-subtitle">Convert between any two currencies, smooth sailing 🧭</p>
+          <p className="view-subtitle">Convert between any two currencies, easy peasy 💱✨</p>
         </div>
       </div>
 

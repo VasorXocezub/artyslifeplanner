@@ -6,21 +6,21 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Birthdays', desc: 'Never miss a cake day washed ashore 🎂', enabled: true, accent: '#F2B6C6' },
+      { key: 'contacts', title: 'Birthdays', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#F2B6C6' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Goals', desc: 'Charting a course to your dreams ⛵', enabled: true, accent: '#1B3A5C' },
-      { key: 'habits', title: 'Habits', desc: 'Steady as she goes 🔥⚓', enabled: true, accent: '#EF7B4D' },
-      { key: 'todos', title: 'To-Do', desc: 'Smooth sailing, one task at a time ⚓', enabled: true, accent: '#F2C955' },
+      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps ✨', enabled: true, accent: '#1B3A5C' },
+      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#EF7B4D' },
+      { key: 'todos', title: 'To-Do', desc: 'One thing at a time, bestie 📋', enabled: true, accent: '#F2C955' },
     ],
   },
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Finances', desc: 'Where your treasure sails off to 🏴‍☠️', enabled: true, accent: '#3D6FB4' },
+      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#3D6FB4' },
     ],
   },
 ]

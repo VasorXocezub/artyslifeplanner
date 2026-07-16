@@ -144,14 +144,14 @@ export default function BusinessTracker({ currency }) {
     <div>
       <div className="view-header">
         <div>
-          <p className="view-subtitle">Your work allowance, ship-shape 🧭</p>
+          <p className="view-subtitle">Your work allowance, tracked simply ✨</p>
         </div>
         <div className="toolbar">
           <button className="btn-primary" onClick={openAdd}>+ Add expense</button>
         </div>
       </div>
 
-      {loading && <p className="loading">Counting your doubloons… 🏴‍☠️</p>}
+      {loading && <p className="loading">Counting your coins… 💸</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && (
@@ -196,7 +196,7 @@ export default function BusinessTracker({ currency }) {
 
           {expenses.length === 0 ? (
             <div className="empty-state">
-              <h3>No business expenses logged yet ⚓</h3>
+              <h3>No business expenses yet, bestie 💼</h3>
               <p>Log the first thing you spent from your work allowance.</p>
             </div>
           ) : (

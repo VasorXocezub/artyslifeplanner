@@ -88,12 +88,9 @@ function App() {
             </button>
           ))}
         </nav>
-        <button className="sidebar-settings-trigger" onClick={() => setSettingsOpen(true)}>
-          ⚙ Modules
-        </button>
         <div className="sidebar-footer">
-          smooth sailing,<br />
-          all hands on deck ⚓
+          your whole life,<br />
+          organized (mostly) ✨
         </div>
         <div className="sidebar-account">
           {editingName ? (
@@ -124,6 +121,9 @@ function App() {
             </>
           )}
         </div>
+        <button className="sidebar-settings-trigger" onClick={() => setSettingsOpen(true)}>
+          ⚙ Modules
+        </button>
         <button className="sidebar-logout" onClick={handleLogout}>Log out</button>
       </aside>
       <main className="main">

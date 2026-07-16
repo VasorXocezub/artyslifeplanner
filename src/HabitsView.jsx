@@ -368,7 +368,7 @@ export default function HabitsView() {
         <div>
           <h1 className="view-title">Habits</h1>
           <p className="view-subtitle">
-            {habits.length === 0 ? 'Ready to make some waves? 🌊' : `${habits.length} ${habits.length === 1 ? 'habit' : 'habits'} riding the tide`}
+            {habits.length === 0 ? 'Ready to build something? ✨' : `${habits.length} ${habits.length === 1 ? 'habit' : 'habits'} in the works, let's go`}
           </p>
         </div>
         <div className="toolbar">
@@ -376,12 +376,12 @@ export default function HabitsView() {
         </div>
       </div>
 
-      {loading && <p className="loading">Charting your streaks… 🔥</p>}
+      {loading && <p className="loading">Warming up your streaks… 🔥</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && habits.length === 0 && (
         <div className="empty-state">
-          <h3>No habits yet — every streak starts at the shore 🌊</h3>
+          <h3>No habits yet — every streak starts at zero 🔥</h3>
           <p>Add the first thing you want to build (or quit) — let's get iconic.</p>
         </div>
       )}

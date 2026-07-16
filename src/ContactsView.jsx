@@ -149,7 +149,7 @@ export default function ContactsView() {
         <div>
           <h1 className="view-title">Birthdays</h1>
           <p className="view-subtitle">
-            {contacts.length === 0 ? 'Not a single candle spotted on the horizon' : `${contacts.length} ${contacts.length === 1 ? 'cake day' : 'cake days'} charted`}
+            {contacts.length === 0 ? 'Not a single candle lit yet, bestie' : `${contacts.length} ${contacts.length === 1 ? 'cake day' : 'cake days'} on the books, iconic`}
           </p>
         </div>
         <div className="toolbar">
@@ -157,7 +157,7 @@ export default function ContactsView() {
         </div>
       </div>
 
-      {loading && <p className="loading">Charting cake days… 🎂⚓</p>}
+      {loading && <p className="loading">Fetching cake days… 🎂✨</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && (
@@ -228,8 +228,8 @@ export default function ContactsView() {
 
           {contacts.length === 0 && (
             <div className="empty-state">
-              <h3>No cakes washed ashore yet 🎂</h3>
-              <p>Tap a date above, or hit "+ Add birthday" to chart the first one ⚓</p>
+              <h3>No cakes yet, but we're manifesting 🎂</h3>
+              <p>Tap a date above, or hit "+ Add birthday" to get started, queen ✨</p>
             </div>
           )}
         </>

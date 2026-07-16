@@ -1732,10 +1732,28 @@
 
 .module-group-label {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--ink-faint);
-  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--olive);
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.module-group-label::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--olive) 0,
+    var(--olive) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  opacity: 0.5;
 }
 
 .module-grid {

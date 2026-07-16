@@ -125,7 +125,7 @@ export default function SavingsGoals({ currency }) {
       <div className="view-header">
         <div>
           <p className="view-subtitle">
-            {goals.length === 0 ? 'Every treasure chest starts empty ⚓' : `${formatMoney(totalSaved, currency)} in the treasure chest across ${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}
+            {goals.length === 0 ? 'Every big goal starts with 0, and that\'s iconic ✨' : `${formatMoney(totalSaved, currency)} saved up across ${goals.length} ${goals.length === 1 ? 'goal' : 'goals'}`}
           </p>
         </div>
         <div className="toolbar">
@@ -146,13 +146,13 @@ export default function SavingsGoals({ currency }) {
         </div>
       )}
 
-      {loading && <p className="loading">Counting your doubloons… 🏴‍☠️</p>}
+      {loading && <p className="loading">Counting your coins… 💸</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && goals.length === 0 && (
         <div className="empty-state">
-          <h3>No treasure charted yet ⚓</h3>
-          <p>Add something you're saving toward — a trip, a home, anything worth the voyage. Manifest it ✨</p>
+          <h3>No savings goals yet, let's manifest ✨</h3>
+          <p>Add something you're saving toward — a trip, a home, anything at all. Manifest it ✨</p>
         </div>
       )}
 
