@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Space+Grotesk:wght@500;600;700;800&family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Meow+Script&family=Shadows+Into+Light&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   --bg: #F3EFE3;
@@ -23,10 +23,10 @@
   --border-strong: #1A1A1A;
   --danger: #E24B6B;
 
-  --font-brand: 'Kaushan Script', cursive;
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-script: 'Kaushan Script', cursive;
-  --font-body: 'Work Sans', sans-serif;
+  --font-brand: 'Meow Script', cursive;
+  --font-display: 'Meow Script', cursive;
+  --font-script: 'Meow Script', cursive;
+  --font-body: 'Shadows Into Light', cursive;
   --font-mono: 'IBM Plex Mono', monospace;
 }
 

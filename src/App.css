@@ -17,8 +17,8 @@
 
 .brand {
   font-family: var(--font-brand);
-  font-size: 24px;
-  font-weight: 400;
+  font-size: 28px;
+  font-weight: 700;
   color: var(--sidebar-text);
 }
 
@@ -100,8 +100,8 @@
 
 .view-title {
   font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 600;
+  font-size: 42px;
+  font-weight: 400;
   margin: 0 0 6px 0;
   color: var(--ink);
 }
@@ -253,8 +253,8 @@
 
 .contact-name {
   font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 400;
   margin: 0 0 2px 0;
   color: var(--ink);
 }
@@ -347,8 +347,8 @@
 
 .modal h2 {
   font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 400;
   margin: 12px 0 18px 0;
   color: var(--ink);
 }
@@ -472,8 +472,8 @@
 
 .cal-month-label {
   font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 400;
   color: var(--ink);
   min-width: 160px;
   text-align: center;
@@ -660,8 +660,8 @@
 
 .total-value {
   font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 400;
 }
 
 .total-positive {
@@ -1057,8 +1057,8 @@
 
 .streak-number {
   font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 42px;
+  font-weight: 400;
   color: var(--ink);
 }
 
@@ -1128,8 +1128,8 @@
 
 .hero-title {
   font-family: var(--font-brand);
-  font-size: 44px;
-  font-weight: 400;
+  font-size: 52px;
+  font-weight: 700;
   margin: 0 0 8px 0;
   color: var(--ink);
 }
@@ -1222,8 +1222,8 @@
 
 .module-card h3 {
   font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 400;
   margin: 6px 0 4px 0;
   color: var(--ink);
 }
