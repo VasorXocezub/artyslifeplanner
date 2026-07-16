@@ -164,7 +164,9 @@ export default function HabitsView() {
     setLoading(false)
   }
 
-  function handleDragStart(id) {
+  function handleDragStart(e, id) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(id))
     setDraggedId(id)
   }
 
@@ -172,7 +174,13 @@ export default function HabitsView() {
     setDraggedId(null)
   }
 
-  function handleDrop(targetId) {
+  function handleDragOver(e) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  function handleDrop(e, targetId) {
+    e.preventDefault()
     if (draggedId === null || draggedId === targetId) return
     const current = [...habits]
     const fromIdx = current.findIndex((h) => h.id === draggedId)
@@ -367,17 +375,17 @@ export default function HabitsView() {
                 className={`contact-card habit-card ${draggedId === h.id ? 'habit-card-dragging' : ''}`}
                 key={h.id}
                 style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => handleDrop(h.id)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, h.id)}
               >
                 <span
                   className="drag-handle"
                   draggable
-                  onDragStart={() => handleDragStart(h.id)}
+                  onDragStart={(e) => handleDragStart(e, h.id)}
                   onDragEnd={handleDragEnd}
                   title="Drag to reorder"
                 >
-                  ⠿
+                  ⠿⠿
                 </span>
                 <div className="habit-header-row">
                   <h3 className="contact-name">{h.icon || '✨'} {h.name}</h3>
