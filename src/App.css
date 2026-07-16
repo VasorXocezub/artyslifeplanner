@@ -675,6 +675,78 @@
   text-align: right;
 }
 
+.icon-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.icon-preview {
+  font-size: 26px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.icon-custom-input {
+  flex: 1;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 16px;
+  color: var(--ink);
+  outline: none;
+}
+
+.icon-custom-input:focus {
+  border-color: var(--pink);
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+}
+
+.icon-cell {
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 0;
+  font-size: 16px;
+}
+
+.icon-cell-active {
+  background: var(--pink-soft);
+  border-color: var(--pink);
+}
+
+.drag-handle {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 16px;
+  color: var(--ink-faint);
+  cursor: grab;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.habit-card-dragging {
+  opacity: 0.4;
+}
+
 .habit-header-row {
   display: flex;
   justify-content: space-between;

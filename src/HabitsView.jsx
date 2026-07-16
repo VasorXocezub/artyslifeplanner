@@ -6,8 +6,15 @@ const CARD_COLORS = ['#E0457B', '#E8623C', '#8A9A5B', '#5A1730']
 const UNIT_LABELS = { none: 'times', steps: 'steps', calories: 'cal', time: 'min' }
 const PERIOD_LABELS = { day: 'day', week: 'week', month: 'month' }
 
+const ICON_OPTIONS = [
+  '✨', '💧', '🏃', '🧘', '📚', '💪', '🥗', '🚭', '🛌', '🎯',
+  '🔥', '🧹', '💰', '📵', '🌱', '🧠', '🎨', '🚴', '☀️', '🦷',
+  '🧴', '🍎', '☕', '🍺', '💊', '📝', '🎸', '🐶', '🧺', '💤',
+]
+
 const emptyForm = {
   name: '',
+  icon: '✨',
   type: 'build',
   start_date: '',
   end_date: '',
@@ -110,6 +117,7 @@ export default function HabitsView() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [valueInputs, setValueInputs] = useState({})
+  const [draggedId, setDraggedId] = useState(null)
 
   const todayStr = toISO(new Date())
   const today = new Date()
@@ -126,6 +134,7 @@ export default function HabitsView() {
     const { data: habitsData, error: habitsError } = await supabase
       .from('habits')
       .select('*')
+      .order('sort_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
 
     if (habitsError) {
@@ -155,6 +164,33 @@ export default function HabitsView() {
     setLoading(false)
   }
 
+  function handleDragStart(id) {
+    setDraggedId(id)
+  }
+
+  function handleDragEnd() {
+    setDraggedId(null)
+  }
+
+  function handleDrop(targetId) {
+    if (draggedId === null || draggedId === targetId) return
+    const current = [...habits]
+    const fromIdx = current.findIndex((h) => h.id === draggedId)
+    const toIdx = current.findIndex((h) => h.id === targetId)
+    if (fromIdx === -1 || toIdx === -1) return
+    const [moved] = current.splice(fromIdx, 1)
+    current.splice(toIdx, 0, moved)
+    setHabits(current)
+    setDraggedId(null)
+    persistOrder(current)
+  }
+
+  async function persistOrder(orderedHabits) {
+    await Promise.all(
+      orderedHabits.map((h, i) => supabase.from('habits').update({ sort_order: i }).eq('id', h.id))
+    )
+  }
+
   function openAdd() {
     setEditingId(null)
     setForm(emptyForm)
@@ -166,6 +202,7 @@ export default function HabitsView() {
     setEditingId(habit.id)
     setForm({
       name: habit.name || '',
+      icon: habit.icon || '✨',
       type: habit.type || 'build',
       start_date: habit.start_date || '',
       end_date: habit.end_date || '',
@@ -212,6 +249,7 @@ export default function HabitsView() {
 
     const payload = {
       name: form.name.trim(),
+      icon: form.icon || '✨',
       type: form.type,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
@@ -326,12 +364,23 @@ export default function HabitsView() {
 
             return (
               <div
-                className="contact-card habit-card"
+                className={`contact-card habit-card ${draggedId === h.id ? 'habit-card-dragging' : ''}`}
                 key={h.id}
                 style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDrop(h.id)}
               >
+                <span
+                  className="drag-handle"
+                  draggable
+                  onDragStart={() => handleDragStart(h.id)}
+                  onDragEnd={handleDragEnd}
+                  title="Drag to reorder"
+                >
+                  ⠿
+                </span>
                 <div className="habit-header-row">
-                  <h3 className="contact-name">{h.name}</h3>
+                  <h3 className="contact-name">{h.icon || '✨'} {h.name}</h3>
                   <span className={`type-badge ${h.type === 'quit' ? 'type-badge-quit' : 'type-badge-build'}`}>
                     {h.type === 'quit' ? '🚫 Quit' : '🌱 Build'}
                   </span>
@@ -411,6 +460,32 @@ export default function HabitsView() {
                   placeholder="Drink water, quit smoking, read…"
                   required
                 />
+              </div>
+
+              <div className="field">
+                <label>Icon</label>
+                <div className="icon-picker">
+                  <span className="icon-preview">{form.icon || '✨'}</span>
+                  <input
+                    className="icon-custom-input"
+                    value={form.icon}
+                    maxLength={4}
+                    onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                    placeholder="Paste any emoji"
+                  />
+                </div>
+                <div className="icon-grid">
+                  {ICON_OPTIONS.map((emoji) => (
+                    <button
+                      type="button"
+                      key={emoji}
+                      className={`icon-cell ${form.icon === emoji ? 'icon-cell-active' : ''}`}
+                      onClick={() => setForm({ ...form, icon: emoji })}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="field">
