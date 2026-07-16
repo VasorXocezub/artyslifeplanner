@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import Auth from './Auth'
+import Settings from './Settings'
 import Dashboard from './Dashboard'
 import ContactsView from './ContactsView'
 import GoalsView from './GoalsView'
@@ -23,18 +24,26 @@ function App() {
   const [session, setSession] = useState(undefined)
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [hiddenModules, setHiddenModules] = useState([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
+      setHiddenModules(data.session?.user?.user_metadata?.hidden_modules || [])
     })
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
+      setHiddenModules(newSession?.user?.user_metadata?.hidden_modules || [])
     })
 
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (hiddenModules.includes(view)) setView('home')
+  }, [hiddenModules, view])
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -66,7 +75,7 @@ function App() {
     <div className="app">
       <aside className="sidebar">
         <nav className="nav">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => !hiddenModules.includes(item.key)).map((item) => (
             <button
               key={item.key}
               className={`nav-item ${view === item.key ? 'active' : ''}`}
@@ -79,6 +88,9 @@ function App() {
             </button>
           ))}
         </nav>
+        <button className="sidebar-settings-trigger" onClick={() => setSettingsOpen(true)}>
+          ⚙ Modules
+        </button>
         <div className="sidebar-footer">
           your whole life,<br />
           organized (mostly) ✨
@@ -115,13 +127,20 @@ function App() {
         <button className="sidebar-logout" onClick={handleLogout}>Log out</button>
       </aside>
       <main className="main">
-        {view === 'home' && <Dashboard onNavigate={setView} user={session.user} />}
+        {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
         {view === 'contacts' && <ContactsView />}
         {view === 'goals' && <GoalsView />}
         {view === 'habits' && <HabitsView />}
         {view === 'finances' && <FinancesView />}
         {view === 'todos' && <TodoView />}
       </main>
+      {settingsOpen && (
+        <Settings
+          hiddenModules={hiddenModules}
+          onSave={setHiddenModules}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -32,7 +32,7 @@ function getGreeting() {
   return 'Good evening'
 }
 
-export default function Dashboard({ onNavigate, user }) {
+export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   const [stats, setStats] = useState({
     nextBirthday: null,
     birthdaysThisMonth: [],
@@ -131,41 +131,43 @@ export default function Dashboard({ onNavigate, user }) {
 
       {!loading && (
         <div className="stat-strip">
-          <div className="stat-pill">
-            <span className="stat-dot" style={{ background: '#F2B6C6' }} />
-            {birthdayLabel()}
-          </div>
-          {stats.birthdaysThisMonth.length > 0 && (
+          {!hiddenModules.includes('contacts') && (
+            <div className="stat-pill">
+              <span className="stat-dot" style={{ background: '#F2B6C6' }} />
+              {birthdayLabel()}
+            </div>
+          )}
+          {!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0 && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: '#F2C955' }} />
               🎉 {stats.birthdaysThisMonth.length} birthday{stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month
             </div>
           )}
-          {stats.goalsInProgress > 0 && (
+          {!hiddenModules.includes('goals') && stats.goalsInProgress > 0 && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: '#3D6FB4' }} />
               🚀 {stats.goalsInProgress} goal{stats.goalsInProgress > 1 ? 's' : ''} in motion
             </div>
           )}
-          {stats.habitsTotal > 0 && (
+          {!hiddenModules.includes('habits') && stats.habitsTotal > 0 && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: '#EF7B4D' }} />
               🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
             </div>
           )}
-          {stats.hasTransactions && (
+          {!hiddenModules.includes('finances') && stats.hasTransactions && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#2E5A96' : '#D64545' }} />
               💸 {formatMoney(stats.netBalance, user?.user_metadata?.currency)} net
             </div>
           )}
-          {stats.hasSavings && (
+          {!hiddenModules.includes('finances') && stats.hasSavings && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: '#A8CFEA' }} />
               🐷 {formatMoney(stats.totalSaved, user?.user_metadata?.currency)} saved
             </div>
           )}
-          {stats.todosOpen > 0 && (
+          {!hiddenModules.includes('todos') && stats.todosOpen > 0 && (
             <div className="stat-pill">
               <span className="stat-dot" style={{ background: '#1B3A5C' }} />
               📋 {stats.todosOpen} to-do{stats.todosOpen > 1 ? 's' : ''} open
@@ -174,27 +176,31 @@ export default function Dashboard({ onNavigate, user }) {
         </div>
       )}
 
-      {MODULES.map((group) => (
-        <div key={group.group} className="module-section">
-          <p className="module-group-label">{group.group}</p>
-          <div className="module-grid">
-            {group.items.map((m) => (
-              <button
-                key={m.key}
-                className={`module-card ${!m.enabled ? 'module-card-disabled' : ''}`}
-                style={{ '--card-accent': m.accent }}
-                onClick={() => m.enabled && onNavigate(m.key)}
-                disabled={!m.enabled}
-              >
-                <span className="module-accent-bar" />
-                <h3>{m.title}</h3>
-                <p>{m.desc}</p>
-                <span className="module-link">{m.enabled ? 'Open →' : 'Coming soon'}</span>
-              </button>
-            ))}
+      {MODULES.map((group) => {
+        const visibleItems = group.items.filter((m) => !hiddenModules.includes(m.key))
+        if (visibleItems.length === 0) return null
+        return (
+          <div key={group.group} className="module-section">
+            <p className="module-group-label">{group.group}</p>
+            <div className="module-grid">
+              {visibleItems.map((m) => (
+                <button
+                  key={m.key}
+                  className={`module-card ${!m.enabled ? 'module-card-disabled' : ''}`}
+                  style={{ '--card-accent': m.accent }}
+                  onClick={() => m.enabled && onNavigate(m.key)}
+                  disabled={!m.enabled}
+                >
+                  <span className="module-accent-bar" />
+                  <h3>{m.title}</h3>
+                  <p>{m.desc}</p>
+                  <span className="module-link">{m.enabled ? 'Open →' : 'Coming soon'}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
