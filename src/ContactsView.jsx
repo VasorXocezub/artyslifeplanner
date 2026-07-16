@@ -6,7 +6,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['#F2A0BC', '#C9622E', '#7C8B3F', '#6B1B3D']
+const CHIP_COLORS = ['#E8639B', '#E8703C', '#B190D4', '#7C8A3E']
 
 function parseLocalDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number)

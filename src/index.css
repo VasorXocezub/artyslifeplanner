@@ -1,31 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Yeseva+One&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #FDF3EC;
+  --bg: #FAF0DC;
   --surface: #FFFFFF;
-  --sidebar-bg: #F2A0BC;
-  --sidebar-text: #FFFFFF;
+  --sidebar-bg: #7C8A3E;
+  --sidebar-text: #FAF0DC;
 
-  --ink: #6B1B3D;
-  --ink-dim: #A6607F;
-  --ink-faint: #D7A9BE;
+  --ink: #5A2A3D;
+  --ink-dim: #9C7085;
+  --ink-faint: #D3B9C4;
 
-  --pink: #F2A0BC;
-  --pink-soft: #FBD3E1;
-  --coral: #C9622E;
-  --coral-soft: #EFC29F;
-  --olive: #7C8B3F;
-  --olive-dark: #64702F;
-  --maroon: #6B1B3D;
-  --maroon-soft: #E3C3D2;
+  --pink: #E8639B;
+  --pink-soft: #F2C4D4;
+  --coral: #E8703C;
+  --coral-soft: #F5C79E;
+  --olive: #B190D4;
+  --olive-dark: #9575BE;
+  --maroon: #7C8A3E;
+  --maroon-soft: #DCE2C0;
 
-  --border: #F5DCE6;
-  --border-strong: #EFC6D8;
-  --danger: #C9445F;
+  --border: #F0DCC4;
+  --border-strong: #E8C9A0;
+  --danger: #D14C5C;
 
-  --font-brand: 'Baloo 2', sans-serif;
-  --font-display: 'Baloo 2', sans-serif;
-  --font-script: 'Baloo 2', sans-serif;
+  --font-brand: 'Yeseva One', serif;
+  --font-display: 'Yeseva One', serif;
+  --font-script: 'Yeseva One', serif;
   --font-body: 'Inter', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
