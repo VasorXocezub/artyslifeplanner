@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { supabase, getUserId } from './lib/supabase'
 
 const emptyForm = {
   title: '',
@@ -16,9 +16,9 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS = {
-  not_started: '#B190D4',
-  in_progress: '#E8703C',
-  done: '#E8639B',
+  not_started: '#3D6FB4',
+  in_progress: '#EF7B4D',
+  done: '#F2B6C6',
 }
 
 function formatDate(d) {
@@ -96,7 +96,8 @@ export default function GoalsView() {
     if (editingId) {
       ;({ error } = await supabase.from('goals').update(payload).eq('id', editingId))
     } else {
-      ;({ error } = await supabase.from('goals').insert(payload))
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('goals').insert({ ...payload, user_id }))
     }
 
     setSaving(false)
@@ -181,7 +182,7 @@ export default function GoalsView() {
               className="contact-card"
               key={g.id}
               onClick={() => openEdit(g)}
-              style={{ borderTopColor: STATUS_COLORS[g.status] || '#E8639B' }}
+              style={{ borderTopColor: STATUS_COLORS[g.status] || '#F2B6C6' }}
             >
               <span className="status-badge" style={{ background: STATUS_COLORS[g.status] }}>
                 {STATUS_LABELS[g.status]}

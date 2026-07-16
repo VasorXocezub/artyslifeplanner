@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { supabase, getUserId } from './lib/supabase'
 import { formatZAR } from './lib/currency'
 
 const emptyForm = {
@@ -10,7 +10,7 @@ const emptyForm = {
   notes: '',
 }
 
-const CARD_COLORS = ['#E8639B', '#E8703C', '#B190D4', '#7C8A3E']
+const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C']
 
 function formatDate(d) {
   if (!d) return null
@@ -104,7 +104,8 @@ export default function PersonalFinances() {
     if (editingId) {
       ;({ error } = await supabase.from('transactions').update(payload).eq('id', editingId))
     } else {
-      ;({ error } = await supabase.from('transactions').insert(payload))
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('transactions').insert({ ...payload, user_id }))
     }
 
     setSaving(false)

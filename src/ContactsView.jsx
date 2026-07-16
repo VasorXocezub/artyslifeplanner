@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { supabase, getUserId } from './lib/supabase'
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['#E8639B', '#E8703C', '#B190D4', '#7C8A3E']
+const CHIP_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C']
 
 function parseLocalDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -74,7 +74,8 @@ export default function ContactsView() {
     if (editingId) {
       ;({ error } = await supabase.from('contacts').update(payload).eq('id', editingId))
     } else {
-      ;({ error } = await supabase.from('contacts').insert(payload))
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('contacts').insert({ ...payload, user_id }))
     }
 
     setSaving(false)

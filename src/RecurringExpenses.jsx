@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { supabase, getUserId } from './lib/supabase'
 import { formatZAR } from './lib/currency'
 
 const emptyForm = { name: '', amount: '', category: '', frequency: 'monthly', next_due: '' }
-const CARD_COLORS = ['#E8639B', '#E8703C', '#B190D4', '#7C8A3E']
+const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C']
 const FREQUENCY_LABELS = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }
 
 function toMonthly(amount, frequency) {
@@ -86,7 +86,8 @@ export default function RecurringExpenses() {
     if (editingId) {
       ;({ error } = await supabase.from('recurring_expenses').update(payload).eq('id', editingId))
     } else {
-      ;({ error } = await supabase.from('recurring_expenses').insert(payload))
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('recurring_expenses').insert({ ...payload, user_id }))
     }
 
     setSaving(false)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { supabase, getUserId } from './lib/supabase'
 
-const CARD_COLORS = ['#E8639B', '#E8703C', '#B190D4', '#7C8A3E']
+const CARD_COLORS = ['#F2B6C6', '#EF7B4D', '#3D6FB4', '#1B3A5C']
 
 const UNIT_LABELS = { none: 'times', steps: 'steps', calories: 'cal', time: 'min' }
 const PERIOD_LABELS = { day: 'day', week: 'week', month: 'month' }
@@ -275,7 +275,8 @@ export default function HabitsView() {
     if (editingId) {
       ;({ error } = await supabase.from('habits').update(payload).eq('id', editingId))
     } else {
-      ;({ error } = await supabase.from('habits').insert(payload))
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('habits').insert({ ...payload, user_id }))
     }
 
     setSaving(false)
@@ -306,14 +307,16 @@ export default function HabitsView() {
       const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
       if (error) { setError(error.message); return }
     } else {
-      const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null })
+      const user_id = await getUserId()
+      const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null, user_id })
       if (error) { setError(error.message); return }
     }
     fetchAll()
   }
 
   async function incrementToday(habit) {
-    const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null })
+    const user_id = await getUserId()
+    const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null, user_id })
     if (error) { setError(error.message); return }
     fetchAll()
   }
@@ -339,7 +342,8 @@ export default function HabitsView() {
     if (existing) {
       ;({ error } = await supabase.from('habit_logs').update({ value: Number(existing.value || 0) + amount }).eq('id', existing.id))
     } else {
-      ;({ error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: amount }))
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: amount, user_id }))
     }
     if (error) { setError(error.message); return }
     setValueInputs((v) => ({ ...v, [habit.id]: '' }))
