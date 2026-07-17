@@ -147,9 +147,9 @@ function GroceryListTab() {
         .ilike('name', item.text)
         .limit(1)
       if (existingPantry && existingPantry.length > 0) {
-        await supabase.from('pantry_items').update({ status: 'stocked' }).eq('id', existingPantry[0].id)
+        await supabase.from('pantry_items').update({ status: 'stocked', section: item.section || existingPantry[0].section || 'other' }).eq('id', existingPantry[0].id)
       } else {
-        await supabase.from('pantry_items').insert({ name: item.text, status: 'stocked', user_id })
+        await supabase.from('pantry_items').insert({ name: item.text, status: 'stocked', section: item.section || 'other', user_id })
       }
     }
     fetchItems()
@@ -671,6 +671,7 @@ function PantryTab() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [newName, setNewName] = useState('')
+  const [newSection, setNewSection] = useState('other')
   const [adding, setAdding] = useState(false)
 
   useEffect(() => { fetchItems() }, [])
@@ -687,7 +688,7 @@ function PantryTab() {
     if (!newName.trim()) return
     setAdding(true)
     const user_id = await getUserId()
-    await supabase.from('pantry_items').insert({ name: newName.trim(), user_id })
+    await supabase.from('pantry_items').insert({ name: newName.trim(), section: newSection, user_id })
     setAdding(false)
     setNewName('')
     fetchItems()
@@ -707,10 +708,15 @@ function PantryTab() {
       if (!existingGrocery || existingGrocery.length === 0) {
         const user_id = await getUserId()
         await supabase.from('shopping_items').insert({
-          text: item.name, category: 'groceries', section: 'pantry', user_id,
+          text: item.name, category: 'groceries', section: item.section || 'other', user_id,
         })
       }
     }
+    fetchItems()
+  }
+
+  async function setSection(item, section) {
+    await supabase.from('pantry_items').update({ section }).eq('id', item.id)
     fetchItems()
   }
 
@@ -724,6 +730,11 @@ function PantryTab() {
       <p className="field-hint">Track staples.</p>
       <form className="habit-add-row" onSubmit={handleAdd}>
         <input className="search-box habit-add-input" placeholder="Rice, pasta, coffee…" value={newName} onChange={(e) => setNewName(e.target.value)} />
+        <select className="todo-date-input" value={newSection} onChange={(e) => setNewSection(e.target.value)}>
+          {GROCERY_SECTIONS.map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
         <button className="btn-primary" type="submit" disabled={adding}>{adding ? 'Adding…' : '+ Add'}</button>
       </form>
 
@@ -741,6 +752,14 @@ function PantryTab() {
           {items.map((item) => (
             <div className="todo-row shopping-row" key={item.id}>
               <span className="todo-text">{item.name}</span>
+              <select
+                className="todo-recurring-select"
+                value={item.section || 'other'}
+                onChange={(e) => setSection(item, e.target.value)}
+                title="Category"
+              >
+                {GROCERY_SECTIONS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
               <select
                 className="todo-priority-select"
                 value={item.status || 'stocked'}

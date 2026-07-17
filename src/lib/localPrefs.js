@@ -47,6 +47,13 @@ export function setWellnessGoals(goals) {
   localStorage.setItem('wellnessGoals', JSON.stringify(goals))
 }
 
+export function getLastSeenTea() {
+  return localStorage.getItem('lastSeenTea') || null
+}
+export function setLastSeenTea(iso) {
+  localStorage.setItem('lastSeenTea', iso)
+}
+
 export function getHiddenBraindumpTabs() {
   try {
     return JSON.parse(localStorage.getItem('hiddenBraindumpTabs') || '[]')

@@ -41,6 +41,83 @@ const WORKOUT_ITEMS = [
   { key: 'workout_dance', label: 'Dance' },
 ]
 
+const CYCLE_ERAS = {
+  period: {
+    key: 'period', icon: '🩸', name: 'Period Era', caption: '💌 Please lower your expectations of me.',
+    description: "Your body is resting, recharging, and asking for a little extra kindness. This is your permission slip to slow down, wear the comfy clothes, cancel non-essential plans, and prioritize rest. The goal isn't productivity—it's recovery.",
+    vibes: ['🛋️ Blanket Burrito', '🍫 Powered by Chocolate', '💌 Do Not Perceive Me', '🌙 Cozy Goblin Mode', '🦥 Moving at Government Speed'],
+    bestFor: ['Reading', 'Journaling', 'Gentle walks', 'Comfort food', 'Early nights', 'Existing softly'],
+    reminder: '🌸 Resting is productive too.',
+    energy: 'Low', color: '#D9A8B8',
+    summaryTagline: 'Operating on vibes, snacks, and survival.',
+  },
+  fresh_start: {
+    key: 'fresh_start', icon: '🌱', name: 'Fresh Start Era', caption: '✨ Suddenly we have hobbies again.',
+    description: "Energy is returning, motivation is rising, and you're starting to feel like yourself again. This is a great time to begin new habits, tackle projects, make plans, and get back into routines. Everything feels a little lighter and more possible.",
+    vibes: ['✨ Fresh Energy', '🌸 Getting My Life Together', '🦋 New Beginning Energy', '💅 Productive Princess', "🎀 Let's Start Over"],
+    bestFor: ['Goal setting', 'Planning', 'Learning new skills', 'Organizing', 'Deep work', 'Building habits'],
+    reminder: '🌱 She remembered who she is.',
+    energy: 'Rising', color: '#AFC5A5',
+    summaryTagline: 'Suddenly we have hobbies again.',
+  },
+  hot_girl: {
+    key: 'hot_girl', icon: '☀️', name: 'Hot Girl Era', caption: '💅 Feeling suspiciously powerful.',
+    description: "Confidence is high, energy is peaking, and the main character energy is impossible to ignore. This is your social butterfly era. You're likely feeling more outgoing, motivated, creative, and ready to take on the world.",
+    vibes: ['👑 Main Character', '✨ Unstoppable', '💖 Flirty & Thriving', '🌸 Social Butterfly', '💅 Hot Girl Energy'],
+    bestFor: ['Social plans', 'Important meetings', 'Date nights', 'Work presentations', 'Strength workouts', 'Taking cute photos'],
+    reminder: '☀️ Wear the outfit. Send the text. Take the photo.',
+    energy: 'High', color: '#E9C86A',
+    summaryTagline: 'Feeling suspiciously powerful.',
+  },
+  villain: {
+    key: 'villain', icon: '🌙', name: 'Villain Era', caption: '🚨 Everyone is testing my patience.',
+    description: "Your body is preparing for its next reset. Energy may fluctuate, emotions can feel stronger, and suddenly everyone's breathing sounds personal. This isn't a bad phase—it's a phase that asks for boundaries, self-awareness, and a little extra grace.",
+    vibes: ['🚨 The Lore Thickens', '🌧️ In My Feels', '🍟 Little Treat Required', '🤡 Learning Lessons Against My Will', '💌 Processing...'],
+    bestFor: ['Wrapping up projects', 'Self-care', 'Reflection', 'Cozy nights in', 'Protecting your peace', 'Avoiding unnecessary nonsense'],
+    reminder: '🌙 Not everyone deserves access to your energy.',
+    energy: 'Fluctuating', color: '#8FC2BE',
+    summaryTagline: 'Everyone is testing my patience.',
+  },
+}
+const ERA_ORDER = ['period', 'fresh_start', 'hot_girl', 'villain']
+
+function getCycleDay(lastPeriodStart, cycleLength) {
+  if (!lastPeriodStart) return null
+  const start = new Date(lastPeriodStart + 'T00:00:00')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diff = Math.floor((today - start) / 86400000)
+  const day = ((diff % cycleLength) + cycleLength) % cycleLength + 1
+  return day
+}
+
+function getEraKey(cycleDay, periodLength, cycleLength) {
+  if (!cycleDay) return null
+  if (cycleDay <= periodLength) return 'period'
+  const ovulationDay = Math.round(cycleLength / 2)
+  if (cycleDay <= ovulationDay - 3) return 'fresh_start'
+  if (cycleDay <= ovulationDay + 2) return 'hot_girl'
+  return 'villain'
+}
+
+function getPredictions(cycleDay, periodLength, cycleLength) {
+  if (!cycleDay) return []
+  const ovulationDay = Math.round(cycleLength / 2)
+  const daysToOvulation = ovulationDay - cycleDay
+  const daysToPeriod = cycleDay <= periodLength ? null : cycleLength - cycleDay + 1
+  const preds = []
+  if (daysToOvulation > 3) {
+    preds.push({ days: daysToOvulation - 3, text: '✨ Energy may increase' })
+  }
+  if (daysToOvulation > 0) {
+    preds.push({ days: daysToOvulation, text: '☀️ Ovulation expected' })
+  }
+  if (daysToPeriod != null && daysToPeriod > 0) {
+    preds.push({ days: daysToPeriod, text: '🩷 Period expected' })
+  }
+  return preds.sort((a, b) => a.days - b.days)
+}
+
 const TABS = [
   { key: 'today', label: '✨ Today' },
   { key: 'cycle', label: '🌸 Cycle' },
@@ -49,6 +126,12 @@ const TABS = [
 
 function todayStr() {
   return new Date().toISOString().split('T')[0]
+}
+
+function formatDateShort(d) {
+  if (!d) return ''
+  const date = new Date(d + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 function hydrationMessage(glasses, goal) {
@@ -82,6 +165,8 @@ function average(nums) {
 export default function GlowUpHubView() {
   const [log, setLog] = useState(null)
   const [cycleLog, setCycleLog] = useState(null)
+  const [cycleSettings, setCycleSettings] = useState(null)
+  const [periodInput, setPeriodInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [stepsInput, setStepsInput] = useState('')
@@ -152,6 +237,15 @@ export default function GlowUpHubView() {
       existingCycle = createdCycle
     }
     setCycleLog(existingCycle)
+
+    let { data: existingSettings } = await supabase
+      .from('cycle_settings').select('*').maybeSingle()
+    if (!existingSettings) {
+      const { data: createdSettings } = await supabase
+        .from('cycle_settings').insert({ user_id }).select().single()
+      existingSettings = createdSettings
+    }
+    setCycleSettings(existingSettings)
     setLoading(false)
   }
 
@@ -183,6 +277,27 @@ export default function GlowUpHubView() {
     setCycleLog(data)
   }
 
+  async function logPeriodStart(dateStr) {
+    const { data, error } = await supabase
+      .from('cycle_settings')
+      .update({ last_period_start: dateStr })
+      .eq('id', cycleSettings.id)
+      .select().single()
+    if (error) { setError(error.message); return }
+    setCycleSettings(data)
+    setPeriodInput('')
+  }
+
+  async function updateCycleLength(field, value) {
+    const { data, error } = await supabase
+      .from('cycle_settings')
+      .update({ [field]: parseInt(value, 10) || (field === 'cycle_length' ? 28 : 5) })
+      .eq('id', cycleSettings.id)
+      .select().single()
+    if (error) { setError(error.message); return }
+    setCycleSettings(data)
+  }
+
   async function saveGoals() {
     const water = parseInt(goalInputs.water, 10) || 8
     const calories = parseInt(goalInputs.calories, 10) || 1900
@@ -210,6 +325,14 @@ export default function GlowUpHubView() {
     { key: 'Mood', done: !!log.mood },
   ]
   const scorePct = Math.round((scoreItems.filter((s) => s.done).length / scoreItems.length) * 100)
+
+  const cycleLength = cycleSettings?.cycle_length || 28
+  const periodLength = cycleSettings?.period_length || 5
+  const cycleDay = cycleSettings ? getCycleDay(cycleSettings.last_period_start, cycleLength) : null
+  const eraKey = getEraKey(cycleDay, periodLength, cycleLength)
+  const era = eraKey ? CYCLE_ERAS[eraKey] : null
+  const predictions = getPredictions(cycleDay, periodLength, cycleLength)
+  const daysToNextPeriod = cycleDay ? (cycleDay <= periodLength ? null : cycleLength - cycleDay + 1) : null
 
   const monthName = new Date().toLocaleDateString('en-US', { month: 'long' })
   const thisYear = new Date().getFullYear()
@@ -500,62 +623,190 @@ export default function GlowUpHubView() {
         </>
       )}
 
-      {tab === 'cycle' && cycleLog && (
-        <div className="calendar-card">
-          <div className="field-row">
-            <div className="field">
-              <label>🌸 Phase</label>
-              <select value={cycleLog.phase || ''} onChange={(e) => updateCycle({ phase: e.target.value })}>
-                <option value="">Select…</option>
-                {CYCLE_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+      {tab === 'cycle' && cycleLog && cycleSettings && (
+        <>
+          {!cycleSettings.last_period_start && (
+            <div className="calendar-card">
+              <p className="module-group-label">🩸 LOG YOUR LAST PERIOD START</p>
+              <p className="field-hint">This is how we figure out your cycle day, era, and predictions.</p>
+              <div className="log-value-row">
+                <input type="date" className="log-value-input" value={periodInput} onChange={(e) => setPeriodInput(e.target.value)} />
+                <button className="btn-check log-value-btn" onClick={() => logPeriodStart(periodInput)}>Log it</button>
+              </div>
             </div>
-            <div className="field">
-              <label>⚡ Energy Level</label>
-              <select value={cycleLog.energy_level || ''} onChange={(e) => updateCycle({ energy_level: e.target.value })}>
-                <option value="">Select…</option>
-                {ENERGY_LEVELS.map((e_) => <option key={e_} value={e_}>{e_}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="field-row">
-            <div className="field">
-              <label>💧 Flow</label>
-              <select value={cycleLog.flow || ''} onChange={(e) => updateCycle({ flow: e.target.value })}>
-                <option value="">Select…</option>
-                {FLOW_LEVELS.map((f) => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label>🧘 Recommended Activity</label>
-              <select value={cycleLog.recommended_activity || ''} onChange={(e) => updateCycle({ recommended_activity: e.target.value })}>
-                <option value="">Select…</option>
-                {ACTIVITIES.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="field">
-            <label>💖 Symptoms</label>
-            <div className="settings-module-list">
-              {SYMPTOMS.map((s) => {
-                const isOn = (cycleLog.symptoms || []).includes(s)
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
-                    onClick={() => updateCycle({ symptoms: toggleSymptom(cycleLog.symptoms, s) })}
+          )}
+
+          {cycleSettings.last_period_start && era && (
+            <>
+              {/* Summary card */}
+              <div className="calendar-card booknook-progress-card">
+                <p className="module-group-label">🌸 CYCLE DAY {cycleDay}</p>
+                <div className="cycle-ring-wrap">
+                  <div
+                    className="cycle-ring"
+                    style={{
+                      background: `conic-gradient(#D9A8B8 0% ${(periodLength / cycleLength) * 100}%, #AFC5A5 ${(periodLength / cycleLength) * 100}% ${((Math.round(cycleLength / 2) - 3) / cycleLength) * 100}%, #E9C86A ${((Math.round(cycleLength / 2) - 3) / cycleLength) * 100}% ${((Math.round(cycleLength / 2) + 2) / cycleLength) * 100}%, #8FC2BE ${((Math.round(cycleLength / 2) + 2) / cycleLength) * 100}% 100%)`,
+                    }}
                   >
-                    <span className="settings-module-label">{s}</span>
-                    <span className={`settings-toggle ${isOn ? 'settings-toggle-on' : ''}`}>
-                      <span className="settings-toggle-knob" />
-                    </span>
-                  </button>
+                    <div className="cycle-ring-marker" style={{ transform: `rotate(${(cycleDay / cycleLength) * 360}deg)` }}>
+                      <span className="cycle-ring-dot" />
+                    </div>
+                    <div className="cycle-ring-hole">
+                      <span className="cycle-ring-icon">{era.icon}</span>
+                    </div>
+                  </div>
+                  <div className="cycle-ring-legend">
+                    <span><span className="cycle-legend-dot" style={{ background: '#D9A8B8' }} /> Menstrual</span>
+                    <span><span className="cycle-legend-dot" style={{ background: '#AFC5A5' }} /> Follicular</span>
+                    <span><span className="cycle-legend-dot" style={{ background: '#E9C86A' }} /> Ovulation</span>
+                    <span><span className="cycle-legend-dot" style={{ background: '#8FC2BE' }} /> Luteal</span>
+                  </div>
+                </div>
+                <div className="goals-summary-row">
+                  <span className="goals-summary-label">{era.icon} Era</span>
+                  <span className="goals-summary-value">{era.name}</span>
+                </div>
+                <div className="goals-summary-row">
+                  <span className="goals-summary-label">💖 Energy</span>
+                  <span className="goals-summary-value">{era.energy}</span>
+                </div>
+                <div className="goals-summary-row">
+                  <span className="goals-summary-label">🏃 Best for</span>
+                  <span className="goals-summary-value">{era.bestFor.slice(0, 2).join(' & ')}</span>
+                </div>
+                <div className="goals-summary-row">
+                  <span className="goals-summary-label">💧 Water Goal</span>
+                  <span className="goals-summary-value">{(waterGoal * 0.25).toFixed(1)}L</span>
+                </div>
+                {daysToNextPeriod && (
+                  <div className="goals-summary-row">
+                    <span className="goals-summary-label">📅 Next Period</span>
+                    <span className="goals-summary-value">In {daysToNextPeriod} days</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Era description card */}
+              <div className="upnext-section">
+                <p className="module-group-label">{era.icon} {era.name.toUpperCase()}</p>
+                <div className="calendar-card" style={{ borderTop: `4px solid ${era.color}` }}>
+                  <p className="cake-club-subtitle" style={{ fontSize: 20, marginBottom: 10 }}>{era.caption}</p>
+                  <p className="brain-dump-content" style={{ marginBottom: 16 }}>{era.description}</p>
+
+                  <p className="module-group-label">CURRENT VIBE</p>
+                  <select value={cycleLog.vibe || ''} onChange={(e) => updateCycle({ vibe: e.target.value })} style={{ marginBottom: 16 }}>
+                    <option value="">Pick your vibe…</option>
+                    {era.vibes.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </select>
+
+                  <p className="module-group-label">BEST FOR</p>
+                  <div className="goal-badges-row" style={{ marginBottom: 12 }}>
+                    {era.bestFor.map((b) => <span className="goal-badge" key={b}>{b}</span>)}
+                  </div>
+
+                  <p className="momentum-caption">{era.reminder}</p>
+                </div>
+              </div>
+
+              {/* Predictions */}
+              {predictions.length > 0 && (
+                <div className="upnext-section">
+                  <p className="module-group-label">🔮 COMING UP</p>
+                  <div className="calendar-card goals-summary-card">
+                    {predictions.map((p) => (
+                      <div className="goals-summary-row" key={p.text}>
+                        <span className="goals-summary-label">In {p.days} day{p.days > 1 ? 's' : ''}</span>
+                        <span className="goals-summary-value">{p.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Update period / settings */}
+              <div className="upnext-section">
+                <p className="module-group-label">🩸 PERIOD TRACKING</p>
+                <div className="calendar-card">
+                  <p className="field-hint">Last period started {formatDateShort(cycleSettings.last_period_start)}. Starting a new one?</p>
+                  <div className="log-value-row" style={{ marginBottom: 16 }}>
+                    <input type="date" className="log-value-input" value={periodInput} onChange={(e) => setPeriodInput(e.target.value)} />
+                    <button className="btn-check log-value-btn" onClick={() => logPeriodStart(periodInput || todayStr())}>Log new period</button>
+                  </div>
+                  <div className="field-row">
+                    <div className="field">
+                      <label>Average cycle length (days)</label>
+                      <input type="number" defaultValue={cycleLength} onBlur={(e) => updateCycleLength('cycle_length', e.target.value)} />
+                    </div>
+                    <div className="field">
+                      <label>Average period length (days)</label>
+                      <input type="number" defaultValue={periodLength} onBlur={(e) => updateCycleLength('period_length', e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Symptoms & extras */}
+          <div className="upnext-section">
+            <p className="module-group-label">💖 TODAY'S DETAILS</p>
+            <div className="calendar-card">
+              <div className="field-row">
+                <div className="field">
+                  <label>💧 Flow</label>
+                  <select value={cycleLog.flow || ''} onChange={(e) => updateCycle({ flow: e.target.value })}>
+                    <option value="">Select…</option>
+                    {FLOW_LEVELS.map((f) => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>🧘 Recommended Activity</label>
+                  <select value={cycleLog.recommended_activity || ''} onChange={(e) => updateCycle({ recommended_activity: e.target.value })}>
+                    <option value="">Select…</option>
+                    {ACTIVITIES.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label>💖 Symptoms</label>
+                <div className="settings-module-list">
+                  {SYMPTOMS.map((s) => {
+                    const isOn = (cycleLog.symptoms || []).includes(s)
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
+                        onClick={() => updateCycle({ symptoms: toggleSymptom(cycleLog.symptoms, s) })}
+                      >
+                        <span className="settings-module-label">{s}</span>
+                        <span className={`settings-toggle ${isOn ? 'settings-toggle-on' : ''}`}>
+                          <span className="settings-toggle-knob" />
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cycle Dashboard Summary legend */}
+          <div className="upnext-section">
+            <p className="module-group-label">✨ CYCLE DASHBOARD SUMMARY</p>
+            <div className="finished-shelf">
+              {ERA_ORDER.map((key) => {
+                const e = CYCLE_ERAS[key]
+                return (
+                  <div className="library-card library-card-small" key={key} style={{ borderTop: `4px solid ${e.color}` }}>
+                    <h3 className="contact-name">{e.icon} {e.name}</h3>
+                    <p className="contact-relationship">{e.summaryTagline}</p>
+                  </div>
                 )
               })}
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {tab === 'summary' && (

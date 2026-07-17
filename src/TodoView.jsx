@@ -22,6 +22,26 @@ const REPEAT_OPTIONS = [
   { key: 'custom', label: '✨ Custom Repeat' },
 ]
 
+const DAY_OPTIONS = [
+  { key: 'sunday', label: 'Sun' },
+  { key: 'monday', label: 'Mon' },
+  { key: 'tuesday', label: 'Tue' },
+  { key: 'wednesday', label: 'Wed' },
+  { key: 'thursday', label: 'Thu' },
+  { key: 'friday', label: 'Fri' },
+  { key: 'saturday', label: 'Sat' },
+]
+
+function toggleDay(current, day) {
+  const arr = Array.isArray(current) ? current : []
+  return arr.includes(day) ? arr.filter((d) => d !== day) : [...arr, day]
+}
+
+function formatDays(days) {
+  if (!days || days.length === 0) return 'Pick days'
+  return days.map((d) => DAY_OPTIONS.find((o) => o.key === d)?.label).join(', ')
+}
+
 function repeatInfo(key) {
   return REPEAT_OPTIONS.find((r) => r.key === key) || REPEAT_OPTIONS[0]
 }
@@ -61,7 +81,13 @@ function shouldReset(todo, now) {
   const last = new Date(todo.last_reset_date + 'T00:00:00')
   if (todo.repeat_type === 'weekly') return (now - last) / 86400000 >= 7
   if (todo.repeat_type === 'monthly') return now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear()
-  if (todo.repeat_type === 'custom') return false
+  if (todo.repeat_type === 'custom') {
+    const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const todayKey = dayKeys[now.getDay()]
+    const days = todo.custom_days || []
+    if (!days.includes(todayKey)) return false
+    return todo.last_reset_date !== todayStr()
+  }
   return todo.last_reset_date !== todayStr()
 }
 
@@ -80,11 +106,13 @@ export default function TodoView() {
   const [newDate, setNewDate] = useState('')
   const [newPriority, setNewPriority] = useState('next_up')
   const [newRepeat, setNewRepeat] = useState('none')
+  const [newCustomDays, setNewCustomDays] = useState([])
   const [adding, setAdding] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [expandedNotes, setExpandedNotes] = useState({})
   const [noteInputs, setNoteInputs] = useState({})
+  const [editingDaysId, setEditingDaysId] = useState(null)
 
   useEffect(() => {
     fetchTodos()
@@ -145,6 +173,7 @@ export default function TodoView() {
         category,
         is_recurring: isRecurring,
         repeat_type: isRecurring ? newRepeat : null,
+        custom_days: newRepeat === 'custom' ? newCustomDays : [],
         last_reset_date: isRecurring ? todayStr() : null,
         user_id,
       })
@@ -156,6 +185,7 @@ export default function TodoView() {
     setNewText('')
     setNewDate('')
     setNewRepeat('none')
+    setNewCustomDays([])
     fetchTodos()
   }
 
@@ -165,6 +195,18 @@ export default function TodoView() {
       .from('todos')
       .update({ is_recurring: isRecurring, repeat_type: isRecurring ? repeatType : null, last_reset_date: isRecurring ? todayStr() : null })
       .eq('id', todo.id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    if (repeatType === 'custom') {
+      setEditingDaysId(todo.id)
+    }
+    fetchTodos()
+  }
+
+  async function saveCustomDays(todo, days) {
+    const { error } = await supabase.from('todos').update({ custom_days: days }).eq('id', todo.id)
     if (error) {
       setError(error.message)
       return
@@ -310,6 +352,20 @@ export default function TodoView() {
             <option key={r.key} value={r.key}>{r.label}</option>
           ))}
         </select>
+        {newRepeat === 'custom' && (
+          <div className="custom-days-row">
+            {DAY_OPTIONS.map((d) => (
+              <button
+                key={d.key}
+                type="button"
+                className={`custom-day-chip ${newCustomDays.includes(d.key) ? 'custom-day-chip-on' : ''}`}
+                onClick={() => setNewCustomDays(toggleDay(newCustomDays, d.key))}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="filter-row">
@@ -375,11 +431,33 @@ export default function TodoView() {
                       {formatDate(t.due_date)}
                     </span>
                   )}
+                  {t.is_recurring && t.repeat_type === 'custom' && (
+                    <button className="weather-location-link" onClick={() => setEditingDaysId(editingDaysId === t.id ? null : t.id)}>
+                      📆 {formatDays(t.custom_days)}
+                    </button>
+                  )}
                   <button className="weather-location-link" onClick={() => toggleNotesExpanded(t)}>
                     {t.notes ? '📝 Notes' : '📝 Add notes'}
                   </button>
                   <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
                 </div>
+                {editingDaysId === t.id && (
+                  <div className="todo-notes-panel">
+                    <span className="booknook-stat-label">REPEATS ON…</span>
+                    <div className="custom-days-row" style={{ marginTop: 8 }}>
+                      {DAY_OPTIONS.map((d) => (
+                        <button
+                          key={d.key}
+                          type="button"
+                          className={`custom-day-chip ${(t.custom_days || []).includes(d.key) ? 'custom-day-chip-on' : ''}`}
+                          onClick={() => saveCustomDays(t, toggleDay(t.custom_days, d.key))}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {notesOpen && (
                   <div className="todo-notes-panel">
                     <div className="todo-notes-header">

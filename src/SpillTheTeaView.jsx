@@ -73,7 +73,8 @@ export default function SpillTheTeaView() {
   }
 
   async function changeStatus(item, status) {
-    await supabase.from('dev_feedback').update({ status }).eq('id', item.id)
+    const { error } = await supabase.from('dev_feedback').update({ status }).eq('id', item.id)
+    if (error) { setError(error.message); return }
     fetchItems()
   }
 
@@ -142,7 +143,6 @@ export default function SpillTheTeaView() {
                     style={{ marginTop: 10 }}
                     value={item.status || 'open'}
                     onChange={(e) => changeStatus(item, e.target.value)}
-                    disabled={!isMine}
                   >
                     {STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                   </select>

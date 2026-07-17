@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenModules, setHiddenModules } from './lib/localPrefs'
+import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea } from './lib/localPrefs'
 import Auth from './Auth'
 import SettingsView from './SettingsView'
 import Dashboard from './Dashboard'
@@ -36,6 +36,7 @@ function App() {
   const [view, setView] = useState('home')
   const [session, setSession] = useState(undefined)
   const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
+  const [hasUnseenTea, setHasUnseenTea] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -48,6 +49,26 @@ function App() {
 
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!session) return
+    checkUnseenTea()
+  }, [session])
+
+  useEffect(() => {
+    if (view === 'spillthetea' && hasUnseenTea) {
+      setLastSeenTea(new Date().toISOString())
+      setHasUnseenTea(false)
+    }
+  }, [view])
+
+  async function checkUnseenTea() {
+    const lastSeen = getLastSeenTea()
+    let query = supabase.from('dev_feedback').select('id', { count: 'exact', head: true })
+    if (lastSeen) query = query.gt('created_at', lastSeen)
+    const { count } = await query
+    setHasUnseenTea((count || 0) > 0)
+  }
 
   useEffect(() => {
     if (hiddenModules.includes(view)) setView('home')
@@ -89,6 +110,7 @@ function App() {
               <span className="num">{item.num}</span>
               {item.label}
               {!item.enabled && ' (soon)'}
+              {item.key === 'spillthetea' && hasUnseenTea && <span className="nav-notification-dot" />}
             </button>
           ))}
         </nav>
