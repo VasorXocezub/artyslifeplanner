@@ -2142,35 +2142,8 @@
 
 .hero-quote-card {
   position: relative;
-  background: var(--surface);
-  padding: 30px 30px 34px;
-  border-radius: 8px;
   max-width: 280px;
-  min-width: 220px;
-  box-shadow: 0 6px 18px rgba(30, 92, 87, 0.14);
-}
-
-.hero-quote-card::before,
-.hero-quote-card::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 11px;
-  background-image: radial-gradient(circle 11px at 11px 11px, var(--surface) 11px, transparent 11.5px);
-  background-size: 22px 22px;
-  background-repeat: repeat-x;
-}
-
-.hero-quote-card::before {
-  top: -10px;
-  background-position: 0 0;
-}
-
-.hero-quote-card::after {
-  bottom: -10px;
-  transform: scaleY(-1);
-  background-position: 0 0;
+  min-width: 200px;
 }
 
 .hero-quote-mark {
