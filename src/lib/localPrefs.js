@@ -54,6 +54,17 @@ export function setLastSeenTea(iso) {
   localStorage.setItem('lastSeenTea', iso)
 }
 
+export function getHiddenWellnessMetrics() {
+  try {
+    return JSON.parse(localStorage.getItem('hiddenWellnessMetrics') || '[]')
+  } catch {
+    return []
+  }
+}
+export function setHiddenWellnessMetrics(arr) {
+  localStorage.setItem('hiddenWellnessMetrics', JSON.stringify(arr))
+}
+
 export function getHiddenBraindumpTabs() {
   try {
     return JSON.parse(localStorage.getItem('hiddenBraindumpTabs') || '[]')

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 
 const MONTH_NAMES = [
@@ -49,6 +49,8 @@ function rsvpInfo(key) {
   return RSVP_OPTIONS.find((r) => r.key === key) || RSVP_OPTIONS[0]
 }
 
+const NO_RSVP_TYPES = ['holiday_magic', 'reminder', 'appointment', 'treat_yourself', 'ceo_era', 'growth_moment', 'main_character', 'adventure']
+
 function parseLocalDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number)
   return { year: y, month: m - 1, day: d }
@@ -68,14 +70,17 @@ function formatTime(t) {
 
 const emptyForm = {
   title: '', event_date: '', event_time: '', location: '',
-  event_type: 'cozy_gathering', rsvp: 'going', notes: '', holiday_subcategory: '',
+  event_type: 'cozy_gathering', rsvp: 'going', notes: '', holiday_subcategory: '', custom_holiday: '',
 }
 
 export default function SocialCalendarView() {
   const [events, setEvents] = useState([])
+  const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [viewDate, setViewDate] = useState(new Date())
+  const [highlightDate, setHighlightDate] = useState(null)
+  const calendarRef = useRef(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -88,13 +93,14 @@ export default function SocialCalendarView() {
   async function fetchEvents() {
     setLoading(true)
     setError(null)
-    const { data, error } = await supabase
-      .from('social_events')
-      .select('*')
-      .order('event_date', { ascending: true })
+    const [{ data, error }, { data: contactsData }] = await Promise.all([
+      supabase.from('social_events').select('*').order('event_date', { ascending: true }),
+      supabase.from('contacts').select('*').not('birthday', 'is', null),
+    ])
 
     if (error) setError(error.message)
     else setEvents(data)
+    setContacts(contactsData || [])
     setLoading(false)
   }
 
@@ -114,7 +120,10 @@ export default function SocialCalendarView() {
       event_type: event.event_type || 'cozy_gathering',
       rsvp: event.rsvp || 'going',
       notes: event.notes || '',
-      holiday_subcategory: event.holiday_subcategory || '',
+      holiday_subcategory: event.holiday_subcategory && !HOLIDAY_SUBCATEGORIES.some((h) => h.key === event.holiday_subcategory)
+        ? 'other_holiday' : (event.holiday_subcategory || ''),
+      custom_holiday: event.holiday_subcategory && !HOLIDAY_SUBCATEGORIES.some((h) => h.key === event.holiday_subcategory)
+        ? event.holiday_subcategory : '',
     })
     setModalOpen(true)
   }
@@ -136,9 +145,11 @@ export default function SocialCalendarView() {
       event_time: form.event_time || null,
       location: form.location.trim() || null,
       event_type: form.event_type,
-      rsvp: form.rsvp,
+      rsvp: NO_RSVP_TYPES.includes(form.event_type) ? null : form.rsvp,
       notes: form.notes.trim() || null,
-      holiday_subcategory: form.event_type === 'holiday_magic' ? (form.holiday_subcategory || null) : null,
+      holiday_subcategory: form.event_type === 'holiday_magic'
+        ? (form.holiday_subcategory === 'other_holiday' && form.custom_holiday.trim() ? form.custom_holiday.trim() : (form.holiday_subcategory || null))
+        : null,
     }
 
     let error
@@ -187,6 +198,18 @@ export default function SocialCalendarView() {
     return map
   }, [events, month, year])
 
+  const birthdaysByDay = useMemo(() => {
+    const map = {}
+    for (const c of contacts) {
+      if (!c.birthday) continue
+      const bd = parseLocalDate(c.birthday)
+      if (bd.month !== month) continue
+      if (!map[bd.day]) map[bd.day] = []
+      map[bd.day].push(c)
+    }
+    return map
+  }, [contacts, month])
+
   const cells = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -199,21 +222,43 @@ export default function SocialCalendarView() {
   const upcoming = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return events
+    const eventItems = events
       .map((e) => {
         const d = parseLocalDate(e.event_date)
         const eventDate = new Date(d.year, d.month, d.day)
         const daysAway = Math.round((eventDate - today) / 86400000)
-        return { ...e, eventDate, daysAway, month: d.month, day: d.day }
+        return { ...e, eventDate, daysAway, month: d.month, day: d.day, isBirthday: false }
       })
       .filter((e) => e.daysAway >= 0)
-      .sort((a, b) => a.eventDate - b.eventDate)
-  }, [events])
+
+    const birthdayItems = contacts.map((c) => {
+      const bd = parseLocalDate(c.birthday)
+      let next = new Date(today.getFullYear(), bd.month, bd.day)
+      if (next < today) next = new Date(today.getFullYear() + 1, bd.month, bd.day)
+      const daysAway = Math.round((next - today) / 86400000)
+      return {
+        id: `bday-${c.id}`, title: `${c.name}'s Birthday`, event_type: 'birthday',
+        eventDate: next, daysAway, month: bd.month, day: bd.day, isBirthday: true, contact: c,
+      }
+    })
+
+    return [...eventItems, ...birthdayItems].sort((a, b) => a.eventDate - b.eventDate)
+  }, [events, contacts])
 
   const upNext = upcoming.slice(0, 3)
 
   function goToMonth(delta) {
     setViewDate(new Date(year, month + delta, 1))
+  }
+
+  function jumpToDate(dateStr) {
+    const d = parseLocalDate(dateStr)
+    setViewDate(new Date(d.year, d.month, 1))
+    setHighlightDate(dateStr)
+    setTimeout(() => {
+      calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+    setTimeout(() => setHighlightDate(null), 2500)
   }
 
   return (
@@ -223,7 +268,8 @@ export default function SocialCalendarView() {
           <h1 className="view-title">Social Club</h1>
           <p className="view-subtitle cake-club-subtitle">🌸 The group chat's HR department.</p>
         </div>
-        <div className="toolbar">
+        <div className="toolbar no-print">
+          <button className="btn-check" onClick={() => window.print()}>🖨️ Print / Save as PDF</button>
           <button className="btn-primary" onClick={() => openAdd()}>+ Add event</button>
         </div>
       </div>
@@ -234,28 +280,39 @@ export default function SocialCalendarView() {
       {!loading && !error && (
         <>
           {upNext.length > 0 && (
-            <div className="upnext-section">
+            <div className="upnext-section no-print">
               <p className="module-group-label">UP NEXT</p>
               <div className="card-grid">
                 {upNext.map((e, i) => {
-                  const typeInfo = eventTypeInfo(e.event_type)
-                  const rInfo = rsvpInfo(e.rsvp)
+                  const typeInfo = e.isBirthday ? { label: '🎂 Birthday' } : eventTypeInfo(e.event_type)
+                  const rInfo = e.isBirthday ? null : rsvpInfo(e.rsvp)
+                  const chipColor = e.isBirthday ? '#B896C9' : CHIP_COLORS[i % CHIP_COLORS.length]
                   return (
                     <div
                       className="contact-card upnext-card"
                       key={e.id}
-                      onClick={() => openEdit(e)}
-                      style={{ borderTopColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
+                      onClick={() => !e.isBirthday && openEdit(e)}
+                      style={{ borderTopColor: chipColor, cursor: e.isBirthday ? 'default' : 'pointer' }}
                     >
-                      <span className="status-badge" style={{ background: CHIP_COLORS[i % CHIP_COLORS.length] }}>
-                        {typeInfo.label}{e.holiday_subcategory && ` · ${HOLIDAY_SUBCATEGORIES.find((h) => h.key === e.holiday_subcategory)?.label || ''}`}
+                      <span className="status-badge" style={{ background: chipColor }}>
+                        {typeInfo.label}{!e.isBirthday && e.holiday_subcategory && ` · ${HOLIDAY_SUBCATEGORIES.find((h) => h.key === e.holiday_subcategory)?.label || `✨ ${e.holiday_subcategory}`}`}
                       </span>
                       <h3 className="contact-name">{e.title}</h3>
                       <p className="habit-schedule">
                         {formatMonthDay(e.month, e.day)}{e.event_time ? ` · ${formatTime(e.event_time)}` : ''} · {e.daysAway === 0 ? 'today!' : `in ${e.daysAway}d`}
                       </p>
                       {e.location && <p className="contact-relationship">📍 {e.location}</p>}
-                      <p className="progress-label">{rInfo.label}</p>
+                      {e.rsvp && <p className="progress-label">{rInfo.label}</p>}
+                      {e.isBirthday ? (
+                        <p className="field-hint">🎁 Manage gift ideas in Cake Club</p>
+                      ) : (
+                        <button
+                          className="weather-location-link"
+                          onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }}
+                        >
+                          📅 View in calendar
+                        </button>
+                      )}
                     </div>
                   )
                 })}
@@ -263,7 +320,7 @@ export default function SocialCalendarView() {
             </div>
           )}
 
-          <div className="calendar-card">
+          <div className="calendar-card print-calendar" ref={calendarRef}>
             <div className="calendar-nav">
               <button className="cal-nav-btn" onClick={() => goToMonth(-1)}>‹</button>
               <span className="cal-month-label">{MONTH_NAMES[month]} {year}</span>
@@ -273,20 +330,32 @@ export default function SocialCalendarView() {
               {DAY_NAMES.map((d) => (
                 <div key={d} className="cal-day-name">{d}</div>
               ))}
-              {cells.map((day, i) => (
+              {cells.map((day, i) => {
+                const cellIso = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null
+                return (
                 <div
                   key={i}
-                  className={`cal-cell ${day ? 'cal-cell-active' : 'cal-cell-empty'}`}
+                  className={`cal-cell ${day ? 'cal-cell-active' : 'cal-cell-empty'} ${cellIso && cellIso === highlightDate ? 'cal-cell-highlight' : ''}`}
                   onClick={() => {
                     if (!day) return
-                    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                    openAdd(iso)
+                    openAdd(cellIso)
                   }}
                 >
                   {day && <span className="cal-day-num">{day}</span>}
-                  {day && eventsByDay[day] && (
+                  {day && (eventsByDay[day] || birthdaysByDay[day]) && (
                     <div className="cal-chip-stack">
-                      {eventsByDay[day].map((e, ci) => (
+                      {(birthdaysByDay[day] || []).map((c) => (
+                        <span
+                          key={`bday-${c.id}`}
+                          className="cal-chip"
+                          style={{ background: '#B896C9' }}
+                          onClick={(ev) => ev.stopPropagation()}
+                          title="Manage in Cake Club"
+                        >
+                          🎂 {c.name}
+                        </span>
+                      ))}
+                      {(eventsByDay[day] || []).map((e, ci) => (
                         <span
                           key={e.id}
                           className="cal-chip"
@@ -302,32 +371,42 @@ export default function SocialCalendarView() {
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 
           {upcoming.length > 0 && (
-            <div className="upcoming-section">
+            <div className="upcoming-section no-print">
               <p className="module-group-label">EVERYTHING COMING UP</p>
               <div className="upcoming-list">
                 {upcoming.slice(0, 10).map((e, i) => (
                   <div
                     className="upcoming-row"
                     key={e.id}
-                    onClick={() => openEdit(e)}
-                    style={{ borderLeftColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
+                    onClick={() => !e.isBirthday && openEdit(e)}
+                    style={{ borderLeftColor: e.isBirthday ? '#B896C9' : CHIP_COLORS[i % CHIP_COLORS.length], cursor: e.isBirthday ? 'default' : 'pointer' }}
                   >
-                    <span className="upcoming-name">{eventTypeInfo(e.event_type).label.split(' ')[0]} {e.title}</span>
+                    <span className="upcoming-name">{e.isBirthday ? '🎂' : eventTypeInfo(e.event_type).label.split(' ')[0]} {e.title}</span>
                     <span className="upcoming-date">
                       {formatMonthDay(e.month, e.day)}{e.event_time ? ` · ${formatTime(e.event_time)}` : ''} · {e.daysAway === 0 ? 'today' : `in ${e.daysAway}d`}
                     </span>
+                    {!e.isBirthday && (
+                      <button
+                        className="upcoming-cal-jump"
+                        onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }}
+                        title="View in calendar"
+                      >
+                        📅
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {events.length === 0 && (
+          {events.length === 0 && contacts.length === 0 && (
             <div className="empty-state">
               <h3>No plans yet — let's fix that ✨</h3>
               <p>Tap a date above, or hit "+ Add event" to get your calendar looking cute.</p>
@@ -371,6 +450,14 @@ export default function SocialCalendarView() {
                       <option key={h.key} value={h.key}>{h.label}</option>
                     ))}
                   </select>
+                  {form.holiday_subcategory === 'other_holiday' && (
+                    <input
+                      style={{ marginTop: 8 }}
+                      value={form.custom_holiday}
+                      onChange={(e) => setForm({ ...form, custom_holiday: e.target.value })}
+                      placeholder="Type the holiday name…"
+                    />
+                  )}
                 </div>
               )}
               <div className="field-row">
@@ -400,14 +487,16 @@ export default function SocialCalendarView() {
                   placeholder="Where's it happening?"
                 />
               </div>
-              <div className="field">
-                <label>RSVP</label>
-                <select value={form.rsvp} onChange={(e) => setForm({ ...form, rsvp: e.target.value })}>
-                  {RSVP_OPTIONS.map((r) => (
-                    <option key={r.key} value={r.key}>{r.label}</option>
-                  ))}
-                </select>
-              </div>
+              {!NO_RSVP_TYPES.includes(form.event_type) && (
+                <div className="field">
+                  <label>RSVP</label>
+                  <select value={form.rsvp} onChange={(e) => setForm({ ...form, rsvp: e.target.value })}>
+                    {RSVP_OPTIONS.map((r) => (
+                      <option key={r.key} value={r.key}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="field">
                 <label>Notes</label>
                 <textarea

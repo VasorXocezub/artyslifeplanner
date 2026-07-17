@@ -47,7 +47,7 @@ export default function FinancesView() {
           <p className="view-subtitle cake-club-subtitle">💸 We listen and we don't judge.</p>
         </div>
         <div className="currency-picker">
-          <label>Main currency</label>
+          <label>Preferred Currency</label>
           <select value={currency} onChange={handleCurrencyChange}>
             {CURRENCIES.map((c) => (
               <option key={c.code} value={c.code}>{c.label}</option>

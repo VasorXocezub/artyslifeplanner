@@ -88,7 +88,7 @@ export default function SpillTheTeaView() {
 
   const filtered = items.filter((i) => {
     const matchesType = typeFilter === 'all' || i.type === typeFilter
-    const matchesStatus = statusFilter === 'all' || i.status === statusFilter
+    const matchesStatus = statusFilter === 'all' ? i.status !== 'done' : i.status === statusFilter
     return matchesType && matchesStatus
   })
 

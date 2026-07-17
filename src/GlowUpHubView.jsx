@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
-import { getHiddenGlowupTabs, getWellnessGoals, setWellnessGoals } from './lib/localPrefs'
+import { getHiddenGlowupTabs, getWellnessGoals, setWellnessGoals, getHiddenWellnessMetrics, setHiddenWellnessMetrics } from './lib/localPrefs'
 
 const MOODS = [
   '👑 Main Character', '✨ Glowing', '🌸 Soft & Happy', '💖 Loved Up', '🔥 Unstoppable',
@@ -118,6 +118,18 @@ function getPredictions(cycleDay, periodLength, cycleLength) {
   return preds.sort((a, b) => a.days - b.days)
 }
 
+const WELLNESS_METRICS = [
+  { key: 'water', label: '💧 Water / Hydration' },
+  { key: 'steps', label: '👟 Steps' },
+  { key: 'movement', label: '🏋️ Movement' },
+  { key: 'calories', label: '🍓 Calories' },
+  { key: 'protein', label: '💪 Protein' },
+  { key: 'fibre', label: '🌾 Fibre' },
+  { key: 'sleep', label: '😴 Sleep' },
+  { key: 'mood', label: '💖 Mood' },
+  { key: 'selfcare', label: '🎀 Self-Care Bingo' },
+]
+
 const TABS = [
   { key: 'today', label: '✨ Today' },
   { key: 'cycle', label: '🌸 Cycle' },
@@ -177,6 +189,14 @@ export default function GlowUpHubView() {
   const [sleepInput, setSleepInput] = useState('')
   const [editingGoals, setEditingGoals] = useState(false)
   const [goalInputs, setGoalInputs] = useState(getWellnessGoals())
+  const [hiddenMetrics, setHiddenMetricsState] = useState(getHiddenWellnessMetrics())
+  const [customizeOpen, setCustomizeOpen] = useState(false)
+
+  function toggleMetric(key) {
+    const next = hiddenMetrics.includes(key) ? hiddenMetrics.filter((m) => m !== key) : [...hiddenMetrics, key]
+    setHiddenMetricsState(next)
+    setHiddenWellnessMetrics(next)
+  }
 
   const hiddenTabs = getHiddenGlowupTabs()
   const visibleTabs = TABS.filter((t) => !hiddenTabs.includes(t.key))
@@ -372,6 +392,34 @@ export default function GlowUpHubView() {
       </div>
 
       {tab === 'today' && (
+        <div className="calendar-card" style={{ marginBottom: 18 }}>
+          <button className="weather-location-link" onClick={() => setCustomizeOpen(!customizeOpen)}>
+            ⚙️ Customize what you track
+          </button>
+          {customizeOpen && (
+            <div className="settings-module-list" style={{ marginTop: 12 }}>
+              {WELLNESS_METRICS.map((m) => {
+                const isOn = !hiddenMetrics.includes(m.key)
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
+                    onClick={() => toggleMetric(m.key)}
+                  >
+                    <span className="settings-module-label">{m.label}</span>
+                    <span className={`settings-toggle ${isOn ? 'settings-toggle-on' : ''}`}>
+                      <span className="settings-toggle-knob" />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'today' && (
         <>
           <div className="calendar-card momentum-card hero-glow-score">
             <p className="module-group-label">🌿 TODAY'S GLOW SCORE</p>
@@ -391,34 +439,49 @@ export default function GlowUpHubView() {
           <div className="calendar-card booknook-progress-card">
             <p className="module-group-label">TODAY'S WELLNESS</p>
             <div className="booknook-stats-grid">
+              {!hiddenMetrics.includes('water') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">💧 Water</span>
                 <span className="booknook-stat-value booknook-stat-small">{water} / {waterGoal} glasses</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('steps') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">👟 Steps</span>
                 <span className="booknook-stat-value booknook-stat-small">{(log.steps || 0).toLocaleString()} / {(log.steps_goal || 10000).toLocaleString()}</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('movement') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">🔥 Movement</span>
                 <span className="booknook-stat-value booknook-stat-small">{log.movement_mins || 0} mins</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('calories') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">🍓 Calories</span>
                 <span className="booknook-stat-value booknook-stat-small">{log.calories || 0} / {log.calories_goal || 1900}</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('sleep') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">😴 Sleep</span>
                 <span className="booknook-stat-value booknook-stat-small">{sleepH}h {sleepM}m</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('protein') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">💪 Protein</span>
                 <span className="booknook-stat-value booknook-stat-small">{log.protein_g || 0}g</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('fibre') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">🌾 Fibre</span>
                 <span className="booknook-stat-value booknook-stat-small">{log.fiber_g || 0}g</span>
               </div>
+              )}
+              {!hiddenMetrics.includes('mood') && (
               <div className="booknook-stat">
                 <span className="booknook-stat-label">💖 Mood</span>
                 <select value={log.mood || ''} onChange={(e) => updateLog({ mood: e.target.value })}>
@@ -426,6 +489,7 @@ export default function GlowUpHubView() {
                   {MOODS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
+              )}
             </div>
 
             {editingGoals ? (
@@ -468,6 +532,7 @@ export default function GlowUpHubView() {
             </div>
           </div>
 
+          {!hiddenMetrics.includes('selfcare') && (
           <div className="upnext-section">
             <p className="module-group-label">💖 SELF-CARE BINGO</p>
             <div className="calendar-card">
@@ -488,7 +553,9 @@ export default function GlowUpHubView() {
               </div>
             </div>
           </div>
+          )}
 
+          {!hiddenMetrics.includes('water') && (
           <div className="upnext-section">
             <p className="module-group-label">💧 HYDRATION</p>
             <div className="calendar-card">
@@ -505,7 +572,9 @@ export default function GlowUpHubView() {
               </div>
             </div>
           </div>
+          )}
 
+          {!hiddenMetrics.includes('steps') && (
           <div className="upnext-section">
             <p className="module-group-label">👟 STEPS</p>
             <div className="calendar-card">
@@ -529,7 +598,9 @@ export default function GlowUpHubView() {
               </div>
             </div>
           </div>
+          )}
 
+          {!hiddenMetrics.includes('movement') && (
           <div className="upnext-section">
             <p className="module-group-label">🏋️ TODAY'S MOVEMENT</p>
             <div className="calendar-card">
@@ -565,42 +636,56 @@ export default function GlowUpHubView() {
               </div>
             </div>
           </div>
+          )}
 
+          {(!hiddenMetrics.includes('calories') || !hiddenMetrics.includes('protein') || !hiddenMetrics.includes('fibre')) && (
           <div className="upnext-section">
             <p className="module-group-label">🍓 NUTRITION</p>
             <p className="field-hint">Keep it simple.</p>
             <div className="calendar-card">
-              <p className="progress-label">Calories: {log.calories || 0} / {log.calories_goal || 1900}</p>
-              <div className="log-value-row">
-                <input
-                  type="number"
-                  className="log-value-input"
-                  placeholder="Calories"
-                  value={caloriesInput}
-                  onChange={(e) => setCaloriesInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && updateLog({ calories: parseInt(caloriesInput, 10) || 0 })}
-                />
-                <button className="btn-check log-value-btn" onClick={() => updateLog({ calories: parseInt(caloriesInput, 10) || 0 })}>Update</button>
-              </div>
-              <div className="field-row" style={{ marginTop: 14 }}>
-                <div className="field">
-                  <label>Protein (g)</label>
+              {!hiddenMetrics.includes('calories') && (
+                <>
+                  <p className="progress-label">Calories: {log.calories || 0} / {log.calories_goal || 1900}</p>
                   <div className="log-value-row">
-                    <input type="number" className="log-value-input" value={proteinInput} onChange={(e) => setProteinInput(e.target.value)} />
-                    <button className="btn-check log-value-btn" onClick={() => updateLog({ protein_g: parseInt(proteinInput, 10) || 0 })}>Set</button>
+                    <input
+                      type="number"
+                      className="log-value-input"
+                      placeholder="Calories"
+                      value={caloriesInput}
+                      onChange={(e) => setCaloriesInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && updateLog({ calories: parseInt(caloriesInput, 10) || 0 })}
+                    />
+                    <button className="btn-check log-value-btn" onClick={() => updateLog({ calories: parseInt(caloriesInput, 10) || 0 })}>Update</button>
                   </div>
+                </>
+              )}
+              {(!hiddenMetrics.includes('protein') || !hiddenMetrics.includes('fibre')) && (
+                <div className="field-row" style={{ marginTop: 14 }}>
+                  {!hiddenMetrics.includes('protein') && (
+                    <div className="field">
+                      <label>Protein (g)</label>
+                      <div className="log-value-row">
+                        <input type="number" className="log-value-input" value={proteinInput} onChange={(e) => setProteinInput(e.target.value)} />
+                        <button className="btn-check log-value-btn" onClick={() => updateLog({ protein_g: parseInt(proteinInput, 10) || 0 })}>Set</button>
+                      </div>
+                    </div>
+                  )}
+                  {!hiddenMetrics.includes('fibre') && (
+                    <div className="field">
+                      <label>Fibre (g)</label>
+                      <div className="log-value-row">
+                        <input type="number" className="log-value-input" value={fiberInput} onChange={(e) => setFiberInput(e.target.value)} />
+                        <button className="btn-check log-value-btn" onClick={() => updateLog({ fiber_g: parseInt(fiberInput, 10) || 0 })}>Set</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="field">
-                  <label>Fibre (g)</label>
-                  <div className="log-value-row">
-                    <input type="number" className="log-value-input" value={fiberInput} onChange={(e) => setFiberInput(e.target.value)} />
-                    <button className="btn-check log-value-btn" onClick={() => updateLog({ fiber_g: parseInt(fiberInput, 10) || 0 })}>Set</button>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
+          )}
 
+          {!hiddenMetrics.includes('sleep') && (
           <div className="upnext-section">
             <p className="module-group-label">😴 SLEEP</p>
             <div className="calendar-card">
@@ -619,6 +704,7 @@ export default function GlowUpHubView() {
               </div>
             </div>
           </div>
+          )}
 
         </>
       )}

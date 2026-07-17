@@ -231,7 +231,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       ? "It's getting close — start thinking gifts 🎁"
       : 'On the horizon — plenty of time to plan ✨'
     statCandidates.push({
-      key: 'birthday', icon: '🎂', title: `${name}'s Birthday`,
+      key: 'birthday', nav: 'contacts', icon: '🎂', title: `${name}'s Birthday`,
       bigNumber: daysAway, unit: daysAway === 1 ? 'day to go' : 'days to go',
       subtitle, progressPct: Math.max(2, Math.round(((365 - Math.min(daysAway, 365)) / 365) * 100)),
       color: '#D9A8B8', insight: birthdayLabel().replace('🎂 ', ''),
@@ -239,7 +239,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('habits') && stats.habitsDoneToday > 0) {
     statCandidates.push({
-      key: 'habits', icon: '🌸', title: 'Habits',
+      key: 'habits', nav: 'habits', icon: '🌸', title: 'Habits',
       bigNumber: stats.habitsDoneToday, unit: stats.habitsDoneToday === 1 ? 'habit checked off' : 'habits checked off',
       subtitle: 'Look at you go, bestie ✨',
       progressPct: stats.habitsTotal > 0 ? Math.round((stats.habitsDoneToday / stats.habitsTotal) * 100) : null,
@@ -248,7 +248,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('finances') && stats.hasTransactions) {
     statCandidates.push({
-      key: 'net', icon: '🎀', title: 'Spending Power',
+      key: 'net', nav: 'finances', icon: '🎀', title: 'Spending Power',
       bigNumber: formatMoney(stats.netBalance, currency), unit: '',
       subtitle: "You're keeping it cute with your money 💅",
       progressPct: null, color: '#164641', insight: `Spending power: ${formatMoney(stats.netBalance, currency)}`,
@@ -256,7 +256,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('finances') && stats.hasSavings) {
     statCandidates.push({
-      key: 'savings', icon: '✨', title: currentEraLabel,
+      key: 'savings', nav: 'finances', icon: '✨', title: currentEraLabel,
       bigNumber: formatMoney(stats.totalSaved, currency), unit: 'saved',
       subtitle: 'Every little bit adds up to something big 🌷',
       progressPct: null, color: '#B896C9', insight: `${currentEraLabel}: ${formatMoney(stats.totalSaved, currency)} saved`,
@@ -264,7 +264,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('goals') && stats.goalsInProgress > 0) {
     statCandidates.push({
-      key: 'goals', icon: '🎯', title: 'Your Goals',
+      key: 'goals', nav: 'goals', icon: '🎯', title: 'Your Goals',
       bigNumber: stats.goalsInProgress, unit: stats.goalsInProgress === 1 ? 'win waiting' : 'wins waiting',
       subtitle: 'Your dreams are so close, keep going ✨',
       progressPct: null, color: '#1E5C57', insight: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`,
@@ -272,7 +272,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('glowup') && stats.wellness?.steps > 0) {
     statCandidates.push({
-      key: 'steps', icon: '🚶', title: 'Walking Queen',
+      key: 'steps', nav: 'glowup', icon: '🚶', title: 'Walking Queen',
       bigNumber: Number(stats.wellness.steps).toLocaleString(), unit: 'steps',
       subtitle: 'Every step is a step toward glowing ✨',
       progressPct: Math.min(100, Math.round((stats.wellness.steps / (stats.wellness.steps_goal || 10000)) * 100)),
@@ -281,7 +281,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('booknook') && stats.currentlyReadingBook) {
     statCandidates.push({
-      key: 'reading', icon: '📚', title: stats.currentlyReadingBook.title,
+      key: 'reading', nav: 'booknook', icon: '📚', title: stats.currentlyReadingBook.title,
       bigNumber: stats.currentlyReadingBook.pct, unit: '% through',
       subtitle: 'A little escape is always worth it 📖',
       progressPct: stats.currentlyReadingBook.pct, color: '#8FC2BE',
@@ -291,7 +291,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   if (!hiddenModules.includes('social') && stats.nextSocialEvent) {
     const daysText = stats.nextSocialEvent.daysAway === 0 ? 'today' : stats.nextSocialEvent.daysAway === 1 ? 'tomorrow' : `in ${stats.nextSocialEvent.daysAway} days`
     statCandidates.push({
-      key: 'social', icon: '💌', title: stats.nextSocialEvent.title,
+      key: 'social', nav: 'social', icon: '💌', title: stats.nextSocialEvent.title,
       bigNumber: stats.nextSocialEvent.daysAway, unit: 'days away',
       subtitle: "Can't wait — it's going to be so fun 🎉",
       progressPct: null, color: '#C98A72', insight: `${stats.nextSocialEvent.title} ${daysText}`,
@@ -302,25 +302,25 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
 
   const insightItems = []
   if (!hiddenModules.includes('habits') && heroFocus?.key !== 'habits' && stats.habitsDoneToday > 0) {
-    insightItems.push({ icon: '🌸', text: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} completed today` })
+    insightItems.push({ icon: '🌸', text: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} completed today`, nav: 'habits' })
   }
   if (!hiddenModules.includes('finances') && heroFocus?.key !== 'net' && stats.hasTransactions) {
-    insightItems.push({ icon: '💸', text: `Spending power: ${formatMoney(stats.netBalance, currency)}` })
+    insightItems.push({ icon: '💸', text: `Spending power: ${formatMoney(stats.netBalance, currency)}`, nav: 'finances' })
   }
   if (!hiddenModules.includes('finances') && heroFocus?.key !== 'savings' && stats.hasSavings) {
-    insightItems.push({ icon: '✨', text: `${formatMoney(stats.totalSaved, currency)} saved toward your goals` })
+    insightItems.push({ icon: '✨', text: `${formatMoney(stats.totalSaved, currency)} saved toward your goals`, nav: 'finances' })
   }
   if (!hiddenModules.includes('wishlist') && stats.shoppingPlanned > 0) {
-    insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} item${stats.shoppingPlanned > 1 ? 's' : ''} on your wishlist` })
+    insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} item${stats.shoppingPlanned > 1 ? 's' : ''} on your wishlist`, nav: 'wishlist' })
   }
   if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {
-    insightItems.push({ icon: '🍓', text: `${stats.shoppingGroceries} essential${stats.shoppingGroceries > 1 ? 's' : ''} to grab` })
+    insightItems.push({ icon: '🍓', text: `${stats.shoppingGroceries} essential${stats.shoppingGroceries > 1 ? 's' : ''} to grab`, nav: 'shopping' })
   }
   if (!hiddenModules.includes('todos') && stats.todosOpen > 0) {
-    insightItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} waiting` })
+    insightItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} waiting`, nav: 'todos' })
   }
   if (!hiddenModules.includes('goals') && heroFocus?.key !== 'goals' && stats.goalsInProgress > 0) {
-    insightItems.push({ icon: '🎯', text: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you` })
+    insightItems.push({ icon: '🎯', text: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`, nav: 'goals' })
   }
   if (!hiddenModules.includes('glowup') && stats.wellness) {
     const w = stats.wellness
@@ -332,11 +332,11 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     ]
     const glowPct = Math.round((glowItems.filter(Boolean).length / glowItems.length) * 100)
     if (glowPct > 0) {
-      insightItems.push({ icon: '🌿', text: `Glow Score: ${glowPct}%` })
+      insightItems.push({ icon: '🌿', text: `Glow Score: ${glowPct}%`, nav: 'glowup' })
     }
   }
   if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
-    insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month` })
+    insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month`, nav: 'contacts' })
   }
 
   return (
@@ -364,7 +364,11 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       {!loading && (heroFocus || insightItems.length > 0) && (
         <>
           {heroFocus && (
-            <div className="hero-highlight-strip" style={{ '--focus-accent': heroFocus.color }}>
+            <button
+              className="hero-highlight-strip"
+              style={{ '--focus-accent': heroFocus.color }}
+              onClick={() => heroFocus.nav && onNavigate(heroFocus.nav)}
+            >
               <span className="hero-highlight-icon">{heroFocus.icon}</span>
               <span className="hero-highlight-title">{heroFocus.title}</span>
               <span className="hero-highlight-dot">•</span>
@@ -376,15 +380,15 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
                   <div className="hero-highlight-progress-fill" style={{ width: `${heroFocus.progressPct}%` }} />
                 </div>
               )}
-            </div>
+            </button>
           )}
           {insightItems.length > 0 && (
             <div className="hero-stats-grid">
               {insightItems.map((item, i) => (
-                <div className="hero-stats-tile" key={i}>
+                <button className="hero-stats-tile" key={i} onClick={() => item.nav && onNavigate(item.nav)}>
                   <span className="hero-stats-tile-icon">{item.icon}</span>
                   <span className="hero-stats-tile-text">{item.text}</span>
-                </div>
+                </button>
               ))}
             </div>
           )}

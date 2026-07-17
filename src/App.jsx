@@ -35,7 +35,12 @@ const NAV_ITEMS = [
 ]
 
 function App() {
-  const [view, setView] = useState('home')
+  const [view, setViewState] = useState(() => localStorage.getItem('lastView') || 'home')
+
+  function setView(v) {
+    setViewState(v)
+    localStorage.setItem('lastView', v)
+  }
   const [session, setSession] = useState(undefined)
   const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
   const [hasUnseenTea, setHasUnseenTea] = useState(false)
