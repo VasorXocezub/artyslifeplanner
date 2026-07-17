@@ -263,6 +263,8 @@
   border: 2px solid var(--border);
   cursor: pointer;
   transition: transform 0.14s ease, box-shadow 0.14s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .contact-card::before {
@@ -292,9 +294,9 @@
 }
 
 .contact-name {
-  font-family: var(--font-script);
-  font-size: 19px;
-  font-weight: 400;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
   line-height: 1.3;
   margin: 0;
   color: var(--ink);
@@ -1871,6 +1873,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .log-value-input {
@@ -2124,6 +2128,69 @@
   border-radius: 24px;
   background: linear-gradient(120deg, var(--coral-soft) 0%, var(--pink-soft) 55%, var(--peach-soft) 100%);
   box-shadow: 0 4px 18px rgba(30, 92, 87, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.hero-panel-main {
+  flex: 1;
+  min-width: 260px;
+}
+
+.hero-quote-card {
+  position: relative;
+  background: var(--surface);
+  padding: 30px 30px 34px;
+  border-radius: 8px;
+  max-width: 280px;
+  min-width: 220px;
+  box-shadow: 0 6px 18px rgba(30, 92, 87, 0.14);
+}
+
+.hero-quote-card::before,
+.hero-quote-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 11px;
+  background-image: radial-gradient(circle 11px at 11px 11px, var(--surface) 11px, transparent 11.5px);
+  background-size: 22px 22px;
+  background-repeat: repeat-x;
+}
+
+.hero-quote-card::before {
+  top: -10px;
+  background-position: 0 0;
+}
+
+.hero-quote-card::after {
+  bottom: -10px;
+  transform: scaleY(-1);
+  background-position: 0 0;
+}
+
+.hero-quote-mark {
+  font-family: var(--font-display);
+  font-size: 46px;
+  line-height: 0.5;
+  color: var(--coral);
+  opacity: 0.35;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.hero-quote-text {
+  font-family: var(--font-quote);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--coral);
+  margin: 0;
+  animation: heroMsgFade 0.6s ease;
 }
 
 .hero-title {

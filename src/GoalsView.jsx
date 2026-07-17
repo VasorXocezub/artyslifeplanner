@@ -27,32 +27,19 @@ const STATUS_COLORS = {
   done: '#B896C9',
 }
 
-const ERA_ICONS = [
-  [['health', 'wellness', 'fitness', 'gym', 'weight'], '🌿'],
-  [['career', 'work', 'business', 'job'], '💼'],
-  [['travel', 'adventure', 'trip'], '✈️'],
-  [['finance', 'money', 'save', 'saving'], '💰'],
-  [['love', 'relationship', 'dating'], '💕'],
-  [['home', 'house', 'move'], '🏠'],
-  [['learn', 'education', 'study', 'course'], '📚'],
-  [['creative', 'art', 'design', 'craft'], '🎨'],
+const ERA_OPTIONS = [
+  '🌸 Glow-Up Era', '💸 Rich Girl Era', '👑 Main Character Era', '🌿 Peace Era',
+  '💼 CEO Era', '💖 Lover Girl Era', '🏡 Cozy Girl Era', '📚 Smart Girl Era',
+  '✈️ Passport Princess Era', '💪 Strong Girl Era', '🎨 Creative Girl Era', '🎀 Dream Life Era',
+  '🔥 Discipline Era', '🌙 Healing Era', '🍒 Hot Girl Era', '🦋 Reinvention Era',
+  '⭐ Success Era', '☁️ Soft Life Era', '🧘 Wellness Era', '💎 Luxury Era',
+  '🛍️ Wishlist Era', '🏠 Homebody Era', '👶 Family Era', '🐾 Pet Mom Era',
+  '🌎 Adventure Era', '🎯 Level-Up Era', '📈 Money Moves Era', '✨ Becoming Her Era',
+  '💌 Self-Love Era', '🌻 Happy Girl Era', '🥂 Celebration Era', '🎄 Holiday Era',
+  '🧁 Hobby Era', '🎓 Student Era', '💻 Content Creator Era', '🚀 Side Hustle Era',
+  '🗂️ Life Admin Era', '🕊️ Fresh Start Era', '🌈 Bucket List Era', '🍵 Slow Living Era',
+  '💫 Future Me Era',
 ]
-
-function getEraIcon(category) {
-  if (!category) return '✨'
-  const lower = category.toLowerCase()
-  for (const [keywords, icon] of ERA_ICONS) {
-    if (keywords.some((k) => lower.includes(k))) return icon
-  }
-  return '✨'
-}
-
-function formatEraLabel(category) {
-  if (!category) return null
-  const trimmed = category.trim()
-  const hasEra = /era$/i.test(trimmed)
-  return `${getEraIcon(category)} ${trimmed}${hasEra ? '' : ' Era'}`
-}
 
 function formatDate(d) {
   if (!d) return null
@@ -236,10 +223,6 @@ export default function GoalsView() {
     fetchGoals()
   }
 
-  const knownCategories = Array.from(
-    new Set(goals.map((g) => g.category).filter(Boolean))
-  ).sort()
-
   const filtered = goals.filter((g) => {
     const q = search.toLowerCase()
     const matchesSearch =
@@ -307,7 +290,7 @@ export default function GoalsView() {
           {topEra && (
             <div className="goals-summary-row">
               <span className="goals-summary-label">🌸 Current Era</span>
-              <span className="goals-summary-value">{getEraIcon(topEra[0])} {topEra[0]}</span>
+              <span className="goals-summary-value">{topEra[0]}</span>
             </div>
           )}
         </div>
@@ -358,7 +341,7 @@ export default function GoalsView() {
             const pct = effectivePct(g)
             const stage = progressStage(pct)
             const badges = computeBadges(g)
-            const eraLabel = formatEraLabel(g.category)
+            const eraLabel = g.category
             return (
               <div
                 className="contact-card"
@@ -443,18 +426,16 @@ export default function GoalsView() {
                 />
               </div>
               <div className="field">
-                <label>Era / Category</label>
-                <input
+                <label>Era</label>
+                <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  placeholder="Wellness, Career, Adventure…"
-                  list="goal-category-options"
-                />
-                <datalist id="goal-category-options">
-                  {knownCategories.map((c) => (
-                    <option key={c} value={c} />
+                >
+                  <option value="">Pick your era…</option>
+                  {ERA_OPTIONS.map((e) => (
+                    <option key={e} value={e}>{e}</option>
                   ))}
-                </datalist>
+                </select>
               </div>
 
               <div className="field">
