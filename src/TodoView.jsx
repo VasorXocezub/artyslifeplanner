@@ -67,6 +67,13 @@ function todayStr() {
   return new Date().toISOString().split('T')[0]
 }
 
+function formatTimestamp(iso) {
+  if (!iso) return null
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' }) +
+    ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
 function momentumMessage(pct) {
   if (pct >= 100) return 'You did that! 👑'
   if (pct >= 70) return 'Almost there, keep going.'
@@ -253,7 +260,10 @@ export default function TodoView() {
   }
 
   async function saveNotes(todo) {
-    const { error } = await supabase.from('todos').update({ notes: noteInputs[todo.id] || null }).eq('id', todo.id)
+    const { error } = await supabase.from('todos').update({
+      notes: noteInputs[todo.id] || null,
+      notes_updated_at: new Date().toISOString(),
+    }).eq('id', todo.id)
     if (error) {
       setError(error.message)
       return
@@ -462,23 +472,39 @@ export default function TodoView() {
                   <div className="todo-notes-panel">
                     <div className="todo-notes-header">
                       <span className="booknook-stat-label">PROGRESS, CONTEXT, FOLLOW-UPS…</span>
-                      <button
-                        className="weather-location-link"
-                        onClick={() => toggleNotesVisible(t)}
-                      >
-                        {t.notes_visible === false ? '🙈 Hidden — tap to show' : '👀 Visible — tap to hide'}
+                      <button className="todo-visibility-toggle" onClick={() => toggleNotesVisible(t)}>
+                        <span className={`settings-toggle ${t.notes_visible === false ? '' : 'settings-toggle-on'}`}>
+                          <span className="settings-toggle-knob" />
+                        </span>
+                        {t.notes_visible === false ? '🙈 Hidden' : '👀 Visible'}
                       </button>
                     </div>
                     <textarea
+                      className="todo-notes-textarea"
                       value={noteInputs[t.id] !== undefined ? noteInputs[t.id] : (t.notes || '')}
                       onChange={(e) => setNoteInputs((v) => ({ ...v, [t.id]: e.target.value }))}
                       placeholder="Progress updates, notes, context, follow-up reminders…"
                     />
-                    <button className="btn-check log-value-btn" onClick={() => saveNotes(t)}>Save notes</button>
+                    <div className="todo-notes-footer">
+                      {t.notes_updated_at && (
+                        <span className="todo-notes-timestamp">Last updated {formatTimestamp(t.notes_updated_at)}</span>
+                      )}
+                      <button className="btn-check log-value-btn" onClick={() => saveNotes(t)}>Save notes</button>
+                    </div>
                   </div>
                 )}
-                {!notesOpen && t.notes && t.notes_visible !== false && (
-                  <p className="todo-notes-preview" onClick={() => toggleNotesExpanded(t)}>📝 {t.notes}</p>
+                {!notesOpen && t.notes && (
+                  <div className="todo-notes-preview-row">
+                    <p className="todo-notes-preview" onClick={() => toggleNotesExpanded(t)} style={{ opacity: t.notes_visible === false ? 0.4 : 1 }}>
+                      📝 {t.notes_visible === false ? 'Note hidden' : t.notes}
+                      {t.notes_updated_at && <span className="todo-notes-timestamp"> · {formatTimestamp(t.notes_updated_at)}</span>}
+                    </p>
+                    <button className="todo-visibility-toggle todo-visibility-toggle-small" onClick={() => toggleNotesVisible(t)}>
+                      <span className={`settings-toggle ${t.notes_visible === false ? '' : 'settings-toggle-on'}`}>
+                        <span className="settings-toggle-knob" />
+                      </span>
+                    </button>
+                  </div>
                 )}
               </div>
             )

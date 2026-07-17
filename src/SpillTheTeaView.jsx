@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 
+const ADMIN_USER_ID = '339b9f21-2842-4aec-8cbe-f04db5358ac2'
+
 const TYPES = [
   { key: 'bug', label: '🐛 Bug' },
   { key: 'suggestion', label: '💡 Suggestion' },
@@ -127,6 +129,8 @@ export default function SpillTheTeaView() {
           {filtered.map((item) => {
             const tInfo = typeInfo(item.type)
             const isMine = item.user_id === currentUserId
+            const isAdmin = currentUserId === ADMIN_USER_ID
+            const sInfo = statusInfo(item.status)
             return (
               <div className="todo-item-wrap" key={item.id}>
                 <div className="calendar-card" style={{ marginBottom: 10, padding: '16px 18px' }}>
@@ -138,14 +142,20 @@ export default function SpillTheTeaView() {
                   </div>
                   <p className="journey-date">{item.author_name} · {formatDate(item.created_at)}</p>
                   {item.description && <p className="brain-dump-content">{item.description}</p>}
-                  <select
-                    className="todo-priority-select"
-                    style={{ marginTop: 10 }}
-                    value={item.status || 'open'}
-                    onChange={(e) => changeStatus(item, e.target.value)}
-                  >
-                    {STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-                  </select>
+                  {isAdmin ? (
+                    <select
+                      className="todo-priority-select"
+                      style={{ marginTop: 10 }}
+                      value={item.status || 'open'}
+                      onChange={(e) => changeStatus(item, e.target.value)}
+                    >
+                      {STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                    </select>
+                  ) : (
+                    <span className="filter-pill" style={{ marginTop: 10, display: 'inline-block', cursor: 'default' }}>
+                      {sInfo.label}
+                    </span>
+                  )}
                 </div>
               </div>
             )

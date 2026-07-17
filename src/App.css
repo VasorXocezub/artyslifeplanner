@@ -738,7 +738,7 @@
 .todo-notes-panel {
   background: var(--bg);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   margin: 4px 0 10px 44px;
 }
 
@@ -749,11 +749,70 @@
   margin-bottom: 8px;
 }
 
+.todo-notes-textarea {
+  width: 100%;
+  min-height: 90px;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--ink);
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.todo-notes-textarea:focus {
+  border-color: var(--coral);
+}
+
+.todo-notes-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.todo-notes-timestamp {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+.todo-visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  flex-shrink: 0;
+}
+
+.todo-visibility-toggle-small {
+  margin-left: 44px;
+}
+
+.todo-notes-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 2px 0 8px 44px;
+}
+
 .todo-notes-preview {
   font-size: 12px;
   color: var(--ink-faint);
-  margin: 2px 0 8px 44px;
   cursor: pointer;
+  margin: 0;
+  flex: 1;
 }
 
 .cycle-ring-wrap {
