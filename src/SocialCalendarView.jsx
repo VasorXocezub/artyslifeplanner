@@ -74,7 +74,6 @@ const emptyForm = {
 
 export default function SocialCalendarView() {
   const [events, setEvents] = useState([])
-  const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [viewDate, setViewDate] = useState(new Date())
@@ -92,14 +91,10 @@ export default function SocialCalendarView() {
   async function fetchEvents() {
     setLoading(true)
     setError(null)
-    const [{ data, error }, { data: contactsData }] = await Promise.all([
-      supabase.from('social_events').select('*').order('event_date', { ascending: true }),
-      supabase.from('contacts').select('*').not('birthday', 'is', null),
-    ])
+    const { data, error } = await supabase.from('social_events').select('*').order('event_date', { ascending: true })
 
     if (error) setError(error.message)
     else setEvents(data)
-    setContacts(contactsData || [])
     setLoading(false)
   }
 
@@ -197,18 +192,6 @@ export default function SocialCalendarView() {
     return map
   }, [events, month, year])
 
-  const birthdaysByDay = useMemo(() => {
-    const map = {}
-    for (const c of contacts) {
-      if (!c.birthday) continue
-      const bd = parseLocalDate(c.birthday)
-      if (bd.month !== month) continue
-      if (!map[bd.day]) map[bd.day] = []
-      map[bd.day].push(c)
-    }
-    return map
-  }, [contacts, month])
-
   const cells = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -230,19 +213,8 @@ export default function SocialCalendarView() {
       })
       .filter((e) => e.daysAway >= 0)
 
-    const birthdayItems = contacts.map((c) => {
-      const bd = parseLocalDate(c.birthday)
-      let next = new Date(today.getFullYear(), bd.month, bd.day)
-      if (next < today) next = new Date(today.getFullYear() + 1, bd.month, bd.day)
-      const daysAway = Math.round((next - today) / 86400000)
-      return {
-        id: `bday-${c.id}`, title: `${c.name}'s Birthday`, event_type: 'birthday',
-        eventDate: next, daysAway, month: bd.month, day: bd.day, isBirthday: true, contact: c,
-      }
-    })
-
-    return [...eventItems, ...birthdayItems].sort((a, b) => a.eventDate - b.eventDate)
-  }, [events, contacts])
+    return eventItems.sort((a, b) => a.eventDate - b.eventDate)
+  }, [events])
 
   const upNext = upcoming.slice(0, 3)
 
@@ -283,18 +255,18 @@ export default function SocialCalendarView() {
               <p className="module-group-label">UP NEXT</p>
               <div className="card-grid">
                 {upNext.map((e, i) => {
-                  const typeInfo = e.isBirthday ? { label: '🎂 Birthday' } : eventTypeInfo(e.event_type)
-                  const rInfo = e.isBirthday ? null : rsvpInfo(e.rsvp)
-                  const chipColor = e.isBirthday ? '#B896C9' : CHIP_COLORS[i % CHIP_COLORS.length]
+                  const typeInfo = eventTypeInfo(e.event_type)
+                  const rInfo = rsvpInfo(e.rsvp)
+                  const chipColor = CHIP_COLORS[i % CHIP_COLORS.length]
                   return (
                     <div
                       className="contact-card upnext-card"
                       key={e.id}
-                      onClick={() => !e.isBirthday && openEdit(e)}
-                      style={{ borderTopColor: chipColor, cursor: e.isBirthday ? 'default' : 'pointer' }}
+                      onClick={() => openEdit(e)}
+                      style={{ borderTopColor: chipColor }}
                     >
                       <span className="status-badge" style={{ background: chipColor }}>
-                        {typeInfo.label}{!e.isBirthday && e.holiday_subcategory && ` · ${HOLIDAY_SUBCATEGORIES.find((h) => h.key === e.holiday_subcategory)?.label || `✨ ${e.holiday_subcategory}`}`}
+                        {typeInfo.label}{e.holiday_subcategory && ` · ${HOLIDAY_SUBCATEGORIES.find((h) => h.key === e.holiday_subcategory)?.label || `✨ ${e.holiday_subcategory}`}`}
                       </span>
                       <h3 className="contact-name">{e.title}</h3>
                       <p className="habit-schedule">
@@ -302,16 +274,12 @@ export default function SocialCalendarView() {
                       </p>
                       {e.location && <p className="contact-relationship">📍 {e.location}</p>}
                       {e.rsvp && <p className="progress-label">{rInfo.label}</p>}
-                      {e.isBirthday ? (
-                        <p className="field-hint">🎁 Manage gift ideas in Cake Club</p>
-                      ) : (
-                        <button
-                          className="weather-location-link"
-                          onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }}
-                        >
-                          📅 View in calendar
-                        </button>
-                      )}
+                      <button
+                        className="weather-location-link"
+                        onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }}
+                      >
+                        📅 View in calendar
+                      </button>
                     </div>
                   )
                 })}
@@ -341,19 +309,8 @@ export default function SocialCalendarView() {
                   }}
                 >
                   {day && <span className="cal-day-num">{day}</span>}
-                  {day && (eventsByDay[day] || birthdaysByDay[day]) && (
+                  {day && eventsByDay[day] && (
                     <div className="cal-chip-stack">
-                      {(birthdaysByDay[day] || []).map((c) => (
-                        <span
-                          key={`bday-${c.id}`}
-                          className="cal-chip"
-                          style={{ background: '#B896C9' }}
-                          onClick={(ev) => ev.stopPropagation()}
-                          title="Manage in Cake Club"
-                        >
-                          🎂 {c.name}
-                        </span>
-                      ))}
                       {(eventsByDay[day] || []).map((e, ci) => (
                         <span
                           key={e.id}
@@ -383,29 +340,27 @@ export default function SocialCalendarView() {
                   <div
                     className="upcoming-row"
                     key={e.id}
-                    onClick={() => !e.isBirthday && openEdit(e)}
-                    style={{ borderLeftColor: e.isBirthday ? '#B896C9' : CHIP_COLORS[i % CHIP_COLORS.length], cursor: e.isBirthday ? 'default' : 'pointer' }}
+                    onClick={() => openEdit(e)}
+                    style={{ borderLeftColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
                   >
-                    <span className="upcoming-name">{e.isBirthday ? '🎂' : eventTypeInfo(e.event_type).label.split(' ')[0]} {e.title}</span>
+                    <span className="upcoming-name">{eventTypeInfo(e.event_type).label.split(' ')[0]} {e.title}</span>
                     <span className="upcoming-date">
                       {formatMonthDay(e.month, e.day)}{e.event_time ? ` · ${formatTime(e.event_time)}` : ''} · {e.daysAway === 0 ? 'today' : `in ${e.daysAway}d`}
                     </span>
-                    {!e.isBirthday && (
-                      <button
-                        className="upcoming-cal-jump"
-                        onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }}
-                        title="View in calendar"
-                      >
-                        📅
-                      </button>
-                    )}
+                    <button
+                      className="upcoming-cal-jump"
+                      onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }}
+                      title="View in calendar"
+                    >
+                      📅
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {events.length === 0 && contacts.length === 0 && (
+          {events.length === 0 && (
             <div className="empty-state">
               <h3>No plans yet — let's fix that ✨</h3>
               <p>Tap a date above, or hit "+ Add event" to get your calendar looking cute.</p>
