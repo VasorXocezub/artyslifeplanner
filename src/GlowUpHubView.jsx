@@ -250,6 +250,21 @@ export default function GlowUpHubView() {
 
       {tab === 'today' && (
         <>
+          <div className="calendar-card momentum-card hero-glow-score">
+            <p className="module-group-label">🌿 TODAY'S GLOW SCORE</p>
+            <div className="momentum-track">
+              <div className="momentum-fill" style={{ width: `${scorePct}%` }} />
+            </div>
+            <p className="momentum-caption">{scorePct}% — {scoreItems.filter((s) => s.done).length} of {scoreItems.length} glowing</p>
+            <div className="glow-score-chips">
+              {scoreItems.map((s) => (
+                <span key={s.key} className={`glow-score-chip ${s.done ? 'glow-score-chip-on' : ''}`}>
+                  {s.done ? '✓' : '·'} {s.key}
+                </span>
+              ))}
+            </div>
+          </div>
+
           <div className="calendar-card booknook-progress-card">
             <p className="module-group-label">TODAY'S WELLNESS</p>
             <div className="booknook-stats-grid">
@@ -474,21 +489,6 @@ export default function GlowUpHubView() {
             </div>
           </div>
 
-          <div className="upnext-section">
-            <p className="module-group-label">🌿 TODAY'S GLOW SCORE</p>
-            <div className="calendar-card momentum-card">
-              {scoreItems.map((s) => (
-                <div className="goals-summary-row" key={s.key}>
-                  <span className="goals-summary-label">{s.key}</span>
-                  <span className="goals-summary-value">{s.done ? '✓' : '—'}</span>
-                </div>
-              ))}
-              <div className="momentum-track" style={{ marginTop: 12 }}>
-                <div className="momentum-fill" style={{ width: `${scorePct}%` }} />
-              </div>
-              <p className="momentum-caption">{scorePct}%</p>
-            </div>
-          </div>
         </>
       )}
 

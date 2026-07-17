@@ -18,14 +18,14 @@ import './App.css'
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
   { key: 'contacts', label: 'Cake Club', num: '01', enabled: true },
-  { key: 'goals', label: 'Goals', num: '02', enabled: true },
-  { key: 'habits', label: 'Habits', num: '03', enabled: true },
-  { key: 'finances', label: 'Finances', num: '04', enabled: true },
+  { key: 'social', label: 'Social Calendar', num: '02', enabled: true },
+  { key: 'goals', label: 'Goals', num: '03', enabled: true },
+  { key: 'habits', label: 'Habits', num: '04', enabled: true },
   { key: 'todos', label: 'To-Do', num: '05', enabled: true },
-  { key: 'shopping', label: 'Shopping List', num: '06', enabled: true },
+  { key: 'glowup', label: 'Glow Up Hub', num: '06', enabled: true },
   { key: 'booknook', label: 'Book Nook', num: '07', enabled: true },
-  { key: 'glowup', label: 'Glow Up Hub', num: '08', enabled: true },
-  { key: 'social', label: 'Social Calendar', num: '09', enabled: true },
+  { key: 'finances', label: 'Finances', num: '08', enabled: true },
+  { key: 'shopping', label: 'Shopping List', num: '09', enabled: true },
 ]
 
 function App() {

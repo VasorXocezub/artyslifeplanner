@@ -313,13 +313,26 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} wish${stats.shoppingPlanned > 1 ? 'es' : ''} on your wishlist` })
   }
   if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {
-    insightItems.push({ icon: '🍓', text: `${stats.shoppingGroceries} grocer${stats.shoppingGroceries > 1 ? 'ies' : 'y'} to buy` })
+    insightItems.push({ icon: '🍓', text: `${stats.shoppingGroceries} essential${stats.shoppingGroceries > 1 ? 's' : ''} to grab` })
   }
   if (!hiddenModules.includes('todos') && stats.todosOpen > 0) {
     insightItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} waiting` })
   }
   if (!hiddenModules.includes('goals') && heroFocus?.key !== 'goals' && stats.goalsInProgress > 0) {
     insightItems.push({ icon: '🎯', text: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you` })
+  }
+  if (!hiddenModules.includes('glowup') && stats.wellness) {
+    const w = stats.wellness
+    const glowItems = [
+      w.water_glasses >= (w.water_goal || 8),
+      (w.movement_mins || 0) >= 20,
+      Number(w.sleep_hours || 0) >= 7,
+      !!w.mood,
+    ]
+    const glowPct = Math.round((glowItems.filter(Boolean).length / glowItems.length) * 100)
+    if (glowPct > 0) {
+      insightItems.push({ icon: '🌿', text: `Glow Score: ${glowPct}%` })
+    }
   }
   if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
     insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month` })

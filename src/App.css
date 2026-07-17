@@ -653,6 +653,31 @@
   opacity: 1;
 }
 
+.hero-glow-score {
+  margin-bottom: 20px;
+}
+
+.glow-score-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.glow-score-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink-faint);
+}
+
+.glow-score-chip-on {
+  background: var(--coral-soft);
+  color: var(--coral);
+}
+
 .momentum-card {
   margin-bottom: 20px;
 }
