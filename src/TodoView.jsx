@@ -118,7 +118,8 @@ export default function TodoView() {
   const [showCompleted, setShowCompleted] = useState(false)
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [expandedNotes, setExpandedNotes] = useState({})
-  const [noteInputs, setNoteInputs] = useState({})
+  const [notesByTodo, setNotesByTodo] = useState({})
+  const [newNoteInputs, setNewNoteInputs] = useState({})
   const [editingDaysId, setEditingDaysId] = useState(null)
 
   useEffect(() => {
@@ -148,6 +149,7 @@ export default function TodoView() {
     const now = new Date()
     const today = todayStr()
     const toReset = (data || []).filter((t) => shouldReset(t, now))
+    let finalTodos = data
     if (toReset.length > 0) {
       await Promise.all(
         toReset.map((t) =>
@@ -158,9 +160,23 @@ export default function TodoView() {
         .from('todos')
         .select('*')
         .order('created_at', { ascending: true })
-      setTodos(refreshed || [])
-    } else {
-      setTodos(data)
+      finalTodos = refreshed || []
+    }
+    setTodos(finalTodos)
+
+    const ids = (finalTodos || []).map((t) => t.id)
+    if (ids.length > 0) {
+      const { data: notesData } = await supabase
+        .from('todo_notes')
+        .select('*')
+        .in('todo_id', ids)
+        .order('created_at', { ascending: false })
+      const grouped = {}
+      ;(notesData || []).forEach((n) => {
+        if (!grouped[n.todo_id]) grouped[n.todo_id] = []
+        grouped[n.todo_id].push(n)
+      })
+      setNotesByTodo(grouped)
     }
     setLoading(false)
   }
@@ -256,14 +272,23 @@ export default function TodoView() {
 
   function toggleNotesExpanded(todo) {
     setExpandedNotes((v) => ({ ...v, [todo.id]: !v[todo.id] }))
-    setNoteInputs((v) => ({ ...v, [todo.id]: v[todo.id] !== undefined ? v[todo.id] : (todo.notes || '') }))
   }
 
-  async function saveNotes(todo) {
-    const { error } = await supabase.from('todos').update({
-      notes: noteInputs[todo.id] || null,
-      notes_updated_at: new Date().toISOString(),
-    }).eq('id', todo.id)
+  async function addNote(todo) {
+    const text = (newNoteInputs[todo.id] || '').trim()
+    if (!text) return
+    const user_id = await getUserId()
+    const { error } = await supabase.from('todo_notes').insert({ todo_id: todo.id, text, user_id })
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setNewNoteInputs((v) => ({ ...v, [todo.id]: '' }))
+    fetchTodos()
+  }
+
+  async function toggleNotesVisible(todo) {
+    const { error } = await supabase.from('todos').update({ notes_visible: !todo.notes_visible }).eq('id', todo.id)
     if (error) {
       setError(error.message)
       return
@@ -271,8 +296,8 @@ export default function TodoView() {
     fetchTodos()
   }
 
-  async function toggleNotesVisible(todo) {
-    const { error } = await supabase.from('todos').update({ notes_visible: !todo.notes_visible }).eq('id', todo.id)
+  async function deleteNote(noteId) {
+    const { error } = await supabase.from('todo_notes').delete().eq('id', noteId)
     if (error) {
       setError(error.message)
       return
@@ -446,8 +471,11 @@ export default function TodoView() {
                       📆 {formatDays(t.custom_days)}
                     </button>
                   )}
-                  <button className="weather-location-link" onClick={() => toggleNotesExpanded(t)}>
-                    {t.notes ? '📝 Notes' : '📝 Add notes'}
+                  <button
+                    className={`todo-notes-btn ${notesOpen ? 'todo-notes-btn-open' : ''} ${(notesByTodo[t.id] || []).length > 0 ? 'todo-notes-btn-filled' : ''}`}
+                    onClick={() => toggleNotesExpanded(t)}
+                  >
+                    💬{(notesByTodo[t.id] || []).length > 0 && <span className="todo-notes-count">{notesByTodo[t.id].length}</span>}
                   </button>
                   <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
                 </div>
@@ -468,44 +496,45 @@ export default function TodoView() {
                     </div>
                   </div>
                 )}
-                {notesOpen && (
-                  <div className="todo-notes-panel">
-                    <div className="todo-notes-header">
-                      <span className="booknook-stat-label">PROGRESS, CONTEXT, FOLLOW-UPS…</span>
-                      <button className="todo-visibility-toggle" onClick={() => toggleNotesVisible(t)}>
-                        <span className={`settings-toggle ${t.notes_visible === false ? '' : 'settings-toggle-on'}`}>
-                          <span className="settings-toggle-knob" />
-                        </span>
-                        {t.notes_visible === false ? '🙈 Hidden' : '👀 Visible'}
-                      </button>
-                    </div>
-                    <textarea
-                      className="todo-notes-textarea"
-                      value={noteInputs[t.id] !== undefined ? noteInputs[t.id] : (t.notes || '')}
-                      onChange={(e) => setNoteInputs((v) => ({ ...v, [t.id]: e.target.value }))}
-                      placeholder="Progress updates, notes, context, follow-up reminders…"
-                    />
-                    <div className="todo-notes-footer">
-                      {t.notes_updated_at && (
-                        <span className="todo-notes-timestamp">Last updated {formatTimestamp(t.notes_updated_at)}</span>
+                <div className={`todo-notes-collapse ${notesOpen ? 'todo-notes-collapse-open' : ''}`}>
+                  <div className="todo-notes-collapse-inner">
+                    <div className="todo-notes-panel">
+                      <div className="todo-notes-header">
+                        <span className="booknook-stat-label">📝 PROGRESS, CONTEXT, FOLLOW-UPS…</span>
+                        <button className="todo-visibility-toggle" onClick={() => toggleNotesVisible(t)}>
+                          <span className={`settings-toggle ${t.notes_visible === false ? '' : 'settings-toggle-on'}`}>
+                            <span className="settings-toggle-knob" />
+                          </span>
+                          {t.notes_visible === false ? '🙈 Hidden' : '👀 Visible'}
+                        </button>
+                      </div>
+
+                      {(notesByTodo[t.id] || []).length > 0 && (
+                        <div className="todo-notes-log">
+                          {notesByTodo[t.id].map((n) => (
+                            <div className="todo-notes-log-entry" key={n.id}>
+                              <p className="todo-notes-log-text">{n.text}</p>
+                              <div className="todo-notes-log-footer">
+                                <span className="todo-notes-timestamp">{formatTimestamp(n.created_at)}</span>
+                                <button className="todo-notes-log-delete" onClick={() => deleteNote(n.id)}>×</button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
-                      <button className="btn-check log-value-btn" onClick={() => saveNotes(t)}>Save notes</button>
+
+                      <textarea
+                        className="todo-notes-textarea"
+                        value={newNoteInputs[t.id] || ''}
+                        onChange={(e) => setNewNoteInputs((v) => ({ ...v, [t.id]: e.target.value }))}
+                        placeholder="Add a new update…"
+                      />
+                      <div className="todo-notes-footer">
+                        <button className="btn-check log-value-btn" onClick={() => addNote(t)}>+ Add note</button>
+                      </div>
                     </div>
                   </div>
-                )}
-                {!notesOpen && t.notes && (
-                  <div className="todo-notes-preview-row">
-                    <p className="todo-notes-preview" onClick={() => toggleNotesExpanded(t)} style={{ opacity: t.notes_visible === false ? 0.4 : 1 }}>
-                      📝 {t.notes_visible === false ? 'Note hidden' : t.notes}
-                      {t.notes_updated_at && <span className="todo-notes-timestamp"> · {formatTimestamp(t.notes_updated_at)}</span>}
-                    </p>
-                    <button className="todo-visibility-toggle todo-visibility-toggle-small" onClick={() => toggleNotesVisible(t)}>
-                      <span className={`settings-toggle ${t.notes_visible === false ? '' : 'settings-toggle-on'}`}>
-                        <span className="settings-toggle-knob" />
-                      </span>
-                    </button>
-                  </div>
-                )}
+                </div>
               </div>
             )
           })}
