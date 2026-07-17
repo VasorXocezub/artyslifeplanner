@@ -384,7 +384,7 @@
 .modal {
   background: var(--surface);
   color: var(--ink);
-  width: 440px;
+  width: 480px;
   max-width: 92vw;
   max-height: 86vh;
   overflow-y: auto;
@@ -820,21 +820,10 @@
   align-items: center;
 }
 
-.ingredient-amount-input {
-  width: 60px;
-  flex-shrink: 0;
-  background: #fff;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  padding: 8px 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.ingredient-unit-select {
-  width: 70px;
-  flex-shrink: 0;
+.ingredient-row .ingredient-amount-input {
+  width: 48px;
+  flex: 0 0 48px;
+  min-width: 0;
   background: #fff;
   border: 2px solid var(--border);
   border-radius: 12px;
@@ -842,10 +831,24 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
+  text-align: center;
 }
 
-.ingredient-name-input {
-  flex: 1;
+.ingredient-row .ingredient-unit-select {
+  width: 56px;
+  flex: 0 0 56px;
+  min-width: 0;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ingredient-row .ingredient-name-input {
+  flex: 1 1 auto;
   min-width: 0;
   background: #fff;
   border: 2px solid var(--border);
@@ -857,13 +860,13 @@
 }
 
 .ingredient-remove-btn {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   background: none;
   border: none;
   color: var(--ink-faint);
   font-size: 18px;
   line-height: 1;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 .todo-notes-log {

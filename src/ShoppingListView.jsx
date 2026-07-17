@@ -393,16 +393,20 @@ function MealPlannerTab() {
     const { date, mealType } = editing
     const existing = getMeal(date, mealType)
     const user_id = await getUserId()
+    let saveErr
     if (!inputValue.trim()) {
-      if (existing) await supabase.from('meal_plans').delete().eq('id', existing.id)
+      if (existing) {
+        ;({ error: saveErr } = await supabase.from('meal_plans').delete().eq('id', existing.id))
+      }
     } else if (existing) {
-      await supabase.from('meal_plans').update({ meal_name: inputValue.trim(), recipe_id: recipeId || null }).eq('id', existing.id)
+      ;({ error: saveErr } = await supabase.from('meal_plans').update({ meal_name: inputValue.trim(), recipe_id: recipeId || null }).eq('id', existing.id))
     } else {
-      await supabase.from('meal_plans').insert({
+      ;({ error: saveErr } = await supabase.from('meal_plans').insert({
         plan_date: date, day_of_week: DAYS[weekDates.findIndex((d) => isoDate(d) === date)],
         meal_type: mealType, meal_name: inputValue.trim(), recipe_id: recipeId || null, user_id,
-      })
+      }))
     }
+    if (saveErr) { setToast(`⚠️ ${saveErr.message}`); return }
     setEditing(null)
     fetchAll()
   }
@@ -419,6 +423,12 @@ function MealPlannerTab() {
       const meals = MEAL_TYPES.map((mt) => ({ mt, meal: getMeal(dateStr, mt.key) })).filter((m) => m.meal?.meal_name)
       return { day, dateLabel: weekDates[i].toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), meals }
     }).filter((d) => d.meals.length > 0)
+
+    if (daysWithMeals.length === 0) {
+      setToast('Nothing planned this week yet ✨')
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
 
     let totalLines = 0
     daysWithMeals.forEach((d) => { totalLines += 1 + d.meals.length })
@@ -530,12 +540,10 @@ function MealPlannerTab() {
         </button>
       )}
 
-      {mealsPlannedThisWeek > 0 && (
-        <div className="log-value-row" style={{ marginBottom: 16 }}>
-          <button className="btn-check" onClick={printWeekPlan}>🖨️ Print week's meal plan</button>
-          <button className="btn-check" onClick={generateShoppingListFromPlan}>🛒 Generate shopping list</button>
-        </div>
-      )}
+      <div className="log-value-row" style={{ marginBottom: 16 }}>
+        <button className="btn-check" onClick={printWeekPlan}>🖨️ Print week's meal plan</button>
+        <button className="btn-check" onClick={generateShoppingListFromPlan}>🛒 Generate shopping list</button>
+      </div>
       {toast && <p className="momentum-caption" style={{ marginBottom: 14 }}>{toast}</p>}
 
       {loading && <p className="loading">Setting the table… 🍽️✨</p>}
