@@ -12,6 +12,7 @@ import TodoView from './TodoView'
 import ShoppingListView from './ShoppingListView'
 import BookNookView from './BookNookView'
 import GlowUpHubView from './GlowUpHubView'
+import SocialCalendarView from './SocialCalendarView'
 import './App.css'
 
 const NAV_ITEMS = [
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { key: 'shopping', label: 'Shopping List', num: '06', enabled: true },
   { key: 'booknook', label: 'Book Nook', num: '07', enabled: true },
   { key: 'glowup', label: 'Glow Up Hub', num: '08', enabled: true },
+  { key: 'social', label: 'Social Calendar', num: '09', enabled: true },
 ]
 
 function App() {
@@ -109,6 +111,7 @@ function App() {
         {view === 'shopping' && <ShoppingListView />}
         {view === 'booknook' && <BookNookView />}
         {view === 'glowup' && <GlowUpHubView />}
+        {view === 'social' && <SocialCalendarView />}
         {view === 'settings' && (
           <SettingsView
             session={session}

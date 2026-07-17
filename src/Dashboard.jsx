@@ -14,23 +14,23 @@ const ERAS = [
 ]
 
 const ROTATING_MESSAGES = [
-  "I'm literally just a girl.",
-  "Keepin' It Cute Today.",
-  'You Can Do Great Things!',
-  'Romanticise Your Everyday.',
-  'Be a little kinder to yourself.',
-  'Make your heart the prettiest thing about you.',
-  'I refuse to lose my whimsy.',
-  'Manifest Your Dreams!',
-  'Strong Girls Club',
-  'Keep On Smiling',
-  'In My Happy Girl Era',
-  'Girl, you already have what it takes!',
-  "Don't forget to celebrate the little wins!",
-  'You are capable of amazing things!',
-  'Make your energy the prettiest thing about you.',
-  'The Plot Twist? She became everything she said she would.',
-  'Girl, date yourself.',
+  { text: "I'm literally just a girl.", highlight: 'just a girl' },
+  { text: "Keepin' It Cute Today.", highlight: 'Cute' },
+  { text: 'You Can Do Great Things!', highlight: 'Great Things' },
+  { text: 'Romanticise Your Everyday.', highlight: 'Romanticise' },
+  { text: 'Be a little kinder to yourself.', highlight: 'kinder' },
+  { text: 'Make your heart the prettiest thing about you.', highlight: 'prettiest' },
+  { text: 'I refuse to lose my whimsy.', highlight: 'whimsy' },
+  { text: 'Manifest Your Dreams!', highlight: 'Manifest' },
+  { text: 'Strong Girls Club', highlight: 'Strong' },
+  { text: 'Keep On Smiling', highlight: 'Smiling' },
+  { text: 'In My Happy Girl Era', highlight: 'Happy' },
+  { text: 'Girl, you already have what it takes!', highlight: 'what it takes' },
+  { text: "Don't forget to celebrate the little wins!", highlight: 'celebrate' },
+  { text: 'You are capable of amazing things!', highlight: 'amazing' },
+  { text: 'Make your energy the prettiest thing about you.', highlight: 'energy' },
+  { text: 'The Plot Twist? She became everything she said she would.', highlight: 'Plot Twist' },
+  { text: 'Girl, date yourself.', highlight: 'date yourself' },
 ]
 
 const MODULES = [
@@ -38,6 +38,7 @@ const MODULES = [
     group: 'PEOPLE',
     items: [
       { key: 'contacts', title: 'Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
+      { key: 'social', title: 'Social Calendar', desc: 'Your social life, but make it cute 💌', enabled: true, accent: '#C98A72', tint: '#FBF3EF' },
     ],
   },
   {
@@ -68,6 +69,21 @@ const MODULES = [
     ],
   },
 ]
+
+function renderQuote(msg) {
+  if (!msg.highlight) return msg.text
+  const idx = msg.text.indexOf(msg.highlight)
+  if (idx === -1) return msg.text
+  const before = msg.text.slice(0, idx)
+  const after = msg.text.slice(idx + msg.highlight.length)
+  return (
+    <>
+      {before}
+      <span className="hero-quote-highlight">{msg.highlight}</span>
+      {after}
+    </>
+  )
+}
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -105,6 +121,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     currentlyReadingBook: null,
     booksReadThisYear: 0,
     wellness: null,
+    nextSocialEvent: null,
   })
   const [loading, setLoading] = useState(true)
 
@@ -124,6 +141,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const { data: booksData } = await supabase.from('books').select('*')
     const todayIso = new Date().toISOString().split('T')[0]
     const { data: wellnessData } = await supabase.from('wellness_logs').select('*').eq('log_date', todayIso).maybeSingle()
+    const { data: socialData } = await supabase.from('social_events').select('*').gte('event_date', todayIso).order('event_date', { ascending: true }).limit(1)
 
     if (error || !data) {
       setLoading(false)
@@ -179,7 +197,16 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       (b) => b.status === 'finished' && b.finish_date && new Date(b.finish_date + 'T00:00:00').getFullYear() === now.getFullYear()
     ).length
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null })
+    const nextSocialEvent = (socialData || [])[0]
+      ? (() => {
+          const ev = socialData[0]
+          const evDate = new Date(ev.event_date + 'T00:00:00')
+          const daysAway = Math.round((evDate - new Date(new Date().toDateString())) / 86400000)
+          return { title: ev.title, daysAway }
+        })()
+      : null
+
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent })
     setLoading(false)
   }
 
@@ -196,41 +223,107 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
 
   const statCandidates = []
   if (!hiddenModules.includes('contacts') && stats.nextBirthday) {
-    statCandidates.push({ key: 'birthday', icon: '🎂', text: birthdayLabel().replace('🎂 ', ''), color: '#B896C9' })
+    const { name, daysAway } = stats.nextBirthday
+    const subtitle = daysAway <= 14
+      ? 'Time to start planning something special 💖'
+      : daysAway <= 30
+      ? "It's getting close — start thinking gifts 🎁"
+      : 'On the horizon — plenty of time to plan ✨'
+    statCandidates.push({
+      key: 'birthday', icon: '🎂', title: `${name}'s Birthday`,
+      bigNumber: daysAway, unit: daysAway === 1 ? 'day to go' : 'days to go',
+      subtitle, progressPct: Math.max(2, Math.round(((365 - Math.min(daysAway, 365)) / 365) * 100)),
+      color: '#D9A8B8', insight: birthdayLabel().replace('🎂 ', ''),
+    })
   }
   if (!hiddenModules.includes('habits') && stats.habitsDoneToday > 0) {
-    statCandidates.push({ key: 'habits', icon: '🌸', text: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} checked off, bestie`, color: '#1E5C57' })
+    statCandidates.push({
+      key: 'habits', icon: '🌸', title: 'Habits',
+      bigNumber: stats.habitsDoneToday, unit: stats.habitsDoneToday === 1 ? 'habit checked off' : 'habits checked off',
+      subtitle: 'Look at you go, bestie ✨',
+      progressPct: stats.habitsTotal > 0 ? Math.round((stats.habitsDoneToday / stats.habitsTotal) * 100) : null,
+      color: '#1E5C57', insight: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} checked off, bestie`,
+    })
   }
   if (!hiddenModules.includes('finances') && stats.hasTransactions) {
-    statCandidates.push({ key: 'net', icon: '🎀', text: `Spending power: ${formatMoney(stats.netBalance, currency)}`, color: '#164641' })
+    statCandidates.push({
+      key: 'net', icon: '🎀', title: 'Spending Power',
+      bigNumber: formatMoney(stats.netBalance, currency), unit: '',
+      subtitle: "You're keeping it cute with your money 💅",
+      progressPct: null, color: '#164641', insight: `Spending power: ${formatMoney(stats.netBalance, currency)}`,
+    })
   }
   if (!hiddenModules.includes('finances') && stats.hasSavings) {
-    statCandidates.push({ key: 'savings', icon: '✨', text: `${currentEraLabel}: ${formatMoney(stats.totalSaved, currency)} saved`, color: '#B896C9' })
+    statCandidates.push({
+      key: 'savings', icon: '✨', title: currentEraLabel,
+      bigNumber: formatMoney(stats.totalSaved, currency), unit: 'saved',
+      subtitle: 'Every little bit adds up to something big 🌷',
+      progressPct: null, color: '#B896C9', insight: `${currentEraLabel}: ${formatMoney(stats.totalSaved, currency)} saved`,
+    })
   }
   if (!hiddenModules.includes('goals') && stats.goalsInProgress > 0) {
-    statCandidates.push({ key: 'goals', icon: '🎯', text: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`, color: '#1E5C57' })
+    statCandidates.push({
+      key: 'goals', icon: '🎯', title: 'Your Goals',
+      bigNumber: stats.goalsInProgress, unit: stats.goalsInProgress === 1 ? 'win waiting' : 'wins waiting',
+      subtitle: 'Your dreams are so close, keep going ✨',
+      progressPct: null, color: '#1E5C57', insight: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`,
+    })
   }
   if (!hiddenModules.includes('glowup') && stats.wellness?.steps > 0) {
-    statCandidates.push({ key: 'steps', icon: '🚶', text: `Walking Queen: ${Number(stats.wellness.steps).toLocaleString()} steps`, color: '#1E5C57' })
+    statCandidates.push({
+      key: 'steps', icon: '🚶', title: 'Walking Queen',
+      bigNumber: Number(stats.wellness.steps).toLocaleString(), unit: 'steps',
+      subtitle: 'Every step is a step toward glowing ✨',
+      progressPct: Math.min(100, Math.round((stats.wellness.steps / (stats.wellness.steps_goal || 10000)) * 100)),
+      color: '#1E5C57', insight: `Walking Queen: ${Number(stats.wellness.steps).toLocaleString()} steps`,
+    })
   }
   if (!hiddenModules.includes('booknook') && stats.currentlyReadingBook) {
-    statCandidates.push({ key: 'reading', icon: '📚', text: `${stats.currentlyReadingBook.pct}% into "${stats.currentlyReadingBook.title}"`, color: '#8FC2BE' })
+    statCandidates.push({
+      key: 'reading', icon: '📚', title: stats.currentlyReadingBook.title,
+      bigNumber: stats.currentlyReadingBook.pct, unit: '% through',
+      subtitle: 'A little escape is always worth it 📖',
+      progressPct: stats.currentlyReadingBook.pct, color: '#8FC2BE',
+      insight: `${stats.currentlyReadingBook.pct}% into "${stats.currentlyReadingBook.title}"`,
+    })
   }
-  if (!hiddenModules.includes('shopping') && stats.shoppingPlanned > 0) {
-    statCandidates.push({ key: 'wishlist', icon: '💖', text: `${stats.shoppingPlanned} wish${stats.shoppingPlanned > 1 ? 'es' : ''} on your list`, color: '#D9A8B8' })
-  }
-  if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {
-    statCandidates.push({ key: 'groceries', icon: '🍓', text: `${stats.shoppingGroceries} goodie${stats.shoppingGroceries > 1 ? 's' : ''} to grab`, color: '#C98A72' })
-  }
-  if (!hiddenModules.includes('todos') && stats.todosOpen > 0) {
-    statCandidates.push({ key: 'todos', icon: '📋', text: `${stats.todosOpen} thing${stats.todosOpen > 1 ? 's' : ''} on your to-do list`, color: '#1E5C57' })
-  }
-  if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
-    statCandidates.push({ key: 'birthdays-month', icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month`, color: '#8FC2BE' })
+  if (!hiddenModules.includes('social') && stats.nextSocialEvent) {
+    const daysText = stats.nextSocialEvent.daysAway === 0 ? 'today' : stats.nextSocialEvent.daysAway === 1 ? 'tomorrow' : `in ${stats.nextSocialEvent.daysAway} days`
+    statCandidates.push({
+      key: 'social', icon: '💌', title: stats.nextSocialEvent.title,
+      bigNumber: stats.nextSocialEvent.daysAway, unit: 'days away',
+      subtitle: "Can't wait — it's going to be so fun 🎉",
+      progressPct: null, color: '#C98A72', insight: `${stats.nextSocialEvent.title} ${daysText}`,
+    })
   }
 
-  const heroStat = statCandidates[0]
-  const secondaryStats = statCandidates.slice(1)
+  const heroFocus = statCandidates[0]
+
+  const insightItems = []
+  if (!hiddenModules.includes('habits') && heroFocus?.key !== 'habits' && stats.habitsDoneToday > 0) {
+    insightItems.push({ icon: '🌸', text: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} completed today` })
+  }
+  if (!hiddenModules.includes('finances') && heroFocus?.key !== 'net' && stats.hasTransactions) {
+    insightItems.push({ icon: '💸', text: `Spending power: ${formatMoney(stats.netBalance, currency)}` })
+  }
+  if (!hiddenModules.includes('finances') && heroFocus?.key !== 'savings' && stats.hasSavings) {
+    insightItems.push({ icon: '✨', text: `${formatMoney(stats.totalSaved, currency)} saved toward your goals` })
+  }
+  if (!hiddenModules.includes('shopping') && stats.shoppingPlanned > 0) {
+    insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} wish${stats.shoppingPlanned > 1 ? 'es' : ''} on your wishlist` })
+  }
+  if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {
+    insightItems.push({ icon: '🍓', text: `${stats.shoppingGroceries} grocer${stats.shoppingGroceries > 1 ? 'ies' : 'y'} to buy` })
+  }
+  if (!hiddenModules.includes('todos') && stats.todosOpen > 0) {
+    insightItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} waiting` })
+  }
+  if (!hiddenModules.includes('goals') && heroFocus?.key !== 'goals' && stats.goalsInProgress > 0) {
+    insightItems.push({ icon: '🎯', text: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you` })
+  }
+  if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
+    insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month` })
+  }
 
   return (
     <div>
@@ -250,24 +343,36 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
         </div>
         <div className="hero-quote-card" key={msgIndex}>
           <p className="hero-quote-label">💌 Today's Note</p>
-          <p className="hero-quote-text">"{ROTATING_MESSAGES[msgIndex]}"</p>
+          <p className="hero-quote-text">{renderQuote(ROTATING_MESSAGES[msgIndex])}</p>
         </div>
       </div>
 
-      {!loading && statCandidates.length > 0 && (
-        <div className="hero-stat-section">
-          {heroStat && (
-            <div className="hero-stat-card" style={{ '--hero-accent': heroStat.color }}>
-              <span className="hero-stat-icon">{heroStat.icon}</span>
-              <p className="hero-stat-text">{heroStat.text}</p>
+      {!loading && (heroFocus || insightItems.length > 0) && (
+        <div className="hero-focus-section">
+          {heroFocus && (
+            <div className="hero-focus-card" style={{ '--focus-accent': heroFocus.color }}>
+              <span className="hero-focus-sticker">💖</span>
+              <span className="hero-focus-icon">{heroFocus.icon}</span>
+              <p className="hero-focus-title">{heroFocus.title}</p>
+              <div className="hero-focus-number-row">
+                <span className="hero-focus-number">{heroFocus.bigNumber}</span>
+                {heroFocus.unit && <span className="hero-focus-unit">{heroFocus.unit}</span>}
+              </div>
+              {heroFocus.progressPct != null && (
+                <div className="hero-focus-progress-track">
+                  <div className="hero-focus-progress-fill" style={{ width: `${heroFocus.progressPct}%` }} />
+                </div>
+              )}
+              <p className="hero-focus-subtitle">{heroFocus.subtitle}</p>
             </div>
           )}
-          {secondaryStats.length > 0 && (
-            <div className="stat-strip">
-              {secondaryStats.map((s) => (
-                <div className="stat-pill" key={s.key}>
-                  <span className="stat-dot" style={{ background: s.color }} />
-                  {s.icon} {s.text}
+          {insightItems.length > 0 && (
+            <div className="hero-insights-card">
+              <p className="hero-insights-label">AT A GLANCE</p>
+              {insightItems.map((item, i) => (
+                <div className="hero-insight-row" key={i}>
+                  <span className="hero-insight-icon">{item.icon}</span>
+                  <span className="hero-insight-text">{item.text}</span>
                 </div>
               ))}
             </div>

@@ -35,6 +35,29 @@ export function setEra(era) {
   localStorage.setItem('era', era)
 }
 
+export function getWellnessGoals() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('wellnessGoals') || 'null')
+    return { water: 8, calories: 1900, steps: 10000, ...stored }
+  } catch {
+    return { water: 8, calories: 1900, steps: 10000 }
+  }
+}
+export function setWellnessGoals(goals) {
+  localStorage.setItem('wellnessGoals', JSON.stringify(goals))
+}
+
+export function getHiddenGlowupTabs() {
+  try {
+    return JSON.parse(localStorage.getItem('hiddenGlowupTabs') || '[]')
+  } catch {
+    return []
+  }
+}
+export function setHiddenGlowupTabs(arr) {
+  localStorage.setItem('hiddenGlowupTabs', JSON.stringify(arr))
+}
+
 export function getHiddenTodoTabs() {
   try {
     return JSON.parse(localStorage.getItem('hiddenTodoTabs') || '[]')

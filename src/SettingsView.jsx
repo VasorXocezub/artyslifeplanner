@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs } from './lib/localPrefs'
+import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs, getHiddenGlowupTabs, setHiddenGlowupTabs } from './lib/localPrefs'
 
 const SPACES = [
   { key: 'contacts', label: 'Cake Club', icon: '🎂' },
@@ -11,6 +11,7 @@ const SPACES = [
   { key: 'shopping', label: 'Shopping List', icon: '🛍️' },
   { key: 'booknook', label: 'Book Nook', icon: '📚' },
   { key: 'glowup', label: 'Glow Up Hub', icon: '✨' },
+  { key: 'social', label: 'Social Calendar', icon: '💌' },
 ]
 
 const FINANCE_SUB_SPACES = [
@@ -32,6 +33,12 @@ const TODO_SUB_SPACES = [
   { key: 'business', label: '💼 Business' },
 ]
 
+const GLOWUP_SUB_SPACES = [
+  { key: 'today', label: '✨ Today' },
+  { key: 'cycle', label: '🌸 Cycle' },
+  { key: 'summary', label: '📊 Summary' },
+]
+
 export default function SettingsView({ session, hiddenModules, onSaveModules, onLogout }) {
   const [nameInput, setNameInput] = useState(session.user.user_metadata?.full_name || '')
   const [nameSaved, setNameSaved] = useState(false)
@@ -39,6 +46,7 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const [selectedFinanceTabs, setSelectedFinanceTabs] = useState(new Set(getHiddenFinanceTabs()))
   const [selectedShoppingTabs, setSelectedShoppingTabs] = useState(new Set(getHiddenShoppingTabs()))
   const [selectedTodoTabs, setSelectedTodoTabs] = useState(new Set(getHiddenTodoTabs()))
+  const [selectedGlowupTabs, setSelectedGlowupTabs] = useState(new Set(getHiddenGlowupTabs()))
   const [spacesSaved, setSpacesSaved] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -92,11 +100,21 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
     })
   }
 
+  function toggleGlowupTab(key) {
+    setSelectedGlowupTabs((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   function handleSaveSpaces() {
     onSaveModules(Array.from(selectedSpaces))
     setHiddenFinanceTabs(Array.from(selectedFinanceTabs))
     setHiddenShoppingTabs(Array.from(selectedShoppingTabs))
     setHiddenTodoTabs(Array.from(selectedTodoTabs))
+    setHiddenGlowupTabs(Array.from(selectedGlowupTabs))
     setSpacesSaved(true)
     setTimeout(() => setSpacesSaved(false), 2000)
   }
@@ -128,6 +146,7 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const financesHidden = selectedSpaces.has('finances')
   const shoppingHidden = selectedSpaces.has('shopping')
   const todosHidden = selectedSpaces.has('todos')
+  const glowupHidden = selectedSpaces.has('glowup')
 
   return (
     <div>
@@ -272,6 +291,30 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
                     type="button"
                     className={`settings-module-row ${isHidden ? 'settings-module-row-off' : ''}`}
                     onClick={() => toggleTodoTab(t.key)}
+                  >
+                    <span className="settings-module-label">{t.label}</span>
+                    <span className={`settings-toggle ${isHidden ? '' : 'settings-toggle-on'}`}>
+                      <span className="settings-toggle-knob" />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {!glowupHidden && (
+          <>
+            <p className="module-group-label settings-subspace-label">GLOW UP HUB SUB-SPACES</p>
+            <div className="settings-module-list">
+              {GLOWUP_SUB_SPACES.map((t) => {
+                const isHidden = selectedGlowupTabs.has(t.key)
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className={`settings-module-row ${isHidden ? 'settings-module-row-off' : ''}`}
+                    onClick={() => toggleGlowupTab(t.key)}
                   >
                     <span className="settings-module-label">{t.label}</span>
                     <span className={`settings-toggle ${isHidden ? '' : 'settings-toggle-on'}`}>
