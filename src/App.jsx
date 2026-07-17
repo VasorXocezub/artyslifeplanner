@@ -11,6 +11,7 @@ import FinancesView from './FinancesView'
 import TodoView from './TodoView'
 import ShoppingListView from './ShoppingListView'
 import BookNookView from './BookNookView'
+import GlowUpHubView from './GlowUpHubView'
 import './App.css'
 
 const NAV_ITEMS = [
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { key: 'todos', label: 'To-Do', num: '05', enabled: true },
   { key: 'shopping', label: 'Shopping List', num: '06', enabled: true },
   { key: 'booknook', label: 'Book Nook', num: '07', enabled: true },
+  { key: 'glowup', label: 'Glow Up Hub', num: '08', enabled: true },
 ]
 
 function App() {
@@ -106,6 +108,7 @@ function App() {
         {view === 'todos' && <TodoView />}
         {view === 'shopping' && <ShoppingListView />}
         {view === 'booknook' && <BookNookView />}
+        {view === 'glowup' && <GlowUpHubView />}
         {view === 'settings' && (
           <SettingsView
             session={session}

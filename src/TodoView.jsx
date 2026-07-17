@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
+import { getHiddenTodoTabs } from './lib/localPrefs'
 
 const PRIORITIES = [
   { key: 'right_now', label: '🔥 Right Now', color: '#1E5C57' },
@@ -30,6 +31,10 @@ function isOverdue(d) {
   return new Date(d + 'T00:00:00') < today
 }
 
+function todayStr() {
+  return new Date().toISOString().split('T')[0]
+}
+
 function momentumMessage(pct) {
   if (pct >= 100) return 'You did that! 👑'
   if (pct >= 70) return 'Almost there, keep going.'
@@ -42,10 +47,17 @@ export default function TodoView() {
   const [todos, setTodos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [category, setCategory] = useState('personal')
+  const [category, setCategory] = useState(() => {
+    const hidden = getHiddenTodoTabs()
+    const firstVisible = CATEGORIES.find((c) => !hidden.includes(c.key))
+    return firstVisible ? firstVisible.key : 'personal'
+  })
+  const hiddenTabs = getHiddenTodoTabs()
+  const visibleCategories = CATEGORIES.filter((c) => !hiddenTabs.includes(c.key))
   const [newText, setNewText] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newPriority, setNewPriority] = useState('next_up')
+  const [newRecurring, setNewRecurring] = useState(false)
   const [adding, setAdding] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
   const [priorityFilter, setPriorityFilter] = useState('all')
@@ -53,6 +65,12 @@ export default function TodoView() {
   useEffect(() => {
     fetchTodos()
   }, [])
+
+  useEffect(() => {
+    if (hiddenTabs.includes(category) && visibleCategories.length > 0) {
+      setCategory(visibleCategories[0].key)
+    }
+  }, [category])
 
   async function fetchTodos() {
     setLoading(true)
@@ -62,8 +80,30 @@ export default function TodoView() {
       .select('*')
       .order('created_at', { ascending: true })
 
-    if (error) setError(error.message)
-    else setTodos(data)
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    const today = todayStr()
+    const toReset = (data || []).filter(
+      (t) => t.is_recurring && t.completed && t.last_reset_date !== today
+    )
+    if (toReset.length > 0) {
+      await Promise.all(
+        toReset.map((t) =>
+          supabase.from('todos').update({ completed: false, last_reset_date: today }).eq('id', t.id)
+        )
+      )
+      const { data: refreshed } = await supabase
+        .from('todos')
+        .select('*')
+        .order('created_at', { ascending: true })
+      setTodos(refreshed || [])
+    } else {
+      setTodos(data)
+    }
     setLoading(false)
   }
 
@@ -74,7 +114,15 @@ export default function TodoView() {
     const user_id = await getUserId()
     const { error } = await supabase
       .from('todos')
-      .insert({ text: newText.trim(), due_date: newDate || null, priority: newPriority, category, user_id })
+      .insert({
+        text: newText.trim(),
+        due_date: newDate || null,
+        priority: newPriority,
+        category,
+        is_recurring: newRecurring,
+        last_reset_date: newRecurring ? todayStr() : null,
+        user_id,
+      })
     setAdding(false)
     if (error) {
       setError(error.message)
@@ -82,13 +130,29 @@ export default function TodoView() {
     }
     setNewText('')
     setNewDate('')
+    setNewRecurring(false)
+    fetchTodos()
+  }
+
+  async function toggleRecurring(todo) {
+    const { error } = await supabase
+      .from('todos')
+      .update({ is_recurring: !todo.is_recurring, last_reset_date: !todo.is_recurring ? todayStr() : null })
+      .eq('id', todo.id)
+    if (error) {
+      setError(error.message)
+      return
+    }
     fetchTodos()
   }
 
   async function toggleComplete(todo) {
+    const willComplete = !todo.completed
+    const payload = { completed: willComplete }
+    if (todo.is_recurring && willComplete) payload.last_reset_date = todayStr()
     const { error } = await supabase
       .from('todos')
-      .update({ completed: !todo.completed })
+      .update(payload)
       .eq('id', todo.id)
     if (error) {
       setError(error.message)
@@ -144,7 +208,7 @@ export default function TodoView() {
       </div>
 
       <div className="filter-row">
-        {CATEGORIES.map((c) => (
+        {visibleCategories.map((c) => (
           <button
             key={c.key}
             className={`filter-pill ${category === c.key ? 'filter-pill-active' : ''}`}
@@ -192,6 +256,15 @@ export default function TodoView() {
         </button>
       </form>
 
+      <label className="savings-toggle-label todo-recurring-label">
+        <input
+          type="checkbox"
+          checked={newRecurring}
+          onChange={(e) => setNewRecurring(e.target.checked)}
+        />
+        {' '}🔁 Repeats daily
+      </label>
+
       <div className="filter-row">
         <button
           className={`filter-pill ${priorityFilter === 'all' ? 'filter-pill-active' : ''}`}
@@ -228,6 +301,14 @@ export default function TodoView() {
               <div className="todo-row" key={t.id}>
                 <button className="todo-checkbox" onClick={() => toggleComplete(t)} aria-label="Mark done" />
                 <span className="todo-text">{t.text}</span>
+                <button
+                  type="button"
+                  className={`todo-recurring-badge ${t.is_recurring ? 'todo-recurring-badge-on' : ''}`}
+                  onClick={() => toggleRecurring(t)}
+                  title={t.is_recurring ? 'Repeats daily — click to turn off' : 'Click to make this repeat daily'}
+                >
+                  🔁
+                </button>
                 <select
                   className="todo-priority-select"
                   style={{ color: pInfo.color, borderColor: pInfo.color }}
@@ -263,6 +344,7 @@ export default function TodoView() {
                     ✓
                   </button>
                   <span className="todo-text todo-text-done">{t.text}</span>
+                  {t.is_recurring && <span className="todo-recurring-badge todo-recurring-badge-on">🔁</span>}
                   <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
                 </div>
               ))}

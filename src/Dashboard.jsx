@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/currency'
-import { getEra, setEra as saveEra, getReadingGoal } from './lib/localPrefs'
+import { getEra, setEra as saveEra } from './lib/localPrefs'
 import WeatherWidget from './WeatherWidget'
 
 const ERAS = [
@@ -28,6 +28,9 @@ const ROTATING_MESSAGES = [
   'Girl, you already have what it takes!',
   "Don't forget to celebrate the little wins!",
   'You are capable of amazing things!',
+  'Make your energy the prettiest thing about you.',
+  'The Plot Twist? She became everything she said she would.',
+  'Girl, date yourself.',
 ]
 
 const MODULES = [
@@ -52,6 +55,12 @@ const MODULES = [
     ],
   },
   {
+    group: 'WELLNESS',
+    items: [
+      { key: 'glowup', title: 'Glow Up Hub', desc: 'Hydrated, moved, glowing ✨', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
+    ],
+  },
+  {
     group: 'MONEY',
     items: [
       { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#1E5C57', tint: '#F7EFDF' },
@@ -69,14 +78,9 @@ function getGreeting() {
 
 export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   const [era, setEraState] = useState(getEra())
-  const [msgIndex, setMsgIndex] = useState(0)
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMsgIndex((i) => (i + 1) % ROTATING_MESSAGES.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  const dayNumber = Math.floor(Date.now() / 86400000)
+  const msgIndex = ((dayNumber % ROTATING_MESSAGES.length) + ROTATING_MESSAGES.length) % ROTATING_MESSAGES.length
 
   function handleEraChange(e) {
     const value = e.target.value
@@ -96,8 +100,11 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     hasSavings: false,
     todosOpen: 0,
     shoppingOpen: 0,
+    shoppingPlanned: 0,
+    shoppingGroceries: 0,
     currentlyReadingBook: null,
     booksReadThisYear: 0,
+    wellness: null,
   })
   const [loading, setLoading] = useState(true)
 
@@ -115,6 +122,8 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const { data: todosData } = await supabase.from('todos').select('*').eq('completed', false)
     const { data: shoppingData } = await supabase.from('shopping_items').select('*').eq('completed', false)
     const { data: booksData } = await supabase.from('books').select('*')
+    const todayIso = new Date().toISOString().split('T')[0]
+    const { data: wellnessData } = await supabase.from('wellness_logs').select('*').eq('log_date', todayIso).maybeSingle()
 
     if (error || !data) {
       setLoading(false)
@@ -159,6 +168,8 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const hasSavings = (savingsData || []).length > 0
     const todosOpen = (todosData || []).length
     const shoppingOpen = (shoppingData || []).length
+    const shoppingPlanned = (shoppingData || []).filter((s) => s.category === 'planned').length
+    const shoppingGroceries = (shoppingData || []).filter((s) => s.category === 'groceries').length
 
     const readingBook = (booksData || []).find((b) => b.status === 'reading')
     const currentlyReadingBook = readingBook
@@ -168,7 +179,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       (b) => b.status === 'finished' && b.finish_date && new Date(b.finish_date + 'T00:00:00').getFullYear() === now.getFullYear()
     ).length
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, currentlyReadingBook, booksReadThisYear })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null })
     setLoading(false)
   }
 
@@ -179,6 +190,47 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     if (daysAway === 1) return `🎂 ${name}'s birthday is tomorrow`
     return `🎂 ${name}'s birthday in ${daysAway} days`
   }
+
+  const currentEraLabel = ERAS.find((e) => e.key === era)?.label || '✨ Your Era'
+  const currency = user?.user_metadata?.currency
+
+  const statCandidates = []
+  if (!hiddenModules.includes('contacts') && stats.nextBirthday) {
+    statCandidates.push({ key: 'birthday', icon: '🎂', text: birthdayLabel().replace('🎂 ', ''), color: '#B896C9' })
+  }
+  if (!hiddenModules.includes('habits') && stats.habitsDoneToday > 0) {
+    statCandidates.push({ key: 'habits', icon: '🌸', text: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} checked off, bestie`, color: '#1E5C57' })
+  }
+  if (!hiddenModules.includes('finances') && stats.hasTransactions) {
+    statCandidates.push({ key: 'net', icon: '🎀', text: `Spending power: ${formatMoney(stats.netBalance, currency)}`, color: '#164641' })
+  }
+  if (!hiddenModules.includes('finances') && stats.hasSavings) {
+    statCandidates.push({ key: 'savings', icon: '✨', text: `${currentEraLabel}: ${formatMoney(stats.totalSaved, currency)} saved`, color: '#B896C9' })
+  }
+  if (!hiddenModules.includes('goals') && stats.goalsInProgress > 0) {
+    statCandidates.push({ key: 'goals', icon: '🎯', text: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`, color: '#1E5C57' })
+  }
+  if (!hiddenModules.includes('glowup') && stats.wellness?.steps > 0) {
+    statCandidates.push({ key: 'steps', icon: '🚶', text: `Walking Queen: ${Number(stats.wellness.steps).toLocaleString()} steps`, color: '#1E5C57' })
+  }
+  if (!hiddenModules.includes('booknook') && stats.currentlyReadingBook) {
+    statCandidates.push({ key: 'reading', icon: '📚', text: `${stats.currentlyReadingBook.pct}% into "${stats.currentlyReadingBook.title}"`, color: '#8FC2BE' })
+  }
+  if (!hiddenModules.includes('shopping') && stats.shoppingPlanned > 0) {
+    statCandidates.push({ key: 'wishlist', icon: '💖', text: `${stats.shoppingPlanned} wish${stats.shoppingPlanned > 1 ? 'es' : ''} on your list`, color: '#D9A8B8' })
+  }
+  if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {
+    statCandidates.push({ key: 'groceries', icon: '🍓', text: `${stats.shoppingGroceries} goodie${stats.shoppingGroceries > 1 ? 's' : ''} to grab`, color: '#C98A72' })
+  }
+  if (!hiddenModules.includes('todos') && stats.todosOpen > 0) {
+    statCandidates.push({ key: 'todos', icon: '📋', text: `${stats.todosOpen} thing${stats.todosOpen > 1 ? 's' : ''} on your to-do list`, color: '#1E5C57' })
+  }
+  if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
+    statCandidates.push({ key: 'birthdays-month', icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month`, color: '#8FC2BE' })
+  }
+
+  const heroStat = statCandidates[0]
+  const secondaryStats = statCandidates.slice(1)
 
   return (
     <div>
@@ -197,58 +249,27 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
           <WeatherWidget user={user} />
         </div>
         <div className="hero-quote-card" key={msgIndex}>
+          <p className="hero-quote-label">💌 Today's Note</p>
           <p className="hero-quote-text">"{ROTATING_MESSAGES[msgIndex]}"</p>
         </div>
       </div>
 
-      {!loading && (
-        <div className="stat-strip">
-          {!hiddenModules.includes('contacts') && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#B896C9' }} />
-              {birthdayLabel()}
+      {!loading && statCandidates.length > 0 && (
+        <div className="hero-stat-section">
+          {heroStat && (
+            <div className="hero-stat-card" style={{ '--hero-accent': heroStat.color }}>
+              <span className="hero-stat-icon">{heroStat.icon}</span>
+              <p className="hero-stat-text">{heroStat.text}</p>
             </div>
           )}
-          {!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0 && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#8FC2BE' }} />
-              🎉 {stats.birthdaysThisMonth.length} birthday{stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month
-            </div>
-          )}
-          {!hiddenModules.includes('goals') && stats.goalsInProgress > 0 && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#1E5C57' }} />
-              🚀 {stats.goalsInProgress} goal{stats.goalsInProgress > 1 ? 's' : ''} in motion
-            </div>
-          )}
-          {!hiddenModules.includes('habits') && stats.habitsTotal > 0 && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#1E5C57' }} />
-              🔥 {stats.habitsDoneToday}/{stats.habitsTotal} habits done today
-            </div>
-          )}
-          {!hiddenModules.includes('finances') && stats.hasTransactions && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: stats.netBalance >= 0 ? '#164641' : '#1E5C57' }} />
-              💸 {formatMoney(stats.netBalance, user?.user_metadata?.currency)} net
-            </div>
-          )}
-          {!hiddenModules.includes('finances') && stats.hasSavings && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#1E5C57' }} />
-              🐷 {formatMoney(stats.totalSaved, user?.user_metadata?.currency)} saved
-            </div>
-          )}
-          {!hiddenModules.includes('todos') && stats.todosOpen > 0 && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#1E5C57' }} />
-              📋 {stats.todosOpen} to-do{stats.todosOpen > 1 ? 's' : ''} open
-            </div>
-          )}
-          {!hiddenModules.includes('shopping') && stats.shoppingOpen > 0 && (
-            <div className="stat-pill">
-              <span className="stat-dot" style={{ background: '#B896C9' }} />
-              🛍️ {stats.shoppingOpen} on your list
+          {secondaryStats.length > 0 && (
+            <div className="stat-strip">
+              {secondaryStats.map((s) => (
+                <div className="stat-pill" key={s.key}>
+                  <span className="stat-dot" style={{ background: s.color }} />
+                  {s.icon} {s.text}
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -271,23 +292,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
                 >
                   <span className="module-accent-bar" />
                   <h3>{m.title}</h3>
-                  {m.key === 'booknook' ? (
-                    <div className="booknook-preview">
-                      {stats.currentlyReadingBook ? (
-                        <>
-                          <p className="booknook-preview-label">Currently Reading</p>
-                          <p className="booknook-preview-title">{stats.currentlyReadingBook.title}</p>
-                          <p className="booknook-preview-pct">{stats.currentlyReadingBook.pct}%</p>
-                        </>
-                      ) : (
-                        <p className="booknook-preview-title">{m.desc}</p>
-                      )}
-                      <p className="booknook-preview-label">Goal</p>
-                      <p className="booknook-preview-goal">{stats.booksReadThisYear} / {getReadingGoal()} Books</p>
-                    </div>
-                  ) : (
-                    <p>{m.desc}</p>
-                  )}
+                  <p>{m.desc}</p>
                   <span className="module-link">{m.enabled ? 'Open →' : 'Coming soon'}</span>
                 </button>
               ))}

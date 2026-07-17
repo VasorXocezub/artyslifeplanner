@@ -35,6 +35,17 @@ export function setEra(era) {
   localStorage.setItem('era', era)
 }
 
+export function getHiddenTodoTabs() {
+  try {
+    return JSON.parse(localStorage.getItem('hiddenTodoTabs') || '[]')
+  } catch {
+    return []
+  }
+}
+export function setHiddenTodoTabs(arr) {
+  localStorage.setItem('hiddenTodoTabs', JSON.stringify(arr))
+}
+
 export function getHiddenShoppingTabs() {
   try {
     return JSON.parse(localStorage.getItem('hiddenShoppingTabs') || '[]')
