@@ -15,6 +15,7 @@ import GlowUpHubView from './GlowUpHubView'
 import SocialCalendarView from './SocialCalendarView'
 import BrainDumpView from './BrainDumpView'
 import SpillTheTeaView from './SpillTheTeaView'
+import WishlistView from './WishlistView'
 import './App.css'
 
 const NAV_ITEMS = [
@@ -29,7 +30,8 @@ const NAV_ITEMS = [
   { key: 'booknook', label: 'Book Nook', num: '08', enabled: true },
   { key: 'finances', label: 'Rich Girl Era', num: '09', enabled: true },
   { key: 'shopping', label: 'Kitchen Club', num: '10', enabled: true },
-  { key: 'spillthetea', label: 'Spill the Tea', num: '11', enabled: true },
+  { key: 'wishlist', label: 'Wishlist', num: '11', enabled: true },
+  { key: 'spillthetea', label: 'Spill the Tea', num: '12', enabled: true },
 ]
 
 function App() {
@@ -140,6 +142,7 @@ function App() {
         {view === 'social' && <SocialCalendarView />}
         {view === 'braindump' && <BrainDumpView />}
         {view === 'spillthetea' && <SpillTheTeaView />}
+        {view === 'wishlist' && <WishlistView />}
         {view === 'settings' && (
           <SettingsView
             session={session}

@@ -66,6 +66,7 @@ const MODULES = [
     items: [
       { key: 'finances', title: 'Rich Girl Era', desc: '💸 We listen and we don\'t judge.', enabled: true, accent: '#1E5C57', tint: '#F7EFDF' },
       { key: 'shopping', title: 'Kitchen Club', desc: '🍓 Girl dinner is not a food group.', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
+      { key: 'wishlist', title: 'Wishlist', desc: '🎀 Manifesting these into my cart.', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
     ],
   },
 ]
@@ -309,7 +310,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   if (!hiddenModules.includes('finances') && heroFocus?.key !== 'savings' && stats.hasSavings) {
     insightItems.push({ icon: '✨', text: `${formatMoney(stats.totalSaved, currency)} saved toward your goals` })
   }
-  if (!hiddenModules.includes('shopping') && stats.shoppingPlanned > 0) {
+  if (!hiddenModules.includes('wishlist') && stats.shoppingPlanned > 0) {
     insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} item${stats.shoppingPlanned > 1 ? 's' : ''} on your wishlist` })
   }
   if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {

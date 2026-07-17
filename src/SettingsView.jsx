@@ -9,6 +9,7 @@ const SPACES = [
   { key: 'finances', label: 'Rich Girl Era', icon: '💸' },
   { key: 'todos', label: 'To-Do List', icon: '📋' },
   { key: 'shopping', label: 'Kitchen Club', icon: '🍎' },
+  { key: 'wishlist', label: 'Wishlist', icon: '🎀' },
   { key: 'booknook', label: 'Book Nook', icon: '📚' },
   { key: 'glowup', label: 'Glow Up Hub', icon: '✨' },
   { key: 'social', label: 'Social Club', icon: '💌' },
@@ -31,7 +32,6 @@ const SHOPPING_SUB_SPACES = [
   { key: 'recipes', label: '📖 Recipe Box' },
   { key: 'pantry', label: '🌾 Pantry' },
   { key: 'budget', label: '💰 Budget' },
-  { key: 'planned', label: '🎀 Wishlist' },
 ]
 
 const TODO_SUB_SPACES = [
