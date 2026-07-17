@@ -348,36 +348,33 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       </div>
 
       {!loading && (heroFocus || insightItems.length > 0) && (
-        <div className="hero-focus-section">
+        <>
           {heroFocus && (
-            <div className="hero-focus-card" style={{ '--focus-accent': heroFocus.color }}>
-              <span className="hero-focus-sticker">💖</span>
-              <span className="hero-focus-icon">{heroFocus.icon}</span>
-              <p className="hero-focus-title">{heroFocus.title}</p>
-              <div className="hero-focus-number-row">
-                <span className="hero-focus-number">{heroFocus.bigNumber}</span>
-                {heroFocus.unit && <span className="hero-focus-unit">{heroFocus.unit}</span>}
-              </div>
+            <div className="hero-highlight-strip" style={{ '--focus-accent': heroFocus.color }}>
+              <span className="hero-highlight-icon">{heroFocus.icon}</span>
+              <span className="hero-highlight-title">{heroFocus.title}</span>
+              <span className="hero-highlight-dot">•</span>
+              <span className="hero-highlight-countdown">{heroFocus.bigNumber} {heroFocus.unit}</span>
+              <span className="hero-highlight-dot">•</span>
+              <span className="hero-highlight-subtitle">{heroFocus.subtitle}</span>
               {heroFocus.progressPct != null && (
-                <div className="hero-focus-progress-track">
-                  <div className="hero-focus-progress-fill" style={{ width: `${heroFocus.progressPct}%` }} />
+                <div className="hero-highlight-progress-track">
+                  <div className="hero-highlight-progress-fill" style={{ width: `${heroFocus.progressPct}%` }} />
                 </div>
               )}
-              <p className="hero-focus-subtitle">{heroFocus.subtitle}</p>
             </div>
           )}
           {insightItems.length > 0 && (
-            <div className="hero-insights-card">
-              <p className="hero-insights-label">AT A GLANCE</p>
+            <div className="hero-stats-grid">
               {insightItems.map((item, i) => (
-                <div className="hero-insight-row" key={i}>
-                  <span className="hero-insight-icon">{item.icon}</span>
-                  <span className="hero-insight-text">{item.text}</span>
+                <div className="hero-stats-tile" key={i}>
+                  <span className="hero-stats-tile-icon">{item.icon}</span>
+                  <span className="hero-stats-tile-text">{item.text}</span>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {MODULES.map((group) => {

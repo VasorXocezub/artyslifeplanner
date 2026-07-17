@@ -323,6 +323,27 @@ export default function GlowUpHubView() {
           </div>
 
           <div className="upnext-section">
+            <p className="module-group-label">💖 SELF-CARE BINGO</p>
+            <div className="calendar-card">
+              <div className="settings-module-list">
+                {CARE_ITEMS.map((c) => {
+                  const isOn = !!log[c.key]
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
+                      onClick={() => updateLog({ [c.key]: !isOn })}
+                    >
+                      <span className="settings-module-label">{isOn ? '☑' : '☐'} {c.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="upnext-section">
             <p className="module-group-label">💧 HYDRATION</p>
             <div className="calendar-card">
               <p className="water-glasses-row">
@@ -449,27 +470,6 @@ export default function GlowUpHubView() {
                   onKeyDown={(e) => e.key === 'Enter' && updateLog({ sleep_hours: parseFloat(sleepInput) || 0 })}
                 />
                 <button className="btn-check log-value-btn" onClick={() => updateLog({ sleep_hours: parseFloat(sleepInput) || 0 })}>Update</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="upnext-section">
-            <p className="module-group-label">💖 SELF-CARE BINGO</p>
-            <div className="calendar-card">
-              <div className="settings-module-list">
-                {CARE_ITEMS.map((c) => {
-                  const isOn = !!log[c.key]
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
-                      onClick={() => updateLog({ [c.key]: !isOn })}
-                    >
-                      <span className="settings-module-label">{isOn ? '☑' : '☐'} {c.label}</span>
-                    </button>
-                  )
-                })}
               </div>
             </div>
           </div>
