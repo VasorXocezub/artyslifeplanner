@@ -169,6 +169,70 @@ function GroceryListTab() {
     items: openItems.filter((i) => (i.section || 'other') === s.key),
   })).filter((s) => s.items.length > 0)
 
+  function downloadGroceryImage() {
+    if (grouped.length === 0) return
+    const width = 480
+    const padding = 32
+    const headerHeight = 92
+    const lineHeight = 27
+    const sectionGap = 16
+
+    let totalLines = 0
+    grouped.forEach((s) => { totalLines += 1 + s.items.length })
+    const height = headerHeight + totalLines * lineHeight + grouped.length * sectionGap + padding
+
+    const canvas = document.createElement('canvas')
+    const scale = 2
+    canvas.width = width * scale
+    canvas.height = height * scale
+    const ctx = canvas.getContext('2d')
+    ctx.scale(scale, scale)
+
+    ctx.fillStyle = '#FAF6F0'
+    ctx.fillRect(0, 0, width, height)
+
+    ctx.fillStyle = '#1E5C57'
+    ctx.font = 'bold 24px Georgia, serif'
+    ctx.fillText('🛒 Kitchen Club', padding, 44)
+
+    ctx.fillStyle = '#8a8378'
+    ctx.font = '13px sans-serif'
+    const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    ctx.fillText(dateStr, padding, 66)
+
+    ctx.strokeStyle = '#E8DDCB'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(padding, 78)
+    ctx.lineTo(width - padding, 78)
+    ctx.stroke()
+
+    let y = headerHeight
+    grouped.forEach((s) => {
+      ctx.font = 'bold 13px sans-serif'
+      ctx.fillStyle = '#1E5C57'
+      ctx.fillText(s.label.toUpperCase(), padding, y)
+      y += lineHeight
+
+      ctx.font = '15px sans-serif'
+      s.items.forEach((item) => {
+        ctx.strokeStyle = '#C9BFA8'
+        ctx.lineWidth = 1.5
+        ctx.strokeRect(padding, y - 13, 15, 15)
+        ctx.fillStyle = '#3A342E'
+        ctx.fillText(item.text, padding + 25, y - 1)
+        y += lineHeight
+      })
+      y += sectionGap
+    })
+
+    const dataUrl = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.download = `grocery-list-${isoDate(new Date())}.png`
+    link.href = dataUrl
+    link.click()
+  }
+
   return (
     <div>
       <form className="habit-add-row" onSubmit={handleAdd}>
@@ -185,6 +249,12 @@ function GroceryListTab() {
         </select>
         <button className="btn-primary" type="submit" disabled={adding}>{adding ? 'Adding…' : '+ Add'}</button>
       </form>
+
+      {grouped.length > 0 && (
+        <button className="weather-location-link" style={{ marginBottom: 14 }} onClick={downloadGroceryImage}>
+          📸 Save list as image for the store
+        </button>
+      )}
 
       {loading && <p className="loading">Rounding up the essentials… 🛒✨</p>}
       {error && <p className="error-msg">{error}</p>}
