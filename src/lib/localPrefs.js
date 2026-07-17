@@ -35,6 +35,17 @@ export function setEra(era) {
   localStorage.setItem('era', era)
 }
 
+export function getHiddenShoppingTabs() {
+  try {
+    return JSON.parse(localStorage.getItem('hiddenShoppingTabs') || '[]')
+  } catch {
+    return []
+  }
+}
+export function setHiddenShoppingTabs(arr) {
+  localStorage.setItem('hiddenShoppingTabs', JSON.stringify(arr))
+}
+
 export function getHiddenFinanceTabs() {
   try {
     return JSON.parse(localStorage.getItem('hiddenFinanceTabs') || '[]')

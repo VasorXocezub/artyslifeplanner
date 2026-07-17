@@ -5,7 +5,7 @@ import { getReadingGoal, setReadingGoal } from './lib/localPrefs'
 const emptyForm = {
   title: '', author: '', genre: '', pages: '', status: 'want_to_read',
   rating: '', start_date: '', finish_date: '', favorite_quote: '', notes: '',
-  series_name: '', series_number: '',
+  series_name: '', series_number: '', cover_url: '',
 }
 
 function formatDate(d) {
@@ -35,6 +35,7 @@ export default function BookNookView() {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
   const [pageInputs, setPageInputs] = useState({})
   const [goal, setGoalState] = useState(getReadingGoal())
   const [editingGoal, setEditingGoal] = useState(false)
@@ -74,6 +75,7 @@ export default function BookNookView() {
       start_date: book.start_date || '', finish_date: book.finish_date || '',
       favorite_quote: book.favorite_quote || '', notes: book.notes || '',
       series_name: book.series_name || '', series_number: book.series_number != null ? String(book.series_number) : '',
+      cover_url: book.cover_url || '',
     })
     setModalOpen(true)
   }
@@ -82,6 +84,25 @@ export default function BookNookView() {
     setModalOpen(false)
     setEditingId(null)
     setForm(emptyForm)
+  }
+
+  async function handleCoverUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingCover(true)
+    const user_id = await getUserId()
+    const ext = file.name.split('.').pop()
+    const path = `${user_id}/${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage.from('book-covers').upload(path, file)
+    if (uploadError) {
+      setError(uploadError.message)
+      setUploadingCover(false)
+      return
+    }
+    const { data } = supabase.storage.from('book-covers').getPublicUrl(path)
+    setForm((f) => ({ ...f, cover_url: data.publicUrl }))
+    setUploadingCover(false)
   }
 
   async function handleSave(e) {
@@ -102,6 +123,7 @@ export default function BookNookView() {
       notes: form.notes.trim() || null,
       series_name: form.series_name.trim() || null,
       series_number: form.series_number ? parseInt(form.series_number, 10) : null,
+      cover_url: form.cover_url || null,
     }
 
     let error
@@ -367,6 +389,7 @@ export default function BookNookView() {
                   return (
                     <div className="library-card" key={b.id}>
                       <div className="bookmark-ribbon" style={{ height: `${Math.max(12, pct)}%` }} />
+                      {b.cover_url && <img src={b.cover_url} alt={b.title} className="book-cover-thumb" />}
                       <h3 className="contact-name" title={b.title}>{b.title}</h3>
                       {b.author && <p className="contact-relationship">{b.author}</p>}
                       {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
@@ -406,6 +429,7 @@ export default function BookNookView() {
               <div className="finished-shelf">
                 {toBeRead.map((b) => (
                   <div className="library-card library-card-small tbr-card" key={b.id}>
+                    {b.cover_url && <img src={b.cover_url} alt={b.title} className="book-cover-thumb" />}
                     <h3 className="contact-name" title={b.title} onClick={() => openEdit(b)}>{b.title}</h3>
                     {b.author && <p className="contact-relationship">{b.author}</p>}
                     {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
@@ -423,6 +447,7 @@ export default function BookNookView() {
               <div className="finished-shelf">
                 {[...finishedBooks].sort((a, b) => new Date(b.finish_date) - new Date(a.finish_date)).slice(0, 8).map((b) => (
                   <div className="library-card library-card-small" key={b.id} onClick={() => openEdit(b)}>
+                    {b.cover_url && <img src={b.cover_url} alt={b.title} className="book-cover-thumb" />}
                     <h3 className="contact-name" title={b.title}>{b.title}</h3>
                     {b.author && <p className="contact-relationship">{b.author}</p>}
                       {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
@@ -544,6 +569,14 @@ export default function BookNookView() {
               <div className="field">
                 <label>Title</label>
                 <input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Book title" required />
+              </div>
+              <div className="field">
+                <label>Cover image (optional)</label>
+                <div className="cover-upload-row">
+                  {form.cover_url && <img src={form.cover_url} alt="Cover preview" className="cover-preview" />}
+                  <input type="file" accept="image/*" onChange={handleCoverUpload} disabled={uploadingCover} />
+                </div>
+                {uploadingCover && <p className="field-hint">Uploading…</p>}
               </div>
               <div className="field-row">
                 <div className="field">

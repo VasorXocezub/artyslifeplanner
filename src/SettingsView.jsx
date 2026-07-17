@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenFinanceTabs, setHiddenFinanceTabs } from './lib/localPrefs'
+import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs } from './lib/localPrefs'
 
 const SPACES = [
   { key: 'contacts', label: 'Cake Club', icon: '🎂' },
@@ -21,11 +21,17 @@ const FINANCE_SUB_SPACES = [
   { key: 'converter', label: 'Converter' },
 ]
 
+const SHOPPING_SUB_SPACES = [
+  { key: 'groceries', label: '🥑 Groceries' },
+  { key: 'planned', label: '🛍️ Planned Purchases' },
+]
+
 export default function SettingsView({ session, hiddenModules, onSaveModules, onLogout }) {
   const [nameInput, setNameInput] = useState(session.user.user_metadata?.full_name || '')
   const [nameSaved, setNameSaved] = useState(false)
   const [selectedSpaces, setSelectedSpaces] = useState(new Set(hiddenModules))
   const [selectedFinanceTabs, setSelectedFinanceTabs] = useState(new Set(getHiddenFinanceTabs()))
+  const [selectedShoppingTabs, setSelectedShoppingTabs] = useState(new Set(getHiddenShoppingTabs()))
   const [spacesSaved, setSpacesSaved] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -61,9 +67,19 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
     })
   }
 
+  function toggleShoppingTab(key) {
+    setSelectedShoppingTabs((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   function handleSaveSpaces() {
     onSaveModules(Array.from(selectedSpaces))
     setHiddenFinanceTabs(Array.from(selectedFinanceTabs))
+    setHiddenShoppingTabs(Array.from(selectedShoppingTabs))
     setSpacesSaved(true)
     setTimeout(() => setSpacesSaved(false), 2000)
   }
@@ -93,6 +109,7 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   }
 
   const financesHidden = selectedSpaces.has('finances')
+  const shoppingHidden = selectedSpaces.has('shopping')
 
   return (
     <div>
@@ -189,6 +206,30 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
                     type="button"
                     className={`settings-module-row ${isHidden ? 'settings-module-row-off' : ''}`}
                     onClick={() => toggleFinanceTab(t.key)}
+                  >
+                    <span className="settings-module-label">{t.label}</span>
+                    <span className={`settings-toggle ${isHidden ? '' : 'settings-toggle-on'}`}>
+                      <span className="settings-toggle-knob" />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {!shoppingHidden && (
+          <>
+            <p className="module-group-label settings-subspace-label">SHOPPING SUB-SPACES</p>
+            <div className="settings-module-list">
+              {SHOPPING_SUB_SPACES.map((t) => {
+                const isHidden = selectedShoppingTabs.has(t.key)
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className={`settings-module-row ${isHidden ? 'settings-module-row-off' : ''}`}
+                    onClick={() => toggleShoppingTab(t.key)}
                   >
                     <span className="settings-module-label">{t.label}</span>
                     <span className={`settings-toggle ${isHidden ? '' : 'settings-toggle-on'}`}>

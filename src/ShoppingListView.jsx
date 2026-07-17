@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
-import { getCurrency } from './lib/localPrefs'
+import { getCurrency, getHiddenShoppingTabs } from './lib/localPrefs'
 
 const CATEGORIES = [
   { key: 'groceries', label: '🥑 Groceries', addPlaceholder: 'Milk, eggs, bread…' },
@@ -12,7 +12,9 @@ export default function ShoppingListView() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [tab, setTab] = useState('groceries')
+  const hiddenTabs = getHiddenShoppingTabs()
+  const visibleCategories = CATEGORIES.filter((c) => !hiddenTabs.includes(c.key))
+  const [tab, setTab] = useState(() => (visibleCategories[0] ? visibleCategories[0].key : 'groceries'))
   const [newText, setNewText] = useState('')
   const [newPrice, setNewPrice] = useState('')
   const [adding, setAdding] = useState(false)
@@ -22,6 +24,12 @@ export default function ShoppingListView() {
   useEffect(() => {
     fetchItems()
   }, [])
+
+  useEffect(() => {
+    if (hiddenTabs.includes(tab) && visibleCategories.length > 0) {
+      setTab(visibleCategories[0].key)
+    }
+  }, [tab])
 
   async function fetchItems() {
     setLoading(true)
@@ -100,7 +108,7 @@ export default function ShoppingListView() {
       </div>
 
       <div className="filter-row">
-        {CATEGORIES.map((c) => (
+        {visibleCategories.map((c) => (
           <button
             key={c.key}
             className={`filter-pill ${tab === c.key ? 'filter-pill-active' : ''}`}

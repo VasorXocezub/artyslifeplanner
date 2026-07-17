@@ -198,7 +198,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
         </div>
         <div className="hero-quote-card" key={msgIndex}>
           <span className="hero-quote-mark">"</span>
-          <p className="hero-quote-text">{ROTATING_MESSAGES[msgIndex]}</p>
+          <p className="hero-quote-text">"{ROTATING_MESSAGES[msgIndex]}"</p>
         </div>
       </div>
 
