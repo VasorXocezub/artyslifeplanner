@@ -9,7 +9,6 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const CHIP_COLORS = ['#D9A8B8', '#C98A72', '#AFC6DD', '#243B63']
 
 const EVENT_TYPES = [
-  { key: 'birthday', label: '🎂 Birthday' },
   { key: 'holiday_magic', label: '🎄 Holiday Magic' },
   { key: 'bestie_time', label: '👯 Bestie Time' },
   { key: 'date_night', label: '💖 Date Night' },

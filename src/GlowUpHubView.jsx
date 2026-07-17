@@ -392,34 +392,6 @@ export default function GlowUpHubView() {
       </div>
 
       {tab === 'today' && (
-        <div className="calendar-card" style={{ marginBottom: 18 }}>
-          <button className="weather-location-link" onClick={() => setCustomizeOpen(!customizeOpen)}>
-            ⚙️ Customize what you track
-          </button>
-          {customizeOpen && (
-            <div className="settings-module-list" style={{ marginTop: 12 }}>
-              {WELLNESS_METRICS.map((m) => {
-                const isOn = !hiddenMetrics.includes(m.key)
-                return (
-                  <button
-                    key={m.key}
-                    type="button"
-                    className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
-                    onClick={() => toggleMetric(m.key)}
-                  >
-                    <span className="settings-module-label">{m.label}</span>
-                    <span className={`settings-toggle ${isOn ? 'settings-toggle-on' : ''}`}>
-                      <span className="settings-toggle-knob" />
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'today' && (
         <>
           <div className="calendar-card momentum-card hero-glow-score">
             <p className="module-group-label">🌿 TODAY'S GLOW SCORE</p>
@@ -527,9 +499,32 @@ export default function GlowUpHubView() {
                   <button className="btn-check log-value-btn" onClick={saveGoals}>Save goals</button>
                 </>
               ) : (
-                <button className="weather-location-link" onClick={() => setEditingGoals(true)}>🎯 Edit your goals</button>
+                <>
+                  <button className="weather-location-link" onClick={() => setEditingGoals(true)}>🎯 Edit your goals</button>
+                  <button className="weather-location-link" onClick={() => setCustomizeOpen(!customizeOpen)}>⚙️ Hide what you don't track</button>
+                </>
               )}
             </div>
+            {customizeOpen && (
+              <div className="settings-module-list" style={{ marginTop: 12 }}>
+                {WELLNESS_METRICS.map((m) => {
+                  const isOn = !hiddenMetrics.includes(m.key)
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className={`settings-module-row ${isOn ? '' : 'settings-module-row-off'}`}
+                      onClick={() => toggleMetric(m.key)}
+                    >
+                      <span className="settings-module-label">{m.label}</span>
+                      <span className={`settings-toggle ${isOn ? 'settings-toggle-on' : ''}`}>
+                        <span className="settings-toggle-knob" />
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {!hiddenMetrics.includes('selfcare') && (
