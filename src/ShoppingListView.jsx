@@ -26,6 +26,7 @@ const MEAL_TYPES = [
   { key: 'breakfast', label: '🍓 Breakfast' },
   { key: 'lunch', label: '🥗 Lunch' },
   { key: 'dinner', label: '🍝 Dinner' },
+  { key: 'snack', label: '🍿 Snack' },
 ]
 
 const RECIPE_CATEGORIES = [
@@ -125,8 +126,23 @@ function GroceryListTab() {
   }
 
   async function toggleComplete(item) {
-    const { error } = await supabase.from('shopping_items').update({ completed: !item.completed }).eq('id', item.id)
+    const willComplete = !item.completed
+    const { error } = await supabase.from('shopping_items').update({ completed: willComplete }).eq('id', item.id)
     if (error) { setError(error.message); return }
+
+    if (willComplete) {
+      const user_id = await getUserId()
+      const { data: existingPantry } = await supabase
+        .from('pantry_items')
+        .select('*')
+        .ilike('name', item.text)
+        .limit(1)
+      if (existingPantry && existingPantry.length > 0) {
+        await supabase.from('pantry_items').update({ status: 'stocked' }).eq('id', existingPantry[0].id)
+      } else {
+        await supabase.from('pantry_items').insert({ name: item.text, status: 'stocked', user_id })
+      }
+    }
     fetchItems()
   }
 
@@ -212,16 +228,22 @@ function GroceryListTab() {
 /* ---------------- Meal Planner ---------------- */
 function MealPlannerTab() {
   const [plans, setPlans] = useState([])
+  const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null) // { day, mealType }
   const [inputValue, setInputValue] = useState('')
+  const [recipeId, setRecipeId] = useState('')
 
-  useEffect(() => { fetchPlans() }, [])
+  useEffect(() => { fetchAll() }, [])
 
-  async function fetchPlans() {
+  async function fetchAll() {
     setLoading(true)
-    const { data } = await supabase.from('meal_plans').select('*')
-    setPlans(data || [])
+    const [{ data: plansData }, { data: recipesData }] = await Promise.all([
+      supabase.from('meal_plans').select('*'),
+      supabase.from('recipes').select('*').order('name', { ascending: true }),
+    ])
+    setPlans(plansData || [])
+    setRecipes(recipesData || [])
     setLoading(false)
   }
 
@@ -233,6 +255,13 @@ function MealPlannerTab() {
     const existing = getMeal(day, mealType)
     setEditing({ day, mealType })
     setInputValue(existing?.meal_name || '')
+    setRecipeId(existing?.recipe_id || '')
+  }
+
+  function pickRecipe(id) {
+    setRecipeId(id)
+    const recipe = recipes.find((r) => r.id === id)
+    if (recipe) setInputValue(recipe.name)
   }
 
   async function saveMeal() {
@@ -243,12 +272,14 @@ function MealPlannerTab() {
     if (!inputValue.trim()) {
       if (existing) await supabase.from('meal_plans').delete().eq('id', existing.id)
     } else if (existing) {
-      await supabase.from('meal_plans').update({ meal_name: inputValue.trim() }).eq('id', existing.id)
+      await supabase.from('meal_plans').update({ meal_name: inputValue.trim(), recipe_id: recipeId || null }).eq('id', existing.id)
     } else {
-      await supabase.from('meal_plans').insert({ day_of_week: day, meal_type: mealType, meal_name: inputValue.trim(), user_id })
+      await supabase.from('meal_plans').insert({
+        day_of_week: day, meal_type: mealType, meal_name: inputValue.trim(), recipe_id: recipeId || null, user_id,
+      })
     }
     setEditing(null)
-    fetchPlans()
+    fetchAll()
   }
 
   const mealsPlannedThisWeek = plans.filter((p) => p.meal_name).length
@@ -259,7 +290,7 @@ function MealPlannerTab() {
         <p className="module-group-label">QUICK STATS</p>
         <div className="goals-summary-row">
           <span className="goals-summary-label">🍽️ Meals planned this week</span>
-          <span className="goals-summary-value">{mealsPlannedThisWeek} / 21</span>
+          <span className="goals-summary-value">{mealsPlannedThisWeek} / 28</span>
         </div>
       </div>
 
@@ -272,24 +303,39 @@ function MealPlannerTab() {
             {MEAL_TYPES.map((mt) => {
               const meal = getMeal(day, mt.key)
               const isEditing = editing?.day === day && editing?.mealType === mt.key
+              const matchingRecipes = recipes.filter((r) => r.category === mt.key)
               return (
-                <div className="goals-summary-row" key={mt.key}>
+                <div className="goals-summary-row meal-planner-row" key={mt.key}>
                   <span className="goals-summary-label">{mt.label}</span>
                   {isEditing ? (
-                    <span className="log-value-row" style={{ margin: 0 }}>
-                      <input
-                        autoFocus
-                        className="log-value-input"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
-                        placeholder="What's cooking?"
-                      />
-                      <button className="btn-check log-value-btn" onClick={saveMeal}>Save</button>
-                    </span>
+                    <div className="meal-planner-editor">
+                      {matchingRecipes.length > 0 && (
+                        <select
+                          className="meal-planner-recipe-select"
+                          value={recipeId}
+                          onChange={(e) => pickRecipe(e.target.value)}
+                        >
+                          <option value="">📖 Pick from Recipe Box…</option>
+                          {matchingRecipes.map((r) => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      )}
+                      <span className="log-value-row" style={{ margin: 0 }}>
+                        <input
+                          autoFocus
+                          className="log-value-input"
+                          value={inputValue}
+                          onChange={(e) => { setInputValue(e.target.value); setRecipeId('') }}
+                          onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
+                          placeholder="Or type something else…"
+                        />
+                        <button className="btn-check log-value-btn" onClick={saveMeal}>Save</button>
+                      </span>
+                    </div>
                   ) : (
                     <button className="weather-location-link" onClick={() => openEdit(day, mt.key)}>
-                      {meal?.meal_name || 'Add a meal'}
+                      {meal?.recipe_id && '📖 '}{meal?.meal_name || 'Add a meal'}
                     </button>
                   )}
                 </div>
@@ -502,6 +548,22 @@ function PantryTab() {
 
   async function setStatus(item, status) {
     await supabase.from('pantry_items').update({ status }).eq('id', item.id)
+
+    if (status === 'low' || status === 'out') {
+      const { data: existingGrocery } = await supabase
+        .from('shopping_items')
+        .select('*')
+        .eq('category', 'groceries')
+        .eq('completed', false)
+        .ilike('text', item.name)
+        .limit(1)
+      if (!existingGrocery || existingGrocery.length === 0) {
+        const user_id = await getUserId()
+        await supabase.from('shopping_items').insert({
+          text: item.name, category: 'groceries', section: 'pantry', user_id,
+        })
+      }
+    }
     fetchItems()
   }
 

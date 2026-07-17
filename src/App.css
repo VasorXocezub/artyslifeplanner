@@ -678,6 +678,28 @@
   color: var(--coral);
 }
 
+.meal-planner-row {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.meal-planner-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.meal-planner-recipe-select {
+  background: var(--bg);
+  border: 2px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .momentum-card {
   margin-bottom: 20px;
 }
