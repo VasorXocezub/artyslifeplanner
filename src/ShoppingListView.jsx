@@ -169,8 +169,12 @@ function GroceryListTab() {
     items: openItems.filter((i) => (i.section || 'other') === s.key),
   })).filter((s) => s.items.length > 0)
 
-  function downloadGroceryImage() {
+  async function downloadGroceryImage() {
     if (grouped.length === 0) return
+    const { data: userData } = await supabase.auth.getUser()
+    const displayName = userData?.user?.user_metadata?.full_name || userData?.user?.email?.split('@')[0] || 'My'
+    const headerText = `🛍️ ${displayName}'s Grocery List`
+
     const width = 480
     const padding = 32
     const headerHeight = 92
@@ -192,8 +196,13 @@ function GroceryListTab() {
     ctx.fillRect(0, 0, width, height)
 
     ctx.fillStyle = '#1E5C57'
-    ctx.font = 'bold 24px Georgia, serif'
-    ctx.fillText('🛒 Kitchen Club', padding, 44)
+    let titleFontSize = 24
+    ctx.font = `bold ${titleFontSize}px Georgia, serif`
+    while (ctx.measureText(headerText).width > width - padding * 2 && titleFontSize > 16) {
+      titleFontSize -= 1
+      ctx.font = `bold ${titleFontSize}px Georgia, serif`
+    }
+    ctx.fillText(headerText, padding, 44)
 
     ctx.fillStyle = '#8a8378'
     ctx.font = '13px sans-serif'
@@ -251,7 +260,7 @@ function GroceryListTab() {
       </form>
 
       {grouped.length > 0 && (
-        <button className="weather-location-link" style={{ marginBottom: 14 }} onClick={downloadGroceryImage}>
+        <button className="btn-check" style={{ marginBottom: 18 }} onClick={downloadGroceryImage}>
           📸 Save list as image for the store
         </button>
       )}
