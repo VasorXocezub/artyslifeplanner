@@ -629,6 +629,32 @@
   border: 2px solid var(--border);
 }
 
+.momentum-card {
+  margin-bottom: 20px;
+}
+
+.momentum-track {
+  height: 14px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0 8px 0;
+}
+
+.momentum-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--pink), var(--coral));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.momentum-caption {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
 .booknook-progress-card {
   margin-bottom: 24px;
 }

@@ -8,6 +8,11 @@ const PRIORITIES = [
 ]
 const PRIORITY_ORDER = { right_now: 0, next_up: 1, later: 2 }
 
+const CATEGORIES = [
+  { key: 'personal', label: '💖 Personal' },
+  { key: 'business', label: '💼 Business' },
+]
+
 function priorityInfo(key) {
   return PRIORITIES.find((p) => p.key === key) || PRIORITIES[1]
 }
@@ -25,10 +30,19 @@ function isOverdue(d) {
   return new Date(d + 'T00:00:00') < today
 }
 
+function momentumMessage(pct) {
+  if (pct >= 100) return 'You did that! 👑'
+  if (pct >= 70) return 'Almost there, keep going.'
+  if (pct >= 40) return 'Look at you go, queen.'
+  if (pct > 0) return 'Nice start — keep it up.'
+  return "Let's get this bread."
+}
+
 export default function TodoView() {
   const [todos, setTodos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [category, setCategory] = useState('personal')
   const [newText, setNewText] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newPriority, setNewPriority] = useState('next_up')
@@ -60,7 +74,7 @@ export default function TodoView() {
     const user_id = await getUserId()
     const { error } = await supabase
       .from('todos')
-      .insert({ text: newText.trim(), due_date: newDate || null, priority: newPriority, user_id })
+      .insert({ text: newText.trim(), due_date: newDate || null, priority: newPriority, category, user_id })
     setAdding(false)
     if (error) {
       setError(error.message)
@@ -101,7 +115,8 @@ export default function TodoView() {
     fetchTodos()
   }
 
-  const filteredOpen = todos.filter((t) => !t.completed && (priorityFilter === 'all' || t.priority === priorityFilter))
+  const categoryTodos = todos.filter((t) => (t.category || 'personal') === category)
+  const filteredOpen = categoryTodos.filter((t) => !t.completed && (priorityFilter === 'all' || t.priority === priorityFilter))
   const openTodos = filteredOpen.sort((a, b) => {
     const pa = PRIORITY_ORDER[a.priority] ?? 1
     const pb = PRIORITY_ORDER[b.priority] ?? 1
@@ -111,7 +126,11 @@ export default function TodoView() {
     if (b.due_date) return 1
     return 0
   })
-  const completedTodos = todos.filter((t) => t.completed)
+  const completedTodos = categoryTodos.filter((t) => t.completed)
+
+  const momentumPct = categoryTodos.length > 0
+    ? Math.round((completedTodos.length / categoryTodos.length) * 100)
+    : 0
 
   return (
     <div>
@@ -123,6 +142,28 @@ export default function TodoView() {
           </p>
         </div>
       </div>
+
+      <div className="filter-row">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            className={`filter-pill ${category === c.key ? 'filter-pill-active' : ''}`}
+            onClick={() => setCategory(c.key)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {categoryTodos.length > 0 && (
+        <div className="calendar-card momentum-card">
+          <p className="module-group-label">MOMENTUM METER</p>
+          <div className="momentum-track">
+            <div className="momentum-fill" style={{ width: `${momentumPct}%` }} />
+          </div>
+          <p className="momentum-caption">{momentumPct}% — {momentumMessage(momentumPct)}</p>
+        </div>
+      )}
 
       <form className="habit-add-row" onSubmit={handleAdd}>
         <input
