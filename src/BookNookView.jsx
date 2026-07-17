@@ -5,6 +5,7 @@ import { getReadingGoal, setReadingGoal } from './lib/localPrefs'
 const emptyForm = {
   title: '', author: '', genre: '', pages: '', status: 'want_to_read',
   rating: '', start_date: '', finish_date: '', favorite_quote: '', notes: '',
+  series_name: '', series_number: '',
 }
 
 function formatDate(d) {
@@ -20,6 +21,11 @@ function mostCommon(arr) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
 }
 
+function seriesLabel(book) {
+  if (!book.series_name) return null
+  return book.series_number ? `${book.series_name} #${book.series_number}` : book.series_name
+}
+
 export default function BookNookView() {
   const [books, setBooks] = useState([])
   const [logs, setLogs] = useState([])
@@ -33,6 +39,9 @@ export default function BookNookView() {
   const [goal, setGoalState] = useState(getReadingGoal())
   const [editingGoal, setEditingGoal] = useState(false)
   const [goalInput, setGoalInput] = useState(String(goal))
+
+  const [checkinPages, setCheckinPages] = useState('')
+  const [checkinBookId, setCheckinBookId] = useState('')
 
   useEffect(() => {
     fetchAll()
@@ -64,6 +73,7 @@ export default function BookNookView() {
       rating: book.rating != null ? String(book.rating) : '',
       start_date: book.start_date || '', finish_date: book.finish_date || '',
       favorite_quote: book.favorite_quote || '', notes: book.notes || '',
+      series_name: book.series_name || '', series_number: book.series_number != null ? String(book.series_number) : '',
     })
     setModalOpen(true)
   }
@@ -90,6 +100,8 @@ export default function BookNookView() {
       finish_date: form.finish_date || null,
       favorite_quote: form.favorite_quote.trim() || null,
       notes: form.notes.trim() || null,
+      series_name: form.series_name.trim() || null,
+      series_number: form.series_number ? parseInt(form.series_number, 10) : null,
     }
 
     let error
@@ -115,8 +127,8 @@ export default function BookNookView() {
     fetchAll()
   }
 
-  async function logPages(book) {
-    const raw = pageInputs[book.id]
+  async function logPages(book, explicitPages) {
+    const raw = explicitPages !== undefined ? explicitPages : pageInputs[book.id]
     const pages = parseInt(raw, 10)
     if (!raw || isNaN(pages) || pages <= 0) return
     const user_id = await getUserId()
@@ -127,6 +139,21 @@ export default function BookNookView() {
     await supabase.from('books').update({ current_page: newCurrent }).eq('id', book.id)
 
     setPageInputs((v) => ({ ...v, [book.id]: '' }))
+    fetchAll()
+  }
+
+  async function handleCheckin() {
+    const book = books.find((b) => b.id === checkinBookId)
+    if (!book) return
+    await logPages(book, checkinPages)
+    setCheckinPages('')
+  }
+
+  async function startReading(book) {
+    await supabase.from('books').update({
+      status: 'reading',
+      start_date: book.start_date || new Date().toISOString().split('T')[0],
+    }).eq('id', book.id)
     fetchAll()
   }
 
@@ -159,6 +186,15 @@ export default function BookNookView() {
   )
   const finishedThisYear = finishedBooks.filter((b) => new Date(b.finish_date + 'T00:00:00').getFullYear() === thisYear)
   const currentlyReading = books.filter((b) => b.status === 'reading')
+  const toBeRead = books.filter((b) => b.status === 'want_to_read')
+  const todayStr = now.toISOString().split('T')[0]
+  const readToday = logs.some((l) => l.logged_date === todayStr)
+
+  useEffect(() => {
+    if (!checkinBookId && currentlyReading.length > 0) {
+      setCheckinBookId(currentlyReading[0].id)
+    }
+  }, [currentlyReading, checkinBookId])
 
   const readThisYear = finishedThisYear.length
   const avgRating = (() => {
@@ -292,6 +328,37 @@ export default function BookNookView() {
           </div>
 
           {currentlyReading.length > 0 && (
+            <div className="calendar-card booknook-checkin-card">
+              <p className="module-group-label">DID YOU READ TODAY?</p>
+              <div className="booknook-checkin-row">
+                <button
+                  className={`btn-check ${readToday ? 'btn-check-done' : ''}`}
+                  disabled={readToday}
+                  onClick={handleCheckin}
+                >
+                  {readToday ? '✓ Logged for today' : '✓ I read today'}
+                </button>
+                {currentlyReading.length > 1 && (
+                  <select value={checkinBookId} onChange={(e) => setCheckinBookId(e.target.value)}>
+                    {currentlyReading.map((b) => (
+                      <option key={b.id} value={b.id}>{b.title}</option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  type="number"
+                  className="log-value-input"
+                  placeholder="pages read"
+                  value={checkinPages}
+                  onChange={(e) => setCheckinPages(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCheckin()}
+                  disabled={readToday}
+                />
+              </div>
+            </div>
+          )}
+
+          {currentlyReading.length > 0 && (
             <div className="upnext-section">
               <p className="module-group-label">CURRENTLY READING</p>
               <div className="card-grid">
@@ -302,6 +369,7 @@ export default function BookNookView() {
                       <div className="bookmark-ribbon" style={{ height: `${Math.max(12, pct)}%` }} />
                       <h3 className="contact-name" title={b.title}>{b.title}</h3>
                       {b.author && <p className="contact-relationship">{b.author}</p>}
+                      {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
                       <div className="progress-row">
                         <div className="progress-track">
                           <div className="progress-fill" style={{ width: `${pct}%`, background: '#1E5C57' }} />
@@ -332,6 +400,23 @@ export default function BookNookView() {
             </div>
           )}
 
+          {toBeRead.length > 0 && (
+            <div className="upnext-section">
+              <p className="module-group-label">TO BE READ</p>
+              <div className="finished-shelf">
+                {toBeRead.map((b) => (
+                  <div className="library-card library-card-small tbr-card" key={b.id}>
+                    <h3 className="contact-name" title={b.title} onClick={() => openEdit(b)}>{b.title}</h3>
+                    {b.author && <p className="contact-relationship">{b.author}</p>}
+                    {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
+                    {b.pages && <p className="habit-dates">{b.pages} pages</p>}
+                    <button className="btn-check tbr-start-btn" onClick={() => startReading(b)}>Start reading</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {finishedBooks.length > 0 && (
             <div className="upnext-section">
               <p className="module-group-label">RECENTLY FINISHED</p>
@@ -340,6 +425,7 @@ export default function BookNookView() {
                   <div className="library-card library-card-small" key={b.id} onClick={() => openEdit(b)}>
                     <h3 className="contact-name" title={b.title}>{b.title}</h3>
                     {b.author && <p className="contact-relationship">{b.author}</p>}
+                      {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
                     {b.rating != null && <p className="booknook-rating">{'⭐'.repeat(Math.round(b.rating))}</p>}
                     <p className="habit-dates">Finished {formatDate(b.finish_date)}</p>
                     {b.favorite_quote && (
@@ -467,6 +553,16 @@ export default function BookNookView() {
                 <div className="field">
                   <label>Genre</label>
                   <input value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} placeholder="Fiction, romance…" />
+                </div>
+              </div>
+              <div className="field-row">
+                <div className="field">
+                  <label>Series (optional)</label>
+                  <input value={form.series_name} onChange={(e) => setForm({ ...form, series_name: e.target.value })} placeholder="e.g. Harry Potter" />
+                </div>
+                <div className="field">
+                  <label>Book #</label>
+                  <input type="number" min="1" value={form.series_number} onChange={(e) => setForm({ ...form, series_number: e.target.value })} placeholder="e.g. 3" />
                 </div>
               </div>
               <div className="field-row">

@@ -184,15 +184,16 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     <div>
       <div className="hero-panel">
         <h1 className="hero-title">{getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>
-        <WeatherWidget />
-        <div className="era-picker">
-          <label>Current era</label>
+        <div className="era-picker era-picker-inline">
+          <span>In My</span>
           <select value={era} onChange={handleEraChange}>
             {ERAS.map((e) => (
               <option key={e.key} value={e.key}>{e.label}</option>
             ))}
           </select>
         </div>
+        <div className="hero-divider" />
+        <WeatherWidget user={user} />
         <p className="hero-rotating-msg" key={msgIndex}>{ROTATING_MESSAGES[msgIndex]}</p>
       </div>
 

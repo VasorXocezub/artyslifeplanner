@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getCurrency, setCurrency as saveCurrency, getHiddenFinanceTabs } from './lib/localPrefs'
 import { CURRENCIES } from './lib/currency'
+import FinanceOverview from './FinanceOverview'
 import PersonalFinances from './PersonalFinances'
 import BusinessTracker from './BusinessTracker'
 import SavingsGoals from './SavingsGoals'
@@ -8,6 +9,7 @@ import RecurringExpenses from './RecurringExpenses'
 import CurrencyConverter from './CurrencyConverter'
 
 const TABS = [
+  { key: 'overview', label: 'Overview' },
   { key: 'personal', label: 'Personal' },
   { key: 'business', label: 'Business' },
   { key: 'savings', label: 'Savings' },
@@ -21,7 +23,7 @@ export default function FinancesView() {
   const [tab, setTab] = useState(() => {
     const hidden = getHiddenFinanceTabs()
     const firstVisible = TABS.find((t) => !hidden.includes(t.key))
-    return firstVisible ? firstVisible.key : 'personal'
+    return firstVisible ? firstVisible.key : 'overview'
   })
   const [currency, setCurrency] = useState(getCurrency())
 
@@ -65,6 +67,7 @@ export default function FinancesView() {
         ))}
       </div>
 
+      {tab === 'overview' && <FinanceOverview currency={currency} />}
       {tab === 'personal' && <PersonalFinances currency={currency} />}
       {tab === 'business' && <BusinessTracker currency={currency} />}
       {tab === 'savings' && <SavingsGoals currency={currency} />}

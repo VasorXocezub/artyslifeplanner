@@ -13,6 +13,7 @@ const SPACES = [
 ]
 
 const FINANCE_SUB_SPACES = [
+  { key: 'overview', label: 'Overview' },
   { key: 'personal', label: 'Personal' },
   { key: 'business', label: 'Business' },
   { key: 'savings', label: 'Savings' },

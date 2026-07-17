@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getLocation, setLocation } from './lib/localPrefs'
+import { supabase } from './lib/supabase'
 
 const WEATHER_ICONS = {
   0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
@@ -26,8 +26,8 @@ function getSeason(date, lat) {
   return season
 }
 
-export default function WeatherWidget() {
-  const [location, setLocationState] = useState(getLocation())
+export default function WeatherWidget({ user }) {
+  const [location, setLocationState] = useState(user?.user_metadata?.location || null)
   const [weather, setWeather] = useState(null)
   const [editing, setEditing] = useState(false)
   const [query, setQuery] = useState('')
@@ -66,22 +66,19 @@ export default function WeatherWidget() {
     setSearching(false)
   }
 
-  function selectResult(r) {
+  async function selectResult(r) {
     const loc = { name: `${r.name}${r.admin1 ? ', ' + r.admin1 : ''}`, lat: r.latitude, lon: r.longitude }
-    setLocation(loc)
     setLocationState(loc)
     setEditing(false)
     setResults([])
     setQuery('')
+    await supabase.auth.updateUser({ data: { location: loc } })
   }
 
   const now = new Date()
-  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' })
-
   const temp = weather?.current?.temperature_2m
   const code = weather?.current?.weather_code
   const icon = code != null ? WEATHER_ICONS[code] || '🌡️' : null
-  const season = location ? getSeason(now, location.lat) : null
   const sunsetRaw = weather?.daily?.sunset?.[0]
   const sunsetTime = sunsetRaw
     ? new Date(sunsetRaw).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -89,20 +86,27 @@ export default function WeatherWidget() {
 
   return (
     <div className="weather-widget">
-      <p className="hero-subline">
-        {dayName}{season ? ` • ${season}` : ''}
-      </p>
-
       {location ? (
-        <p className="hero-subline weather-line">
-          {icon && `${icon} `}{temp != null ? `${Math.round(temp)}°` : '—'}
-          {sunsetTime && <> &nbsp;·&nbsp; 🌙 Sunset {sunsetTime}</>}
-          <button type="button" className="weather-location-link" onClick={() => setEditing(!editing)}>
+        <>
+          {temp != null && (
+            <p className="hero-subline weather-line-item">
+              {icon} {Math.round(temp)}°C
+            </p>
+          )}
+          {sunsetTime && (
+            <p className="hero-subline weather-line-item">
+              🌙 Sunset {sunsetTime}
+            </p>
+          )}
+          <p className="hero-subline weather-line-item weather-location-row">
             📍 {location.name}
-          </button>
-        </p>
+            <button type="button" className="weather-location-link" onClick={() => setEditing(!editing)}>
+              edit
+            </button>
+          </p>
+        </>
       ) : (
-        <p className="hero-subline weather-line">
+        <p className="hero-subline weather-line-item">
           <button type="button" className="weather-location-link" onClick={() => setEditing(!editing)}>
             📍 Set your location for accurate weather
           </button>
