@@ -821,8 +821,8 @@
 }
 
 .ingredient-row .ingredient-amount-input {
-  width: 48px;
-  flex: 0 0 48px;
+  width: 58px;
+  flex: 0 0 58px;
   min-width: 0;
   background: #fff;
   border: 2px solid var(--border);
@@ -835,13 +835,13 @@
 }
 
 .ingredient-row .ingredient-unit-select {
-  width: 56px;
-  flex: 0 0 56px;
+  width: 68px;
+  flex: 0 0 68px;
   min-width: 0;
   background: #fff;
   border: 2px solid var(--border);
   border-radius: 12px;
-  padding: 8px 2px;
+  padding: 8px 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--ink);

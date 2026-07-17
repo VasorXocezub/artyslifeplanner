@@ -895,7 +895,7 @@ function RecipeBoxTab() {
                 <button
                   type="button"
                   className="weather-location-link"
-                  onClick={() => setForm({ ...form, ingredients_list: [...form.ingredients_list, { amount: '', unit: '', name: '' }] })}
+                  onClick={() => setForm({ ...form, ingredients_list: [...form.ingredients_list, { amount: '0', unit: '', name: '' }] })}
                 >
                   + Add ingredient
                 </button>
