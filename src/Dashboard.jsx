@@ -310,7 +310,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     insightItems.push({ icon: '✨', text: `${formatMoney(stats.totalSaved, currency)} saved toward your goals` })
   }
   if (!hiddenModules.includes('shopping') && stats.shoppingPlanned > 0) {
-    insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} wish${stats.shoppingPlanned > 1 ? 'es' : ''} on your wishlist` })
+    insightItems.push({ icon: '🎀', text: `${stats.shoppingPlanned} item${stats.shoppingPlanned > 1 ? 's' : ''} on your wishlist` })
   }
   if (!hiddenModules.includes('shopping') && stats.shoppingGroceries > 0) {
     insightItems.push({ icon: '🍓', text: `${stats.shoppingGroceries} essential${stats.shoppingGroceries > 1 ? 's' : ''} to grab` })

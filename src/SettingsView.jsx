@@ -24,8 +24,12 @@ const FINANCE_SUB_SPACES = [
 ]
 
 const SHOPPING_SUB_SPACES = [
-  { key: 'groceries', label: '🥑 Groceries' },
-  { key: 'planned', label: '🛍️ Planned Purchases' },
+  { key: 'groceries', label: '🛒 Grocery List' },
+  { key: 'planner', label: '🗓️ Meal Planner' },
+  { key: 'recipes', label: '📖 Recipe Box' },
+  { key: 'pantry', label: '🌾 Pantry' },
+  { key: 'budget', label: '💰 Budget' },
+  { key: 'planned', label: '🎀 Wishlist' },
 ]
 
 const TODO_SUB_SPACES = [
