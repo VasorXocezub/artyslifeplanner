@@ -287,15 +287,6 @@ export default function TodoView() {
     fetchTodos()
   }
 
-  async function toggleNotesVisible(todo) {
-    const { error } = await supabase.from('todos').update({ notes_visible: !todo.notes_visible }).eq('id', todo.id)
-    if (error) {
-      setError(error.message)
-      return
-    }
-    fetchTodos()
-  }
-
   async function deleteNote(noteId) {
     const { error } = await supabase.from('todo_notes').delete().eq('id', noteId)
     if (error) {
@@ -501,12 +492,6 @@ export default function TodoView() {
                     <div className="todo-notes-panel">
                       <div className="todo-notes-header">
                         <span className="booknook-stat-label">📝 PROGRESS, CONTEXT, FOLLOW-UPS…</span>
-                        <button className="todo-visibility-toggle" onClick={() => toggleNotesVisible(t)}>
-                          <span className={`settings-toggle ${t.notes_visible === false ? '' : 'settings-toggle-on'}`}>
-                            <span className="settings-toggle-knob" />
-                          </span>
-                          {t.notes_visible === false ? '🙈 Hidden' : '👀 Visible'}
-                        </button>
                       </div>
 
                       {(notesByTodo[t.id] || []).length > 0 && (
