@@ -174,7 +174,7 @@ export default function ContactsView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Cake Club</h1>
-          <p className="view-subtitle cake-club-subtitle">It's giving thoughtful queen. ✨</p>
+          <p className="view-subtitle cake-club-subtitle">Because panic-buying gifts isn't a personality trait. 🎁</p>
         </div>
         <div className="toolbar">
           <button className="btn-primary" onClick={() => openAdd()}>+ Add birthday</button>

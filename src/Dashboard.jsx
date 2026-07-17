@@ -37,35 +37,35 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Cake Club', desc: 'Never miss a cake day 🎂', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
-      { key: 'social', title: 'Social Calendar', desc: 'Your social life, but make it cute 💌', enabled: true, accent: '#C98A72', tint: '#FBF3EF' },
+      { key: 'contacts', title: 'Cake Club', desc: 'Because panic-buying gifts isn\'t a personality trait. 🎁', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
+      { key: 'social', title: 'Social Club', desc: '🌸 The group chat\'s HR department.', enabled: true, accent: '#C98A72', tint: '#FBF3EF' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Goals', desc: 'Big dreams, tiny steps ✨', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
-      { key: 'habits', title: 'Habits', desc: 'Streaks worth bragging about 🔥', enabled: true, accent: '#1E5C57', tint: '#EAF5F3' },
-      { key: 'todos', title: 'To-Do', desc: 'One thing at a time, bestie 📋', enabled: true, accent: '#8FC2BE', tint: '#EAF5F3' },
+      { key: 'goals', title: 'Dream Board', desc: 'Delulu? No. Visionary. ✨', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
+      { key: 'habits', title: 'Daily Habits', desc: '✨ Romanticizing basic human maintenance.', enabled: true, accent: '#1E5C57', tint: '#EAF5F3' },
+      { key: 'todos', title: 'To-Do List', desc: '🫡 Unfortunately, I assigned this to myself.', enabled: true, accent: '#8FC2BE', tint: '#EAF5F3' },
     ],
   },
   {
     group: 'READING',
     items: [
-      { key: 'booknook', title: 'Book Nook', desc: 'I\'d rather be reading 📖', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
+      { key: 'booknook', title: 'Book Nook', desc: '💌 In a committed relationship with fictional characters.', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
     ],
   },
   {
     group: 'WELLNESS',
     items: [
-      { key: 'glowup', title: 'Glow Up Hub', desc: 'Hydrated, moved, glowing ✨', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
+      { key: 'glowup', title: 'Glow Up Hub', desc: 'Mind, body and main character energy. ✨', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
     ],
   },
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Finances', desc: 'Where your money runs off to 💸', enabled: true, accent: '#1E5C57', tint: '#F7EFDF' },
-      { key: 'shopping', title: 'Shopping List', desc: 'Groceries + wishlist, cutely 🛍️', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
+      { key: 'finances', title: 'Rich Girl Era', desc: '💸 We listen and we don\'t judge.', enabled: true, accent: '#1E5C57', tint: '#F7EFDF' },
+      { key: 'shopping', title: 'Kitchen Club', desc: '🍓 Girl dinner is not a food group.', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
     ],
   },
 ]

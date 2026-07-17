@@ -14,6 +14,18 @@ const CATEGORIES = [
   { key: 'business', label: '💼 Business' },
 ]
 
+const REPEAT_OPTIONS = [
+  { key: 'none', label: 'Does not repeat' },
+  { key: 'daily', label: '🔄 Daily' },
+  { key: 'weekly', label: '📅 Weekly' },
+  { key: 'monthly', label: '🗓️ Monthly' },
+  { key: 'custom', label: '✨ Custom Repeat' },
+]
+
+function repeatInfo(key) {
+  return REPEAT_OPTIONS.find((r) => r.key === key) || REPEAT_OPTIONS[0]
+}
+
 function priorityInfo(key) {
   return PRIORITIES.find((p) => p.key === key) || PRIORITIES[1]
 }
@@ -43,6 +55,16 @@ function momentumMessage(pct) {
   return "Let's get this bread."
 }
 
+function shouldReset(todo, now) {
+  if (!todo.is_recurring || !todo.completed) return false
+  if (!todo.last_reset_date) return true
+  const last = new Date(todo.last_reset_date + 'T00:00:00')
+  if (todo.repeat_type === 'weekly') return (now - last) / 86400000 >= 7
+  if (todo.repeat_type === 'monthly') return now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear()
+  if (todo.repeat_type === 'custom') return false
+  return todo.last_reset_date !== todayStr()
+}
+
 export default function TodoView() {
   const [todos, setTodos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,10 +79,12 @@ export default function TodoView() {
   const [newText, setNewText] = useState('')
   const [newDate, setNewDate] = useState('')
   const [newPriority, setNewPriority] = useState('next_up')
-  const [newRecurring, setNewRecurring] = useState(false)
+  const [newRepeat, setNewRepeat] = useState('none')
   const [adding, setAdding] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
   const [priorityFilter, setPriorityFilter] = useState('all')
+  const [expandedNotes, setExpandedNotes] = useState({})
+  const [noteInputs, setNoteInputs] = useState({})
 
   useEffect(() => {
     fetchTodos()
@@ -86,10 +110,9 @@ export default function TodoView() {
       return
     }
 
+    const now = new Date()
     const today = todayStr()
-    const toReset = (data || []).filter(
-      (t) => t.is_recurring && t.completed && t.last_reset_date !== today
-    )
+    const toReset = (data || []).filter((t) => shouldReset(t, now))
     if (toReset.length > 0) {
       await Promise.all(
         toReset.map((t) =>
@@ -112,6 +135,7 @@ export default function TodoView() {
     if (!newText.trim()) return
     setAdding(true)
     const user_id = await getUserId()
+    const isRecurring = newRepeat !== 'none'
     const { error } = await supabase
       .from('todos')
       .insert({
@@ -119,8 +143,9 @@ export default function TodoView() {
         due_date: newDate || null,
         priority: newPriority,
         category,
-        is_recurring: newRecurring,
-        last_reset_date: newRecurring ? todayStr() : null,
+        is_recurring: isRecurring,
+        repeat_type: isRecurring ? newRepeat : null,
+        last_reset_date: isRecurring ? todayStr() : null,
         user_id,
       })
     setAdding(false)
@@ -130,14 +155,15 @@ export default function TodoView() {
     }
     setNewText('')
     setNewDate('')
-    setNewRecurring(false)
+    setNewRepeat('none')
     fetchTodos()
   }
 
-  async function toggleRecurring(todo) {
+  async function changeRepeat(todo, repeatType) {
+    const isRecurring = repeatType !== 'none'
     const { error } = await supabase
       .from('todos')
-      .update({ is_recurring: !todo.is_recurring, last_reset_date: !todo.is_recurring ? todayStr() : null })
+      .update({ is_recurring: isRecurring, repeat_type: isRecurring ? repeatType : null, last_reset_date: isRecurring ? todayStr() : null })
       .eq('id', todo.id)
     if (error) {
       setError(error.message)
@@ -179,6 +205,29 @@ export default function TodoView() {
     fetchTodos()
   }
 
+  function toggleNotesExpanded(todo) {
+    setExpandedNotes((v) => ({ ...v, [todo.id]: !v[todo.id] }))
+    setNoteInputs((v) => ({ ...v, [todo.id]: v[todo.id] !== undefined ? v[todo.id] : (todo.notes || '') }))
+  }
+
+  async function saveNotes(todo) {
+    const { error } = await supabase.from('todos').update({ notes: noteInputs[todo.id] || null }).eq('id', todo.id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    fetchTodos()
+  }
+
+  async function toggleNotesVisible(todo) {
+    const { error } = await supabase.from('todos').update({ notes_visible: !todo.notes_visible }).eq('id', todo.id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    fetchTodos()
+  }
+
   const categoryTodos = todos.filter((t) => (t.category || 'personal') === category)
   const filteredOpen = categoryTodos.filter((t) => !t.completed && (priorityFilter === 'all' || t.priority === priorityFilter))
   const openTodos = filteredOpen.sort((a, b) => {
@@ -200,10 +249,8 @@ export default function TodoView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">To-Do</h1>
-          <p className="view-subtitle">
-            {openTodos.length === 0 ? 'Nothing on your plate, bestie ✨' : `${openTodos.length} ${openTodos.length === 1 ? 'thing' : 'things'} to slay`}
-          </p>
+          <h1 className="view-title">To-Do List</h1>
+          <p className="view-subtitle cake-club-subtitle">🫡 Unfortunately, I assigned this to myself.</p>
         </div>
       </div>
 
@@ -256,14 +303,14 @@ export default function TodoView() {
         </button>
       </form>
 
-      <label className="savings-toggle-label todo-recurring-label">
-        <input
-          type="checkbox"
-          checked={newRecurring}
-          onChange={(e) => setNewRecurring(e.target.checked)}
-        />
-        {' '}🔁 Repeats daily
-      </label>
+      <div className="field todo-repeat-field">
+        <label>Repeat</label>
+        <select value={newRepeat} onChange={(e) => setNewRepeat(e.target.value)}>
+          {REPEAT_OPTIONS.map((r) => (
+            <option key={r.key} value={r.key}>{r.label}</option>
+          ))}
+        </select>
+      </div>
 
       <div className="filter-row">
         <button
@@ -297,34 +344,64 @@ export default function TodoView() {
         <div className="todo-list">
           {openTodos.map((t) => {
             const pInfo = priorityInfo(t.priority)
+            const notesOpen = !!expandedNotes[t.id]
             return (
-              <div className="todo-row" key={t.id}>
-                <button className="todo-checkbox" onClick={() => toggleComplete(t)} aria-label="Mark done" />
-                <span className="todo-text">{t.text}</span>
-                <button
-                  type="button"
-                  className={`todo-recurring-badge ${t.is_recurring ? 'todo-recurring-badge-on' : ''}`}
-                  onClick={() => toggleRecurring(t)}
-                  title={t.is_recurring ? 'Repeats daily — click to turn off' : 'Click to make this repeat daily'}
-                >
-                  🔁
-                </button>
-                <select
-                  className="todo-priority-select"
-                  style={{ color: pInfo.color, borderColor: pInfo.color }}
-                  value={t.priority || 'next_up'}
-                  onChange={(e) => changePriority(t, e.target.value)}
-                >
-                  {PRIORITIES.map((p) => (
-                    <option key={p.key} value={p.key}>{p.label}</option>
-                  ))}
-                </select>
-                {t.due_date && (
-                  <span className={`todo-due ${isOverdue(t.due_date) ? 'todo-due-overdue' : ''}`}>
-                    {formatDate(t.due_date)}
-                  </span>
+              <div className="todo-item-wrap" key={t.id}>
+                <div className="todo-row">
+                  <button className="todo-checkbox" onClick={() => toggleComplete(t)} aria-label="Mark done" />
+                  <span className="todo-text">{t.text}</span>
+                  <select
+                    className="todo-recurring-select"
+                    value={t.is_recurring ? (t.repeat_type || 'daily') : 'none'}
+                    onChange={(e) => changeRepeat(t, e.target.value)}
+                    title="Repeat"
+                  >
+                    {REPEAT_OPTIONS.map((r) => (
+                      <option key={r.key} value={r.key}>{r.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="todo-priority-select"
+                    style={{ color: pInfo.color, borderColor: pInfo.color }}
+                    value={t.priority || 'next_up'}
+                    onChange={(e) => changePriority(t, e.target.value)}
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p.key} value={p.key}>{p.label}</option>
+                    ))}
+                  </select>
+                  {t.due_date && (
+                    <span className={`todo-due ${isOverdue(t.due_date) ? 'todo-due-overdue' : ''}`}>
+                      {formatDate(t.due_date)}
+                    </span>
+                  )}
+                  <button className="weather-location-link" onClick={() => toggleNotesExpanded(t)}>
+                    {t.notes ? '📝 Notes' : '📝 Add notes'}
+                  </button>
+                  <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
+                </div>
+                {notesOpen && (
+                  <div className="todo-notes-panel">
+                    <div className="todo-notes-header">
+                      <span className="booknook-stat-label">PROGRESS, CONTEXT, FOLLOW-UPS…</span>
+                      <button
+                        className="weather-location-link"
+                        onClick={() => toggleNotesVisible(t)}
+                      >
+                        {t.notes_visible === false ? '🙈 Hidden — tap to show' : '👀 Visible — tap to hide'}
+                      </button>
+                    </div>
+                    <textarea
+                      value={noteInputs[t.id] !== undefined ? noteInputs[t.id] : (t.notes || '')}
+                      onChange={(e) => setNoteInputs((v) => ({ ...v, [t.id]: e.target.value }))}
+                      placeholder="Progress updates, notes, context, follow-up reminders…"
+                    />
+                    <button className="btn-check log-value-btn" onClick={() => saveNotes(t)}>Save notes</button>
+                  </div>
                 )}
-                <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
+                {!notesOpen && t.notes && t.notes_visible !== false && (
+                  <p className="todo-notes-preview" onClick={() => toggleNotesExpanded(t)}>📝 {t.notes}</p>
+                )}
               </div>
             )
           })}
@@ -344,7 +421,7 @@ export default function TodoView() {
                     ✓
                   </button>
                   <span className="todo-text todo-text-done">{t.text}</span>
-                  {t.is_recurring && <span className="todo-recurring-badge todo-recurring-badge-on">🔁</span>}
+                  {t.is_recurring && <span className="todo-recurring-badge todo-recurring-badge-on">🔄</span>}
                   <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
                 </div>
               ))}

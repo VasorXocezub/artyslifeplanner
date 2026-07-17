@@ -9,16 +9,30 @@ const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const CHIP_COLORS = ['#D9A8B8', '#C98A72', '#AFC6DD', '#243B63']
 
 const EVENT_TYPES = [
-  { key: 'party', label: '🎉 Party' },
-  { key: 'dinner', label: '🍽️ Dinner' },
-  { key: 'coffee', label: '☕ Coffee Date' },
-  { key: 'girls_night', label: '💅 Girls\' Night' },
-  { key: 'movie', label: '🎬 Movie Night' },
-  { key: 'trip', label: '🏖️ Trip' },
-  { key: 'birthday_party', label: '🎂 Birthday Party' },
-  { key: 'drinks', label: '🍷 Drinks' },
-  { key: 'selfcare', label: '🧘 Self-Care Day' },
-  { key: 'hangout', label: '📅 Hangout' },
+  { key: 'birthday', label: '🎂 Birthday' },
+  { key: 'holiday_magic', label: '🎄 Holiday Magic' },
+  { key: 'bestie_time', label: '👯 Bestie Time' },
+  { key: 'date_night', label: '💖 Date Night' },
+  { key: 'girls_night', label: '🥂 Girls\' Night' },
+  { key: 'family_time', label: '🌸 Family Time' },
+  { key: 'cozy_gathering', label: '🍓 Cozy Gathering' },
+  { key: 'treat_yourself', label: '🛍️ Treat Yourself' },
+  { key: 'adventure', label: '✈️ Adventure' },
+  { key: 'ceo_era', label: '💼 CEO Era' },
+  { key: 'appointment', label: '🩺 Appointment' },
+  { key: 'growth_moment', label: '🎓 Growth Moment' },
+  { key: 'main_character', label: '✨ Main Character Moment' },
+  { key: 'reminder', label: '📝 Reminder' },
+]
+
+const HOLIDAY_SUBCATEGORIES = [
+  { key: 'christmas', label: '🎄 Christmas' },
+  { key: 'nye', label: '🎆 New Year\'s Eve' },
+  { key: 'easter', label: '🐣 Easter' },
+  { key: 'halloween', label: '🎃 Halloween' },
+  { key: 'valentines', label: '💘 Valentine\'s Day' },
+  { key: 'thanksgiving', label: '🦃 Thanksgiving' },
+  { key: 'other_holiday', label: '✨ Other Holiday' },
 ]
 
 const RSVP_OPTIONS = [
@@ -54,7 +68,7 @@ function formatTime(t) {
 
 const emptyForm = {
   title: '', event_date: '', event_time: '', location: '',
-  event_type: 'hangout', rsvp: 'going', notes: '',
+  event_type: 'cozy_gathering', rsvp: 'going', notes: '', holiday_subcategory: '',
 }
 
 export default function SocialCalendarView() {
@@ -97,9 +111,10 @@ export default function SocialCalendarView() {
       event_date: event.event_date || '',
       event_time: event.event_time || '',
       location: event.location || '',
-      event_type: event.event_type || 'hangout',
+      event_type: event.event_type || 'cozy_gathering',
       rsvp: event.rsvp || 'going',
       notes: event.notes || '',
+      holiday_subcategory: event.holiday_subcategory || '',
     })
     setModalOpen(true)
   }
@@ -123,6 +138,7 @@ export default function SocialCalendarView() {
       event_type: form.event_type,
       rsvp: form.rsvp,
       notes: form.notes.trim() || null,
+      holiday_subcategory: form.event_type === 'holiday_magic' ? (form.holiday_subcategory || null) : null,
     }
 
     let error
@@ -204,8 +220,8 @@ export default function SocialCalendarView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">Social Calendar</h1>
-          <p className="view-subtitle cake-club-subtitle">Your social life, but make it cute. 💌</p>
+          <h1 className="view-title">Social Club</h1>
+          <p className="view-subtitle cake-club-subtitle">🌸 The group chat's HR department.</p>
         </div>
         <div className="toolbar">
           <button className="btn-primary" onClick={() => openAdd()}>+ Add event</button>
@@ -232,7 +248,7 @@ export default function SocialCalendarView() {
                       style={{ borderTopColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
                     >
                       <span className="status-badge" style={{ background: CHIP_COLORS[i % CHIP_COLORS.length] }}>
-                        {typeInfo.label}
+                        {typeInfo.label}{e.holiday_subcategory && ` · ${HOLIDAY_SUBCATEGORIES.find((h) => h.key === e.holiday_subcategory)?.label || ''}`}
                       </span>
                       <h3 className="contact-name">{e.title}</h3>
                       <p className="habit-schedule">
@@ -343,6 +359,20 @@ export default function SocialCalendarView() {
                   ))}
                 </select>
               </div>
+              {form.event_type === 'holiday_magic' && (
+                <div className="field">
+                  <label>Which holiday?</label>
+                  <select
+                    value={form.holiday_subcategory}
+                    onChange={(e) => setForm({ ...form, holiday_subcategory: e.target.value })}
+                  >
+                    <option value="">Select…</option>
+                    {HOLIDAY_SUBCATEGORIES.map((h) => (
+                      <option key={h.key} value={h.key}>{h.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="field-row">
                 <div className="field">
                   <label>Date</label>

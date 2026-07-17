@@ -43,7 +43,8 @@ export default function FinancesView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">Finances</h1>
+          <h1 className="view-title">Rich Girl Era</h1>
+          <p className="view-subtitle cake-club-subtitle">💸 We listen and we don't judge.</p>
         </div>
         <div className="currency-picker">
           <label>Main currency</label>

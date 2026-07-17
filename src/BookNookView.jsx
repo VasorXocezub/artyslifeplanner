@@ -262,7 +262,7 @@ export default function BookNookView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Book Nook</h1>
-          <p className="view-subtitle cake-club-subtitle">I'd rather be reading. 📖</p>
+          <p className="view-subtitle cake-club-subtitle">💌 In a committed relationship with fictional characters.</p>
         </div>
         <div className="toolbar">
           <button className="btn-primary" onClick={openAdd}>+ Add a book</button>

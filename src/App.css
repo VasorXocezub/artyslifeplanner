@@ -653,6 +653,74 @@
   opacity: 1;
 }
 
+.brain-dump-entry {
+  position: relative;
+  padding-right: 24px;
+}
+
+.brain-dump-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.brain-dump-content {
+  margin-top: 10px;
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.brain-dump-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.todo-repeat-field {
+  max-width: 220px;
+  margin: -6px 0 14px 0;
+}
+
+.todo-recurring-select {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  max-width: 130px;
+}
+
+.todo-item-wrap {
+  margin-bottom: 2px;
+}
+
+.todo-notes-panel {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 4px 0 10px 44px;
+}
+
+.todo-notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.todo-notes-preview {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin: 2px 0 8px 44px;
+  cursor: pointer;
+}
+
 .hero-glow-score {
   margin-bottom: 20px;
 }

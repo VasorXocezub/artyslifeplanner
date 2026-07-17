@@ -257,8 +257,8 @@ export default function GoalsView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">Goals</h1>
-          <p className="view-subtitle cake-club-subtitle">Dreams don't chase themselves. ✨</p>
+          <h1 className="view-title">Dream Board</h1>
+          <p className="view-subtitle cake-club-subtitle">Delulu? No. Visionary. ✨</p>
         </div>
         <div className="toolbar">
           <input

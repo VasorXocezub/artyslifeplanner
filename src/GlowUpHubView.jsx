@@ -232,7 +232,7 @@ export default function GlowUpHubView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Glow Up Hub</h1>
-          <p className="view-subtitle cake-club-subtitle">Hydrated, moved, glowing. ✨</p>
+          <p className="view-subtitle cake-club-subtitle">Mind, body and main character energy. ✨</p>
         </div>
       </div>
 
@@ -287,6 +287,14 @@ export default function GlowUpHubView() {
               <div className="booknook-stat">
                 <span className="booknook-stat-label">😴 Sleep</span>
                 <span className="booknook-stat-value booknook-stat-small">{sleepH}h {sleepM}m</span>
+              </div>
+              <div className="booknook-stat">
+                <span className="booknook-stat-label">💪 Protein</span>
+                <span className="booknook-stat-value booknook-stat-small">{log.protein_g || 0}g</span>
+              </div>
+              <div className="booknook-stat">
+                <span className="booknook-stat-label">🌾 Fibre</span>
+                <span className="booknook-stat-value booknook-stat-small">{log.fiber_g || 0}g</span>
               </div>
               <div className="booknook-stat">
                 <span className="booknook-stat-label">💖 Mood</span>

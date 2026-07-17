@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs, getHiddenGlowupTabs, setHiddenGlowupTabs } from './lib/localPrefs'
+import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs, getHiddenGlowupTabs, setHiddenGlowupTabs, getHiddenBraindumpTabs, setHiddenBraindumpTabs } from './lib/localPrefs'
 
 const SPACES = [
   { key: 'contacts', label: 'Cake Club', icon: '🎂' },
-  { key: 'goals', label: 'Goals', icon: '🌱' },
-  { key: 'habits', label: 'Habits', icon: '🔥' },
-  { key: 'finances', label: 'Finances', icon: '💸' },
-  { key: 'todos', label: 'To-Do', icon: '📋' },
-  { key: 'shopping', label: 'Shopping List', icon: '🛍️' },
+  { key: 'goals', label: 'Dream Board', icon: '🌱' },
+  { key: 'habits', label: 'Daily Habits', icon: '🔥' },
+  { key: 'finances', label: 'Rich Girl Era', icon: '💸' },
+  { key: 'todos', label: 'To-Do List', icon: '📋' },
+  { key: 'shopping', label: 'Kitchen Club', icon: '🍎' },
   { key: 'booknook', label: 'Book Nook', icon: '📚' },
   { key: 'glowup', label: 'Glow Up Hub', icon: '✨' },
-  { key: 'social', label: 'Social Calendar', icon: '💌' },
+  { key: 'social', label: 'Social Club', icon: '💌' },
+  { key: 'braindump', label: 'Brain Dump', icon: '📖' },
+  { key: 'spillthetea', label: 'Spill the Tea', icon: '🫖' },
 ]
 
 const FINANCE_SUB_SPACES = [
@@ -43,6 +45,11 @@ const GLOWUP_SUB_SPACES = [
   { key: 'summary', label: '📊 Summary' },
 ]
 
+const BRAINDUMP_SUB_SPACES = [
+  { key: 'write', label: '💌 Today\'s Brain Dump' },
+  { key: 'archive', label: '📖 Lore Archive' },
+]
+
 export default function SettingsView({ session, hiddenModules, onSaveModules, onLogout }) {
   const [nameInput, setNameInput] = useState(session.user.user_metadata?.full_name || '')
   const [nameSaved, setNameSaved] = useState(false)
@@ -51,6 +58,7 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const [selectedShoppingTabs, setSelectedShoppingTabs] = useState(new Set(getHiddenShoppingTabs()))
   const [selectedTodoTabs, setSelectedTodoTabs] = useState(new Set(getHiddenTodoTabs()))
   const [selectedGlowupTabs, setSelectedGlowupTabs] = useState(new Set(getHiddenGlowupTabs()))
+  const [selectedBraindumpTabs, setSelectedBraindumpTabs] = useState(new Set(getHiddenBraindumpTabs()))
   const [spacesSaved, setSpacesSaved] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -113,12 +121,22 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
     })
   }
 
+  function toggleBraindumpTab(key) {
+    setSelectedBraindumpTabs((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   function handleSaveSpaces() {
     onSaveModules(Array.from(selectedSpaces))
     setHiddenFinanceTabs(Array.from(selectedFinanceTabs))
     setHiddenShoppingTabs(Array.from(selectedShoppingTabs))
     setHiddenTodoTabs(Array.from(selectedTodoTabs))
     setHiddenGlowupTabs(Array.from(selectedGlowupTabs))
+    setHiddenBraindumpTabs(Array.from(selectedBraindumpTabs))
     setSpacesSaved(true)
     setTimeout(() => setSpacesSaved(false), 2000)
   }
@@ -151,6 +169,7 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const shoppingHidden = selectedSpaces.has('shopping')
   const todosHidden = selectedSpaces.has('todos')
   const glowupHidden = selectedSpaces.has('glowup')
+  const braindumpHidden = selectedSpaces.has('braindump')
 
   return (
     <div>
@@ -319,6 +338,30 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
                     type="button"
                     className={`settings-module-row ${isHidden ? 'settings-module-row-off' : ''}`}
                     onClick={() => toggleGlowupTab(t.key)}
+                  >
+                    <span className="settings-module-label">{t.label}</span>
+                    <span className={`settings-toggle ${isHidden ? '' : 'settings-toggle-on'}`}>
+                      <span className="settings-toggle-knob" />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {!braindumpHidden && (
+          <>
+            <p className="module-group-label settings-subspace-label">BRAIN DUMP SUB-SPACES</p>
+            <div className="settings-module-list">
+              {BRAINDUMP_SUB_SPACES.map((t) => {
+                const isHidden = selectedBraindumpTabs.has(t.key)
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    className={`settings-module-row ${isHidden ? 'settings-module-row-off' : ''}`}
+                    onClick={() => toggleBraindumpTab(t.key)}
                   >
                     <span className="settings-module-label">{t.label}</span>
                     <span className={`settings-toggle ${isHidden ? '' : 'settings-toggle-on'}`}>

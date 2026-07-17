@@ -13,19 +13,23 @@ import ShoppingListView from './ShoppingListView'
 import BookNookView from './BookNookView'
 import GlowUpHubView from './GlowUpHubView'
 import SocialCalendarView from './SocialCalendarView'
+import BrainDumpView from './BrainDumpView'
+import SpillTheTeaView from './SpillTheTeaView'
 import './App.css'
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
   { key: 'contacts', label: 'Cake Club', num: '01', enabled: true },
-  { key: 'social', label: 'Social Calendar', num: '02', enabled: true },
-  { key: 'goals', label: 'Goals', num: '03', enabled: true },
-  { key: 'habits', label: 'Habits', num: '04', enabled: true },
-  { key: 'todos', label: 'To-Do', num: '05', enabled: true },
+  { key: 'social', label: 'Social Club', num: '02', enabled: true },
+  { key: 'goals', label: 'Dream Board', num: '03', enabled: true },
+  { key: 'habits', label: 'Daily Habits', num: '04', enabled: true },
+  { key: 'todos', label: 'To-Do List', num: '05', enabled: true },
   { key: 'glowup', label: 'Glow Up Hub', num: '06', enabled: true },
-  { key: 'booknook', label: 'Book Nook', num: '07', enabled: true },
-  { key: 'finances', label: 'Finances', num: '08', enabled: true },
-  { key: 'shopping', label: 'Shopping List', num: '09', enabled: true },
+  { key: 'braindump', label: 'Brain Dump', num: '07', enabled: true },
+  { key: 'booknook', label: 'Book Nook', num: '08', enabled: true },
+  { key: 'finances', label: 'Rich Girl Era', num: '09', enabled: true },
+  { key: 'shopping', label: 'Kitchen Club', num: '10', enabled: true },
+  { key: 'spillthetea', label: 'Spill the Tea', num: '11', enabled: true },
 ]
 
 function App() {
@@ -112,6 +116,8 @@ function App() {
         {view === 'booknook' && <BookNookView />}
         {view === 'glowup' && <GlowUpHubView />}
         {view === 'social' && <SocialCalendarView />}
+        {view === 'braindump' && <BrainDumpView />}
+        {view === 'spillthetea' && <SpillTheTeaView />}
         {view === 'settings' && (
           <SettingsView
             session={session}

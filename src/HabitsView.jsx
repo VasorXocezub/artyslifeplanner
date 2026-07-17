@@ -374,10 +374,8 @@ export default function HabitsView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">Habits</h1>
-          <p className="view-subtitle">
-            {habits.length === 0 ? 'Ready to build something? ✨' : `${habits.length} ${habits.length === 1 ? 'habit' : 'habits'} in the works, let's go`}
-          </p>
+          <h1 className="view-title">Daily Habits</h1>
+          <p className="view-subtitle cake-club-subtitle">✨ Romanticizing basic human maintenance.</p>
         </div>
         <div className="toolbar">
           <button className="btn-primary" onClick={openAdd}>+ Add habit</button>

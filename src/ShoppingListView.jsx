@@ -13,12 +13,21 @@ const TABS = [
 ]
 
 const GROCERY_SECTIONS = [
-  { key: 'produce', label: '🍓 Produce' },
-  { key: 'dairy', label: '🥛 Dairy' },
+  { key: 'produce', label: '🍎 Produce' },
   { key: 'protein', label: '🥩 Protein' },
-  { key: 'pantry', label: '🌾 Pantry' },
-  { key: 'treats', label: '🧁 Treats' },
-  { key: 'other', label: '🛒 Other' },
+  { key: 'dairy', label: '🥛 Dairy' },
+  { key: 'bakery', label: '🥖 Bakery' },
+  { key: 'pantry', label: '🥫 Pantry' },
+  { key: 'frozen', label: '🧊 Frozen' },
+  { key: 'drinks', label: '🥤 Drinks' },
+  { key: 'treats', label: '🍬 Treats & Snacks' },
+  { key: 'supplements', label: '💊 Supplements' },
+  { key: 'beauty', label: '🧴 Beauty & Skincare' },
+  { key: 'cleaning', label: '🧼 Cleaning Supplies' },
+  { key: 'household', label: '🧻 Household Essentials' },
+  { key: 'pet', label: '🐾 Pet Supplies' },
+  { key: 'baby', label: '👶 Baby Essentials' },
+  { key: 'other', label: '📦 Other' },
 ]
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -62,8 +71,8 @@ export default function ShoppingListView() {
     <div>
       <div className="view-header">
         <div>
-          <h1 className="view-title">Shopping</h1>
-          <p className="view-subtitle cake-club-subtitle">A fully stocked, fully cute kitchen. 🍓</p>
+          <h1 className="view-title">Kitchen Club</h1>
+          <p className="view-subtitle cake-club-subtitle">🍓 Girl dinner is not a food group.</p>
         </div>
       </div>
 
@@ -226,20 +235,46 @@ function GroceryListTab() {
 }
 
 /* ---------------- Meal Planner ---------------- */
+function getMonday(offsetWeeks) {
+  const now = new Date()
+  const day = now.getDay()
+  const diffToMonday = day === 0 ? -6 : 1 - day
+  const monday = new Date(now)
+  monday.setDate(now.getDate() + diffToMonday + offsetWeeks * 7)
+  monday.setHours(0, 0, 0, 0)
+  return monday
+}
+
+function isoDate(d) {
+  return d.toISOString().split('T')[0]
+}
+
 function MealPlannerTab() {
   const [plans, setPlans] = useState([])
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState(null) // { day, mealType }
+  const [editing, setEditing] = useState(null) // { date, mealType }
   const [inputValue, setInputValue] = useState('')
   const [recipeId, setRecipeId] = useState('')
+  const [weekOffset, setWeekOffset] = useState(0)
 
-  useEffect(() => { fetchAll() }, [])
+  const monday = getMonday(weekOffset)
+  const weekDates = DAYS.map((_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d
+  })
+  const weekEnd = weekDates[6]
+  const weekLabel = `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+
+  useEffect(() => { fetchAll() }, [weekOffset])
 
   async function fetchAll() {
     setLoading(true)
+    const from = isoDate(weekDates[0])
+    const to = isoDate(weekDates[6])
     const [{ data: plansData }, { data: recipesData }] = await Promise.all([
-      supabase.from('meal_plans').select('*'),
+      supabase.from('meal_plans').select('*').gte('plan_date', from).lte('plan_date', to),
       supabase.from('recipes').select('*').order('name', { ascending: true }),
     ])
     setPlans(plansData || [])
@@ -247,13 +282,13 @@ function MealPlannerTab() {
     setLoading(false)
   }
 
-  function getMeal(day, mealType) {
-    return plans.find((p) => p.day_of_week === day && p.meal_type === mealType)
+  function getMeal(dateStr, mealType) {
+    return plans.find((p) => p.plan_date === dateStr && p.meal_type === mealType)
   }
 
-  function openEdit(day, mealType) {
-    const existing = getMeal(day, mealType)
-    setEditing({ day, mealType })
+  function openEdit(dateStr, mealType) {
+    const existing = getMeal(dateStr, mealType)
+    setEditing({ date: dateStr, mealType })
     setInputValue(existing?.meal_name || '')
     setRecipeId(existing?.recipe_id || '')
   }
@@ -266,8 +301,8 @@ function MealPlannerTab() {
 
   async function saveMeal() {
     if (!editing) return
-    const { day, mealType } = editing
-    const existing = getMeal(day, mealType)
+    const { date, mealType } = editing
+    const existing = getMeal(date, mealType)
     const user_id = await getUserId()
     if (!inputValue.trim()) {
       if (existing) await supabase.from('meal_plans').delete().eq('id', existing.id)
@@ -275,7 +310,8 @@ function MealPlannerTab() {
       await supabase.from('meal_plans').update({ meal_name: inputValue.trim(), recipe_id: recipeId || null }).eq('id', existing.id)
     } else {
       await supabase.from('meal_plans').insert({
-        day_of_week: day, meal_type: mealType, meal_name: inputValue.trim(), recipe_id: recipeId || null, user_id,
+        plan_date: date, day_of_week: DAYS[weekDates.findIndex((d) => isoDate(d) === date)],
+        meal_type: mealType, meal_name: inputValue.trim(), recipe_id: recipeId || null, user_id,
       })
     }
     setEditing(null)
@@ -294,56 +330,74 @@ function MealPlannerTab() {
         </div>
       </div>
 
+      <div className="calendar-nav" style={{ marginBottom: 16 }}>
+        <button className="cal-nav-btn" onClick={() => setWeekOffset(weekOffset - 1)}>‹</button>
+        <span className="cal-month-label">
+          {weekOffset === 0 ? 'This Week' : weekOffset === -1 ? 'Last Week' : weekOffset < -1 ? `${-weekOffset} Weeks Ago` : `In ${weekOffset} Week${weekOffset > 1 ? 's' : ''}`}
+          {' '}· {weekLabel}
+        </span>
+        <button className="cal-nav-btn" onClick={() => setWeekOffset(weekOffset + 1)}>›</button>
+      </div>
+      {weekOffset !== 0 && (
+        <button className="weather-location-link" style={{ marginBottom: 14 }} onClick={() => setWeekOffset(0)}>
+          Back to this week
+        </button>
+      )}
+
       {loading && <p className="loading">Setting the table… 🍽️✨</p>}
 
-      {!loading && DAYS.map((day) => (
-        <div className="upnext-section" key={day}>
-          <p className="module-group-label">{day.toUpperCase()}</p>
-          <div className="calendar-card">
-            {MEAL_TYPES.map((mt) => {
-              const meal = getMeal(day, mt.key)
-              const isEditing = editing?.day === day && editing?.mealType === mt.key
-              const matchingRecipes = recipes.filter((r) => r.category === mt.key)
-              return (
-                <div className="goals-summary-row meal-planner-row" key={mt.key}>
-                  <span className="goals-summary-label">{mt.label}</span>
-                  {isEditing ? (
-                    <div className="meal-planner-editor">
-                      {matchingRecipes.length > 0 && (
-                        <select
-                          className="meal-planner-recipe-select"
-                          value={recipeId}
-                          onChange={(e) => pickRecipe(e.target.value)}
-                        >
-                          <option value="">📖 Pick from Recipe Box…</option>
-                          {matchingRecipes.map((r) => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
-                        </select>
-                      )}
-                      <span className="log-value-row" style={{ margin: 0 }}>
-                        <input
-                          autoFocus
-                          className="log-value-input"
-                          value={inputValue}
-                          onChange={(e) => { setInputValue(e.target.value); setRecipeId('') }}
-                          onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
-                          placeholder="Or type something else…"
-                        />
-                        <button className="btn-check log-value-btn" onClick={saveMeal}>Save</button>
-                      </span>
-                    </div>
-                  ) : (
-                    <button className="weather-location-link" onClick={() => openEdit(day, mt.key)}>
-                      {meal?.recipe_id && '📖 '}{meal?.meal_name || 'Add a meal'}
-                    </button>
-                  )}
-                </div>
-              )
-            })}
+      {!loading && DAYS.map((day, i) => {
+        const dateStr = isoDate(weekDates[i])
+        const dateLabel = weekDates[i].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        return (
+          <div className="upnext-section" key={day}>
+            <p className="module-group-label">{day.toUpperCase()} · {dateLabel}</p>
+            <div className="calendar-card">
+              {MEAL_TYPES.map((mt) => {
+                const meal = getMeal(dateStr, mt.key)
+                const isEditing = editing?.date === dateStr && editing?.mealType === mt.key
+                const matchingRecipes = recipes.filter((r) => r.category === mt.key)
+                return (
+                  <div className="goals-summary-row meal-planner-row" key={mt.key}>
+                    <span className="goals-summary-label">{mt.label}</span>
+                    {isEditing ? (
+                      <div className="meal-planner-editor">
+                        {matchingRecipes.length > 0 && (
+                          <select
+                            className="meal-planner-recipe-select"
+                            value={recipeId}
+                            onChange={(e) => pickRecipe(e.target.value)}
+                          >
+                            <option value="">📖 Pick from Recipe Box…</option>
+                            {matchingRecipes.map((r) => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
+                          </select>
+                        )}
+                        <span className="log-value-row" style={{ margin: 0 }}>
+                          <input
+                            autoFocus
+                            className="log-value-input"
+                            value={inputValue}
+                            onChange={(e) => { setInputValue(e.target.value); setRecipeId('') }}
+                            onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
+                            placeholder="Or type something else…"
+                          />
+                          <button className="btn-check log-value-btn" onClick={saveMeal}>Save</button>
+                        </span>
+                      </div>
+                    ) : (
+                      <button className="weather-location-link" onClick={() => openEdit(dateStr, mt.key)}>
+                        {meal?.recipe_id && '📖 '}{meal?.meal_name || 'Add a meal'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -355,10 +409,14 @@ function RecipeBoxTab() {
   const [error, setError] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const emptyForm = { name: '', category: 'dinner', prep_time: '', ingredients: '', instructions: '', favorite: false }
+  const emptyForm = { name: '', category: 'dinner', prep_time: '', servings: '4', ingredients: '', instructions: '', favorite: false }
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [schedulingId, setSchedulingId] = useState(null)
+  const [scheduleDay, setScheduleDay] = useState('Monday')
+  const [scheduleMealType, setScheduleMealType] = useState('dinner')
+  const [toast, setToast] = useState(null)
 
   useEffect(() => { fetchRecipes() }, [])
 
@@ -380,7 +438,7 @@ function RecipeBoxTab() {
   function openEdit(r) {
     setEditingId(r.id)
     setForm({
-      name: r.name || '', category: r.category || 'dinner', prep_time: r.prep_time || '',
+      name: r.name || '', category: r.category || 'dinner', prep_time: r.prep_time || '', servings: r.servings || '4',
       ingredients: r.ingredients || '', instructions: r.instructions || '', favorite: r.favorite || false,
     })
     setModalOpen(true)
@@ -397,7 +455,7 @@ function RecipeBoxTab() {
     if (!form.name.trim()) return
     setSaving(true)
     const payload = {
-      name: form.name.trim(), category: form.category, prep_time: form.prep_time.trim() || null,
+      name: form.name.trim(), category: form.category, prep_time: form.prep_time.trim() || null, servings: form.servings,
       ingredients: form.ingredients.trim() || null, instructions: form.instructions.trim() || null, favorite: form.favorite,
     }
     let error
@@ -416,6 +474,59 @@ function RecipeBoxTab() {
   async function toggleFavorite(r) {
     await supabase.from('recipes').update({ favorite: !r.favorite }).eq('id', r.id)
     fetchRecipes()
+  }
+
+  async function addMissingIngredients(recipe) {
+    if (!recipe.ingredients) return
+    const lines = recipe.ingredients.split('\n').map((l) => l.trim()).filter(Boolean)
+    if (lines.length === 0) return
+    const user_id = await getUserId()
+    let added = 0
+    for (const line of lines) {
+      const { data: stocked } = await supabase.from('pantry_items').select('*').ilike('name', line).eq('status', 'stocked').limit(1)
+      if (stocked && stocked.length > 0) continue
+      const { data: existingGrocery } = await supabase
+        .from('shopping_items').select('*').eq('category', 'groceries').eq('completed', false).ilike('text', line).limit(1)
+      if (existingGrocery && existingGrocery.length > 0) continue
+      await supabase.from('shopping_items').insert({ text: line, category: 'groceries', section: 'other', user_id })
+      added++
+    }
+    setToast(added > 0 ? `${added} ingredient${added > 1 ? 's' : ''} added to your grocery list 🛒` : 'Already got everything you need ✨')
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  function openSchedule(recipe) {
+    setSchedulingId(recipe.id)
+    setScheduleDay('Monday')
+    setScheduleMealType(recipe.category === 'dinner' || recipe.category === 'lunch' || recipe.category === 'breakfast' ? recipe.category : 'dinner')
+  }
+
+  async function confirmSchedule(recipe) {
+    const now = new Date()
+    const day = now.getDay()
+    const diffToMonday = day === 0 ? -6 : 1 - day
+    const monday = new Date(now)
+    monday.setDate(now.getDate() + diffToMonday)
+    monday.setHours(0, 0, 0, 0)
+    const dayIndex = DAYS.indexOf(scheduleDay)
+    const targetDate = new Date(monday)
+    targetDate.setDate(monday.getDate() + dayIndex)
+    const dateStr = targetDate.toISOString().split('T')[0]
+
+    const user_id = await getUserId()
+    const { data: existing } = await supabase
+      .from('meal_plans').select('*').eq('plan_date', dateStr).eq('meal_type', scheduleMealType).limit(1)
+    if (existing && existing.length > 0) {
+      await supabase.from('meal_plans').update({ meal_name: recipe.name, recipe_id: recipe.id }).eq('id', existing[0].id)
+    } else {
+      await supabase.from('meal_plans').insert({
+        plan_date: dateStr, day_of_week: scheduleDay, meal_type: scheduleMealType,
+        meal_name: recipe.name, recipe_id: recipe.id, user_id,
+      })
+    }
+    setSchedulingId(null)
+    setToast(`Scheduled for ${scheduleDay} ${MEAL_TYPES.find((m) => m.key === scheduleMealType)?.label} 📅`)
+    setTimeout(() => setToast(null), 3000)
   }
 
   async function handleDelete() {
@@ -452,13 +563,19 @@ function RecipeBoxTab() {
         </div>
       )}
 
+      {toast && <p className="momentum-caption" style={{ marginBottom: 10 }}>{toast}</p>}
+
       {!loading && !error && filtered.length > 0 && (
         <div className="finished-shelf">
           {filtered.map((r) => (
-            <div className="library-card library-card-small" key={r.id} onClick={() => openEdit(r)}>
-              <h3 className="contact-name" title={r.name}>{r.name}</h3>
-              <p className="contact-relationship">{RECIPE_CATEGORIES.find((c) => c.key === r.category)?.label}</p>
-              {r.prep_time && <p className="habit-dates">⏱️ {r.prep_time}</p>}
+            <div className="library-card library-card-small" key={r.id}>
+              <div onClick={() => openEdit(r)} style={{ cursor: 'pointer' }}>
+                <h3 className="contact-name" title={r.name}>{r.name}</h3>
+                <p className="contact-relationship">{RECIPE_CATEGORIES.find((c) => c.key === r.category)?.label}</p>
+                <p className="habit-dates">
+                  {r.prep_time && `⏱️ ${r.prep_time}`}{r.prep_time && r.servings ? ' · ' : ''}{r.servings && `🍽️ Serves ${r.servings}`}
+                </p>
+              </div>
               <button
                 className="todo-recurring-badge todo-recurring-badge-on"
                 style={{ opacity: r.favorite ? 1 : 0.25 }}
@@ -466,6 +583,26 @@ function RecipeBoxTab() {
               >
                 ⭐
               </button>
+
+              {schedulingId === r.id ? (
+                <div className="meal-planner-editor" onClick={(e) => e.stopPropagation()}>
+                  <select className="meal-planner-recipe-select" value={scheduleDay} onChange={(e) => setScheduleDay(e.target.value)}>
+                    {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select className="meal-planner-recipe-select" value={scheduleMealType} onChange={(e) => setScheduleMealType(e.target.value)}>
+                    {MEAL_TYPES.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+                  </select>
+                  <div className="log-value-row">
+                    <button className="btn-cancel" onClick={() => setSchedulingId(null)}>Cancel</button>
+                    <button className="btn-check log-value-btn" onClick={() => confirmSchedule(r)}>Confirm</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="log-value-row" onClick={(e) => e.stopPropagation()}>
+                  <button className="btn-delete-small" onClick={() => addMissingIngredients(r)}>🛒 Add Missing Ingredients</button>
+                  <button className="btn-delete-small" onClick={() => openSchedule(r)}>📅 Schedule Meal</button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -490,6 +627,16 @@ function RecipeBoxTab() {
                 <div className="field">
                   <label>Prep time</label>
                   <input value={form.prep_time} onChange={(e) => setForm({ ...form, prep_time: e.target.value })} placeholder="30 mins" />
+                </div>
+                <div className="field">
+                  <label>🍽️ Servings</label>
+                  <select value={form.servings} onChange={(e) => setForm({ ...form, servings: e.target.value })}>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                    <option value="8+">8+</option>
+                  </select>
                 </div>
               </div>
               <div className="field">
