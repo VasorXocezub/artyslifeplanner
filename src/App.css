@@ -813,6 +813,59 @@
   overflow: hidden;
 }
 
+.ingredient-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.ingredient-amount-input {
+  width: 60px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ingredient-unit-select {
+  width: 70px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ingredient-name-input {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ingredient-remove-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
 .todo-notes-log {
   display: flex;
   flex-direction: column;

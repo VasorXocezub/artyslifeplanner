@@ -53,8 +53,16 @@ const PANTRY_STATUSES = [
   { key: 'out', label: '❌ Out' },
 ]
 
+const UNITS = ['g', 'kg', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'oz', 'lb', 'pcs']
+
 function sectionInfo(key) {
   return GROCERY_SECTIONS.find((s) => s.key === key) || GROCERY_SECTIONS[GROCERY_SECTIONS.length - 1]
+}
+
+function formatDateShort(d) {
+  if (!d) return ''
+  const date = new Date(d + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 export default function ShoppingListView() {
@@ -378,6 +386,8 @@ function MealPlannerTab() {
     if (recipe) setInputValue(recipe.name)
   }
 
+  const [toast, setToast] = useState(null)
+
   async function saveMeal() {
     if (!editing) return
     const { date, mealType } = editing
@@ -395,6 +405,103 @@ function MealPlannerTab() {
     }
     setEditing(null)
     fetchAll()
+  }
+
+  function printWeekPlan() {
+    const width = 480
+    const padding = 32
+    const headerHeight = 92
+    const lineHeight = 24
+    const dayGap = 14
+
+    const daysWithMeals = DAYS.map((day, i) => {
+      const dateStr = isoDate(weekDates[i])
+      const meals = MEAL_TYPES.map((mt) => ({ mt, meal: getMeal(dateStr, mt.key) })).filter((m) => m.meal?.meal_name)
+      return { day, dateLabel: weekDates[i].toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), meals }
+    }).filter((d) => d.meals.length > 0)
+
+    let totalLines = 0
+    daysWithMeals.forEach((d) => { totalLines += 1 + d.meals.length })
+    const height = headerHeight + totalLines * lineHeight + daysWithMeals.length * dayGap + padding
+
+    const canvas = document.createElement('canvas')
+    const scale = 2
+    canvas.width = width * scale
+    canvas.height = height * scale
+    const ctx = canvas.getContext('2d')
+    ctx.scale(scale, scale)
+
+    ctx.fillStyle = '#FAF6F0'
+    ctx.fillRect(0, 0, width, height)
+
+    ctx.fillStyle = '#1E5C57'
+    ctx.font = 'bold 22px Georgia, serif'
+    ctx.fillText('🗓️ This Week\'s Meal Plan', padding, 42)
+    ctx.fillStyle = '#8a8378'
+    ctx.font = '13px sans-serif'
+    ctx.fillText(weekLabel, padding, 64)
+    ctx.strokeStyle = '#E8DDCB'
+    ctx.beginPath()
+    ctx.moveTo(padding, 78)
+    ctx.lineTo(width - padding, 78)
+    ctx.stroke()
+
+    let y = headerHeight
+    daysWithMeals.forEach((d) => {
+      ctx.font = 'bold 14px sans-serif'
+      ctx.fillStyle = '#1E5C57'
+      ctx.fillText(`${d.day.toUpperCase()} · ${d.dateLabel}`, padding, y)
+      y += lineHeight
+      ctx.font = '14px sans-serif'
+      ctx.fillStyle = '#3A342E'
+      d.meals.forEach(({ mt, meal }) => {
+        ctx.fillText(`${mt.label}: ${meal.meal_name}`, padding + 12, y)
+        y += lineHeight
+      })
+      y += dayGap
+    })
+
+    const dataUrl = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.download = `meal-plan-${isoDate(weekDates[0])}.png`
+    link.href = dataUrl
+    link.click()
+  }
+
+  async function generateShoppingListFromPlan() {
+    const recipeIds = Array.from(new Set(plans.filter((p) => p.recipe_id).map((p) => p.recipe_id)))
+    if (recipeIds.length === 0) {
+      setToast('No recipes scheduled this week yet ✨')
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
+    const plannedRecipes = recipes.filter((r) => recipeIds.includes(r.id))
+    const allIngredients = []
+    plannedRecipes.forEach((r) => {
+      const list = Array.isArray(r.ingredients_list) ? r.ingredients_list : []
+      list.forEach((ing) => { if (ing.name) allIngredients.push(ing) })
+    })
+
+    const user_id = await getUserId()
+    let added = 0
+    const seen = new Set()
+    for (const ing of allIngredients) {
+      const key = ing.name.toLowerCase().trim()
+      if (seen.has(key)) continue
+      seen.add(key)
+      const displayText = ing.amount ? `${ing.amount}${ing.unit || ''} ${ing.name}`.trim() : ing.name
+
+      const { data: stocked } = await supabase.from('pantry_items').select('*').ilike('name', ing.name).eq('status', 'stocked').limit(1)
+      if (stocked && stocked.length > 0) continue
+      const { data: existingGrocery } = await supabase
+        .from('shopping_items').select('*').eq('category', 'groceries').eq('completed', false).ilike('text', `%${ing.name}%`).limit(1)
+      if (existingGrocery && existingGrocery.length > 0) continue
+
+      await supabase.from('shopping_items').insert({ text: displayText, category: 'groceries', section: 'other', user_id })
+      added++
+    }
+    setToast(added > 0 ? `${added} ingredient${added > 1 ? 's' : ''} added to your grocery list 🛒` : 'Already got everything you need ✨')
+    setTimeout(() => setToast(null), 3000)
   }
 
   const mealsPlannedThisWeek = plans.filter((p) => p.meal_name).length
@@ -423,6 +530,14 @@ function MealPlannerTab() {
         </button>
       )}
 
+      {mealsPlannedThisWeek > 0 && (
+        <div className="log-value-row" style={{ marginBottom: 16 }}>
+          <button className="btn-check" onClick={printWeekPlan}>🖨️ Print week's meal plan</button>
+          <button className="btn-check" onClick={generateShoppingListFromPlan}>🛒 Generate shopping list</button>
+        </div>
+      )}
+      {toast && <p className="momentum-caption" style={{ marginBottom: 14 }}>{toast}</p>}
+
       {loading && <p className="loading">Setting the table… 🍽️✨</p>}
 
       {!loading && DAYS.map((day, i) => {
@@ -435,7 +550,7 @@ function MealPlannerTab() {
               {MEAL_TYPES.map((mt) => {
                 const meal = getMeal(dateStr, mt.key)
                 const isEditing = editing?.date === dateStr && editing?.mealType === mt.key
-                const matchingRecipes = recipes.filter((r) => r.category === mt.key)
+                const matchingRecipes = recipes
                 return (
                   <div className="goals-summary-row meal-planner-row" key={mt.key}>
                     <span className="goals-summary-label">{mt.label}</span>
@@ -488,12 +603,12 @@ function RecipeBoxTab() {
   const [error, setError] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const emptyForm = { name: '', category: 'dinner', prep_time: '', servings: '4', ingredients: '', instructions: '', favorite: false }
+  const emptyForm = { name: '', category: 'dinner', prep_time: '', servings: '4', ingredients_list: [], instructions: '', favorite: false }
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [schedulingId, setSchedulingId] = useState(null)
-  const [scheduleDay, setScheduleDay] = useState('Monday')
+  const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleMealType, setScheduleMealType] = useState('dinner')
   const [toast, setToast] = useState(null)
 
@@ -516,9 +631,13 @@ function RecipeBoxTab() {
 
   function openEdit(r) {
     setEditingId(r.id)
+    let ingredientsList = Array.isArray(r.ingredients_list) ? r.ingredients_list : []
+    if (ingredientsList.length === 0 && r.ingredients) {
+      ingredientsList = r.ingredients.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => ({ amount: '', unit: '', name: l }))
+    }
     setForm({
       name: r.name || '', category: r.category || 'dinner', prep_time: r.prep_time || '', servings: r.servings || '4',
-      ingredients: r.ingredients || '', instructions: r.instructions || '', favorite: r.favorite || false,
+      ingredients_list: ingredientsList, instructions: r.instructions || '', favorite: r.favorite || false,
     })
     setModalOpen(true)
   }
@@ -535,7 +654,7 @@ function RecipeBoxTab() {
     setSaving(true)
     const payload = {
       name: form.name.trim(), category: form.category, prep_time: form.prep_time.trim() || null, servings: form.servings,
-      ingredients: form.ingredients.trim() || null, instructions: form.instructions.trim() || null, favorite: form.favorite,
+      ingredients_list: form.ingredients_list.filter((i) => i.name.trim()), instructions: form.instructions.trim() || null, favorite: form.favorite,
     }
     let error
     if (editingId) {
@@ -556,18 +675,19 @@ function RecipeBoxTab() {
   }
 
   async function addMissingIngredients(recipe) {
-    if (!recipe.ingredients) return
-    const lines = recipe.ingredients.split('\n').map((l) => l.trim()).filter(Boolean)
-    if (lines.length === 0) return
+    const list = Array.isArray(recipe.ingredients_list) ? recipe.ingredients_list : []
+    if (list.length === 0) return
     const user_id = await getUserId()
     let added = 0
-    for (const line of lines) {
-      const { data: stocked } = await supabase.from('pantry_items').select('*').ilike('name', line).eq('status', 'stocked').limit(1)
+    for (const ing of list) {
+      if (!ing.name) continue
+      const displayText = ing.amount ? `${ing.amount}${ing.unit || ''} ${ing.name}`.trim() : ing.name
+      const { data: stocked } = await supabase.from('pantry_items').select('*').ilike('name', ing.name).eq('status', 'stocked').limit(1)
       if (stocked && stocked.length > 0) continue
       const { data: existingGrocery } = await supabase
-        .from('shopping_items').select('*').eq('category', 'groceries').eq('completed', false).ilike('text', line).limit(1)
+        .from('shopping_items').select('*').eq('category', 'groceries').eq('completed', false).ilike('text', `%${ing.name}%`).limit(1)
       if (existingGrocery && existingGrocery.length > 0) continue
-      await supabase.from('shopping_items').insert({ text: line, category: 'groceries', section: 'other', user_id })
+      await supabase.from('shopping_items').insert({ text: displayText, category: 'groceries', section: 'other', user_id })
       added++
     }
     setToast(added > 0 ? `${added} ingredient${added > 1 ? 's' : ''} added to your grocery list 🛒` : 'Already got everything you need ✨')
@@ -576,35 +696,32 @@ function RecipeBoxTab() {
 
   function openSchedule(recipe) {
     setSchedulingId(recipe.id)
-    setScheduleDay('Monday')
+    setScheduleDate(isoDate(new Date()))
     setScheduleMealType(recipe.category === 'dinner' || recipe.category === 'lunch' || recipe.category === 'breakfast' ? recipe.category : 'dinner')
   }
 
   async function confirmSchedule(recipe) {
-    const now = new Date()
-    const day = now.getDay()
-    const diffToMonday = day === 0 ? -6 : 1 - day
-    const monday = new Date(now)
-    monday.setDate(now.getDate() + diffToMonday)
-    monday.setHours(0, 0, 0, 0)
-    const dayIndex = DAYS.indexOf(scheduleDay)
-    const targetDate = new Date(monday)
-    targetDate.setDate(monday.getDate() + dayIndex)
-    const dateStr = targetDate.toISOString().split('T')[0]
+    if (!scheduleDate) return
+    const dateObj = new Date(scheduleDate + 'T00:00:00')
+    const dayName = DAYS[(dateObj.getDay() + 6) % 7]
 
     const user_id = await getUserId()
-    const { data: existing } = await supabase
-      .from('meal_plans').select('*').eq('plan_date', dateStr).eq('meal_type', scheduleMealType).limit(1)
+    const { data: existing, error: fetchErr } = await supabase
+      .from('meal_plans').select('*').eq('plan_date', scheduleDate).eq('meal_type', scheduleMealType).limit(1)
+    if (fetchErr) { setError(fetchErr.message); return }
+
+    let saveErr
     if (existing && existing.length > 0) {
-      await supabase.from('meal_plans').update({ meal_name: recipe.name, recipe_id: recipe.id }).eq('id', existing[0].id)
+      ;({ error: saveErr } = await supabase.from('meal_plans').update({ meal_name: recipe.name, recipe_id: recipe.id }).eq('id', existing[0].id))
     } else {
-      await supabase.from('meal_plans').insert({
-        plan_date: dateStr, day_of_week: scheduleDay, meal_type: scheduleMealType,
+      ;({ error: saveErr } = await supabase.from('meal_plans').insert({
+        plan_date: scheduleDate, day_of_week: dayName, meal_type: scheduleMealType,
         meal_name: recipe.name, recipe_id: recipe.id, user_id,
-      })
+      }))
     }
+    if (saveErr) { setError(saveErr.message); return }
     setSchedulingId(null)
-    setToast(`Scheduled for ${scheduleDay} ${MEAL_TYPES.find((m) => m.key === scheduleMealType)?.label} 📅`)
+    setToast(`Scheduled for ${dayName} ${formatDateShort(scheduleDate)} — ${MEAL_TYPES.find((m) => m.key === scheduleMealType)?.label} 📅`)
     setTimeout(() => setToast(null), 3000)
   }
 
@@ -665,9 +782,12 @@ function RecipeBoxTab() {
 
               {schedulingId === r.id ? (
                 <div className="meal-planner-editor" onClick={(e) => e.stopPropagation()}>
-                  <select className="meal-planner-recipe-select" value={scheduleDay} onChange={(e) => setScheduleDay(e.target.value)}>
-                    {DAYS.map((d) => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <input
+                    type="date"
+                    className="log-value-input"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                  />
                   <select className="meal-planner-recipe-select" value={scheduleMealType} onChange={(e) => setScheduleMealType(e.target.value)}>
                     {MEAL_TYPES.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
                   </select>
@@ -720,7 +840,57 @@ function RecipeBoxTab() {
               </div>
               <div className="field">
                 <label>Ingredients</label>
-                <textarea value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} placeholder="One per line…" />
+                {form.ingredients_list.map((ing, i) => (
+                  <div className="ingredient-row" key={i}>
+                    <input
+                      type="number"
+                      className="ingredient-amount-input"
+                      placeholder="100"
+                      value={ing.amount}
+                      onChange={(e) => {
+                        const list = [...form.ingredients_list]
+                        list[i] = { ...list[i], amount: e.target.value }
+                        setForm({ ...form, ingredients_list: list })
+                      }}
+                    />
+                    <select
+                      className="ingredient-unit-select"
+                      value={ing.unit}
+                      onChange={(e) => {
+                        const list = [...form.ingredients_list]
+                        list[i] = { ...list[i], unit: e.target.value }
+                        setForm({ ...form, ingredients_list: list })
+                      }}
+                    >
+                      <option value="">—</option>
+                      {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                    <input
+                      className="ingredient-name-input"
+                      placeholder="Chicken breast"
+                      value={ing.name}
+                      onChange={(e) => {
+                        const list = [...form.ingredients_list]
+                        list[i] = { ...list[i], name: e.target.value }
+                        setForm({ ...form, ingredients_list: list })
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="ingredient-remove-btn"
+                      onClick={() => setForm({ ...form, ingredients_list: form.ingredients_list.filter((_, idx) => idx !== i) })}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="weather-location-link"
+                  onClick={() => setForm({ ...form, ingredients_list: [...form.ingredients_list, { amount: '', unit: '', name: '' }] })}
+                >
+                  + Add ingredient
+                </button>
               </div>
               <div className="field">
                 <label>Instructions</label>
@@ -827,29 +997,40 @@ function PantryTab() {
       )}
 
       {!loading && items.length > 0 && (
-        <div className="todo-list">
-          {items.map((item) => (
-            <div className="todo-row shopping-row" key={item.id}>
-              <span className="todo-text">{item.name}</span>
-              <select
-                className="todo-recurring-select"
-                value={item.section || 'other'}
-                onChange={(e) => setSection(item, e.target.value)}
-                title="Category"
-              >
-                {GROCERY_SECTIONS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-              <select
-                className="todo-priority-select"
-                value={item.status || 'stocked'}
-                onChange={(e) => setStatus(item, e.target.value)}
-              >
-                {PANTRY_STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-              <button className="todo-delete" onClick={() => handleDelete(item.id)}>×</button>
-            </div>
-          ))}
-        </div>
+        <>
+          {GROCERY_SECTIONS.map((s) => {
+            const sectionItems = items.filter((i) => (i.section || 'other') === s.key)
+            if (sectionItems.length === 0) return null
+            return (
+              <div className="upnext-section" key={s.key}>
+                <p className="module-group-label">{s.label.toUpperCase()}</p>
+                <div className="todo-list">
+                  {sectionItems.map((item) => (
+                    <div className="todo-row shopping-row" key={item.id}>
+                      <span className="todo-text">{item.name}</span>
+                      <select
+                        className="todo-recurring-select"
+                        value={item.section || 'other'}
+                        onChange={(e) => setSection(item, e.target.value)}
+                        title="Category"
+                      >
+                        {GROCERY_SECTIONS.map((sec) => <option key={sec.key} value={sec.key}>{sec.label}</option>)}
+                      </select>
+                      <select
+                        className="todo-priority-select"
+                        value={item.status || 'stocked'}
+                        onChange={(e) => setStatus(item, e.target.value)}
+                      >
+                        {PANTRY_STATUSES.map((st) => <option key={st.key} value={st.key}>{st.label}</option>)}
+                      </select>
+                      <button className="todo-delete" onClick={() => handleDelete(item.id)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </>
       )}
     </div>
   )
