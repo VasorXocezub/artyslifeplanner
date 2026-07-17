@@ -85,8 +85,9 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          your whole life,<br />
-          organized (mostly) ✨
+          your whole<br />
+          life, organized<br />
+          (mostly) ✨
         </div>
         <button
           className={`nav-item sidebar-settings-nav ${view === 'settings' ? 'active' : ''}`}

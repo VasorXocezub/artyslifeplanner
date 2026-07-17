@@ -36,6 +36,7 @@ export default function BookNookView() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [coverError, setCoverError] = useState(null)
   const [pageInputs, setPageInputs] = useState({})
   const [goal, setGoalState] = useState(getReadingGoal())
   const [editingGoal, setEditingGoal] = useState(false)
@@ -90,13 +91,14 @@ export default function BookNookView() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadingCover(true)
+    setCoverError(null)
     const user_id = await getUserId()
     const ext = file.name.split('.').pop()
     const path = `${user_id}/${Date.now()}.${ext}`
 
     const { error: uploadError } = await supabase.storage.from('book-covers').upload(path, file)
     if (uploadError) {
-      setError(uploadError.message)
+      setCoverError(uploadError.message)
       setUploadingCover(false)
       return
     }
@@ -577,6 +579,7 @@ export default function BookNookView() {
                   <input type="file" accept="image/*" onChange={handleCoverUpload} disabled={uploadingCover} />
                 </div>
                 {uploadingCover && <p className="field-hint">Uploading…</p>}
+                {coverError && <p className="error-msg">{coverError}</p>}
               </div>
               <div className="field-row">
                 <div className="field">
