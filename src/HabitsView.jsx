@@ -26,6 +26,7 @@ const emptyForm = {
   task_days_mode: 'every_day',
   task_days_count: '',
   task_days_specific: [],
+  task_days_weekly: [],
 }
 
 function toISO(date) {
@@ -93,6 +94,17 @@ function calcStreak(habit, logs) {
   return streak
 }
 
+const DAY_OF_WEEK_OPTIONS = [
+  { key: 'sunday', label: 'Sun' },
+  { key: 'monday', label: 'Mon' },
+  { key: 'tuesday', label: 'Tue' },
+  { key: 'wednesday', label: 'Wed' },
+  { key: 'thursday', label: 'Thu' },
+  { key: 'friday', label: 'Fri' },
+  { key: 'saturday', label: 'Sat' },
+]
+const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
 function taskDaysLabel(habit) {
   const v = habit.task_days_value || {}
   switch (habit.task_days_mode) {
@@ -102,6 +114,10 @@ function taskDaysLabel(habit) {
       return `${v.count || 1}x per month`
     case 'specific_days_of_month':
       return (v.days || []).length ? `Days ${(v.days || []).join(', ')} of the month` : 'Specific days'
+    case 'specific_days_of_week':
+      return (v.days || []).length
+        ? (v.days || []).map((d) => DAY_OF_WEEK_OPTIONS.find((o) => o.key === d)?.label).join(', ')
+        : 'Specific days'
     default:
       return 'Every day'
   }
@@ -230,6 +246,7 @@ export default function HabitsView() {
       task_days_mode: habit.task_days_mode || 'every_day',
       task_days_count: v.count != null ? String(v.count) : '',
       task_days_specific: v.days || [],
+      task_days_weekly: habit.task_days_mode === 'specific_days_of_week' ? (v.days || []) : [],
     })
     setModalOpen(true)
   }
@@ -252,6 +269,16 @@ export default function HabitsView() {
     })
   }
 
+  function toggleWeeklyDay(day) {
+    setForm((f) => {
+      const has = f.task_days_weekly.includes(day)
+      return {
+        ...f,
+        task_days_weekly: has ? f.task_days_weekly.filter((d) => d !== day) : [...f.task_days_weekly, day],
+      }
+    })
+  }
+
   async function handleSave(e) {
     e.preventDefault()
     if (!form.name.trim()) return
@@ -262,6 +289,8 @@ export default function HabitsView() {
       task_days_value = { count: parseInt(form.task_days_count, 10) || 1 }
     } else if (form.task_days_mode === 'specific_days_of_month') {
       task_days_value = { days: form.task_days_specific }
+    } else if (form.task_days_mode === 'specific_days_of_week') {
+      task_days_value = { days: form.task_days_weekly }
     }
 
     const payload = {
@@ -306,6 +335,34 @@ export default function HabitsView() {
     }
     closeModal()
     fetchAll()
+  }
+
+  async function toggleLogForDate(habit, dateStr) {
+    const logs = logsByHabit[habit.id] || []
+    const existing = logs.find((l) => l.logged_date === dateStr)
+    if (existing) {
+      const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
+      if (error) { setError(error.message); return }
+    } else {
+      const user_id = await getUserId()
+      const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: dateStr, value: null, user_id })
+      if (error) { setError(error.message); return }
+    }
+    fetchAll()
+  }
+
+  function isScheduledDay(habit, dateStr) {
+    const dow = DAY_KEYS[parseLocalDate(dateStr).getDay()]
+    if (habit.task_days_mode === 'specific_days_of_week') {
+      const days = habit.task_days_value?.days || []
+      return days.length === 0 || days.includes(dow)
+    }
+    if (habit.task_days_mode === 'specific_days_of_month') {
+      const days = habit.task_days_value?.days || []
+      const dom = parseLocalDate(dateStr).getDate()
+      return days.length === 0 || days.includes(dom)
+    }
+    return true
   }
 
   async function toggleDoneToday(habit) {
@@ -370,6 +427,18 @@ export default function HabitsView() {
     })
   }, [habits, logsByHabit])
 
+  const weekDates = useMemo(() => {
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay())
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(startOfWeek)
+      d.setDate(startOfWeek.getDate() + i)
+      return d
+    })
+  }, [])
+
   return (
     <div>
       <div className="view-header">
@@ -393,22 +462,24 @@ export default function HabitsView() {
       )}
 
       {!loading && !error && habits.length > 0 && (
-        <div className="card-grid">
+        <div className="habit-list">
           {enriched.map((h, i) => {
             const unitLabel = UNIT_LABELS[h.unit_type]
             const periodLabel = PERIOD_LABELS[h.goal_period]
-            const pct = h.progress.target > 0 ? Math.min(100, Math.round((h.progress.value / h.progress.target) * 100)) : 0
+            const isTickable = h.unit_type === 'none' && h.goal_period === 'day'
+            const logs = logsByHabit[h.id] || []
+            const loggedDates = new Set(logs.map((l) => l.logged_date))
 
             return (
               <div
-                className={`contact-card habit-card ${draggedId === h.id ? 'habit-card-dragging' : ''}`}
+                className={`habit-row ${draggedId === h.id ? 'habit-card-dragging' : ''}`}
                 key={h.id}
-                style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
+                style={{ borderLeftColor: CARD_COLORS[i % CARD_COLORS.length] }}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, h.id)}
               >
                 <span
-                  className="drag-handle"
+                  className="drag-handle habit-row-drag"
                   draggable
                   onDragStart={(e) => handleDragStart(e, h.id)}
                   onDragEnd={handleDragEnd}
@@ -416,68 +487,63 @@ export default function HabitsView() {
                 >
                   ⠿⠿
                 </span>
-                <div className="habit-header-row">
-                  <h3 className="contact-name" title={h.name}>{h.icon || '✨'} {h.name}</h3>
-                  <span className={`type-badge ${h.type === 'quit' ? 'type-badge-quit' : 'type-badge-build'}`}>
-                    {h.type === 'quit' ? '🚫 Quit' : '🌱 Build'}
-                  </span>
-                </div>
 
-                <p className="habit-schedule">{taskDaysLabel(h)}</p>
-
-                {(h.start_date || h.end_date) && (
-                  <p className="habit-dates">
-                    {h.start_date ? new Date(h.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '…'}
-                    {' – '}
-                    {h.end_date ? new Date(h.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'ongoing'}
-                  </p>
-                )}
-
-                <div className="progress-row">
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${pct}%`, background: CARD_COLORS[i % CARD_COLORS.length] }} />
+                <div className="habit-row-info">
+                  <div className="habit-header-row">
+                    <h3 className="contact-name" title={h.name}>{h.icon || '✨'} {h.name}</h3>
+                    <span className={`type-badge ${h.type === 'quit' ? 'type-badge-quit' : 'type-badge-build'}`}>
+                      {h.type === 'quit' ? '🚫 Quit' : '🌱 Build'}
+                    </span>
                   </div>
-                  <span className="progress-label">
-                    {h.progress.value}/{h.progress.target} {unitLabel} per {periodLabel}
-                  </span>
+                  <p className="habit-schedule">{taskDaysLabel(h)}</p>
+                  {(h.start_date || h.end_date) && (
+                    <p className="habit-dates">
+                      {h.start_date ? new Date(h.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '…'}
+                      {' – '}
+                      {h.end_date ? new Date(h.end_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'ongoing'}
+                    </p>
+                  )}
+                  {h.ended && <p className="habit-status-note">Ended</p>}
+                  {h.notStarted && <p className="habit-status-note">Starts {new Date(h.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
+                  <div className="streak-row">
+                    <span className="streak-number">{h.streak > 0 ? '🔥' : ''}{h.streak}</span>
+                    <span className="streak-label">{periodLabel}{h.streak === 1 ? '' : 's'} strong, icon behavior 💅</span>
+                  </div>
                 </div>
-
-                <div className="streak-row">
-                  <span className="streak-number">{h.streak > 0 ? '🔥' : ''}{h.streak}</span>
-                  <span className="streak-label">{periodLabel}{h.streak === 1 ? '' : 's'} strong, icon behavior 💅</span>
-                </div>
-
-                {h.ended && <p className="habit-status-note">Ended</p>}
-                {h.notStarted && <p className="habit-status-note">Starts {new Date(h.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
 
                 {!h.ended && !h.notStarted && (
-                  <div className="habit-actions">
-                    {h.unit_type === 'none' ? (
-                      h.log_style === 'counter' ? (
-                        <div className={`tick-stepper ${h.todayCount >= (h.target_count || 1) ? 'tick-stepper-done' : ''}`}>
-                          <button
-                            type="button"
-                            className="tick-btn"
-                            onClick={() => decrementToday(h)}
-                            disabled={h.todayCount === 0}
-                          >
-                            −
-                          </button>
-                          <span className="tick-count">
-                            {h.todayCount >= (h.target_count || 1) ? '✓ ' : ''}{h.todayCount} today
-                          </span>
-                          <button type="button" className="tick-btn tick-btn-add" onClick={() => incrementToday(h)}>
-                            +
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          className={`btn-check ${h.todayCount > 0 ? 'btn-check-done' : ''}`}
-                          onClick={() => toggleDoneToday(h)}
-                        >
-                          {h.todayCount > 0 ? '✓ Slayed it today 💅' : 'Mark done today, bestie'}
-                        </button>
-                      )
+                  <div className="habit-row-actions">
+                    {isTickable ? (
+                      <div className="week-tick-strip">
+                        {weekDates.map((d) => {
+                          const dStr = toISO(d)
+                          const isFuture = d > today
+                          const scheduled = isScheduledDay(h, dStr)
+                          const done = loggedDates.has(dStr)
+                          const dayLetter = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][d.getDay()]
+                          return (
+                            <button
+                              key={dStr}
+                              type="button"
+                              className={`week-tick-cell ${done ? 'week-tick-cell-done' : ''} ${!scheduled ? 'week-tick-cell-off' : ''} ${d.getTime() === today.getTime() ? 'week-tick-cell-today' : ''}`}
+                              disabled={isFuture || !scheduled}
+                              onClick={() => toggleLogForDate(h, dStr)}
+                              style={done ? { background: CARD_COLORS[i % CARD_COLORS.length], borderColor: CARD_COLORS[i % CARD_COLORS.length] } : {}}
+                            >
+                              <span className="week-tick-daylabel">{dayLetter}</span>
+                              <span className="week-tick-mark">{done ? '✓' : ''}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : h.unit_type === 'none' ? (
+                      <div className={`tick-stepper ${h.todayCount >= (h.target_count || 1) ? 'tick-stepper-done' : ''}`}>
+                        <button type="button" className="tick-btn" onClick={() => decrementToday(h)} disabled={h.todayCount === 0}>−</button>
+                        <span className="tick-count">
+                          {h.todayCount >= (h.target_count || 1) ? '✓ ' : ''}{h.todayCount} today
+                        </span>
+                        <button type="button" className="tick-btn tick-btn-add" onClick={() => incrementToday(h)}>+</button>
+                      </div>
                     ) : (
                       <div className="log-value-row">
                         <input
@@ -491,9 +557,7 @@ export default function HabitsView() {
                         <button className="btn-check log-value-btn" onClick={() => logValue(h)}>Log</button>
                       </div>
                     )}
-                    <button className="btn-delete-small" onClick={() => openEdit(h)}>
-                      Edit
-                    </button>
+                    <button className="btn-delete-small" onClick={() => openEdit(h)}>Edit</button>
                   </div>
                 )}
               </div>
@@ -671,11 +735,30 @@ export default function HabitsView() {
                   onChange={(e) => setForm({ ...form, task_days_mode: e.target.value })}
                 >
                   <option value="every_day">Every day</option>
+                  <option value="specific_days_of_week">Specific days of the week</option>
                   <option value="days_per_week">Number of days per week</option>
                   <option value="specific_days_of_month">Specific days of the month</option>
                   <option value="days_per_month">Number of days per month</option>
                 </select>
               </div>
+
+              {form.task_days_mode === 'specific_days_of_week' && (
+                <div className="field">
+                  <label>Which days?</label>
+                  <div className="custom-days-row">
+                    {DAY_OF_WEEK_OPTIONS.map((d) => (
+                      <button
+                        key={d.key}
+                        type="button"
+                        className={`custom-day-chip ${form.task_days_weekly.includes(d.key) ? 'custom-day-chip-on' : ''}`}
+                        onClick={() => toggleWeeklyDay(d.key)}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(form.task_days_mode === 'days_per_week' || form.task_days_mode === 'days_per_month') && (
                 <div className="field">
