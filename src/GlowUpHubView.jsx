@@ -133,7 +133,20 @@ const WELLNESS_METRICS = [
 const TABS = [
   { key: 'today', label: '✨ Today' },
   { key: 'cycle', label: '🌸 Cycle' },
+  { key: 'weight', label: '⚖️ Weight Journey' },
   { key: 'summary', label: '📊 Summary' },
+]
+
+const WEIGHT_ACHIEVEMENTS_KG = [
+  { at: 1, icon: '🌸', name: 'First Glow' },
+  { at: 2.5, icon: '✨', name: 'Getting Started' },
+  { at: 5, icon: '💅', name: 'Snatched Era Begins' },
+  { at: 7.5, icon: '🔥', name: 'On Fire' },
+  { at: 10, icon: '👑', name: 'Main Character Progress' },
+  { at: 15, icon: '🦋', name: 'Transformation Queen' },
+  { at: 20, icon: '💎', name: 'Elite Glow Up' },
+  { at: 25, icon: '🚀', name: 'Unstoppable' },
+  { at: 30, icon: '🏆', name: 'Legend Status' },
 ]
 
 function todayStr() {
@@ -179,6 +192,12 @@ export default function GlowUpHubView() {
   const [cycleLog, setCycleLog] = useState(null)
   const [cycleSettings, setCycleSettings] = useState(null)
   const [periodInput, setPeriodInput] = useState('')
+  const [weightSettings, setWeightSettings] = useState(null)
+  const [weightLogs, setWeightLogs] = useState([])
+  const [weightInput, setWeightInput] = useState('')
+  const [startWeightInput, setStartWeightInput] = useState('')
+  const [goalWeightInput, setGoalWeightInput] = useState('')
+  const [editingWeightGoal, setEditingWeightGoal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [stepsInput, setStepsInput] = useState('')
@@ -266,7 +285,62 @@ export default function GlowUpHubView() {
       existingSettings = createdSettings
     }
     setCycleSettings(existingSettings)
+
+    let { data: existingWeightSettings } = await supabase
+      .from('weight_settings').select('*').maybeSingle()
+    if (!existingWeightSettings) {
+      const { data: createdWS } = await supabase
+        .from('weight_settings').insert({ user_id }).select().single()
+      existingWeightSettings = createdWS
+    }
+    setWeightSettings(existingWeightSettings)
+    setStartWeightInput(existingWeightSettings.starting_weight != null ? String(existingWeightSettings.starting_weight) : '')
+    setGoalWeightInput(existingWeightSettings.goal_weight != null ? String(existingWeightSettings.goal_weight) : '')
+
+    const { data: weightData } = await supabase
+      .from('weight_logs').select('*').order('log_date', { ascending: true })
+    setWeightLogs(weightData || [])
+    const todayWeightLog = (weightData || []).find((w) => w.log_date === date)
+    setWeightInput(todayWeightLog ? String(todayWeightLog.weight) : '')
+
     setLoading(false)
+  }
+
+  async function saveWeightGoal() {
+    const { data, error } = await supabase
+      .from('weight_settings')
+      .update({
+        starting_weight: parseFloat(startWeightInput) || null,
+        goal_weight: parseFloat(goalWeightInput) || null,
+      })
+      .eq('id', weightSettings.id)
+      .select().single()
+    if (error) { setError(error.message); return }
+    setWeightSettings(data)
+    setEditingWeightGoal(false)
+  }
+
+  async function setWeightUnit(unit) {
+    const { data, error } = await supabase.from('weight_settings').update({ unit }).eq('id', weightSettings.id).select().single()
+    if (error) { setError(error.message); return }
+    setWeightSettings(data)
+  }
+
+  async function logWeight() {
+    const weight = parseFloat(weightInput)
+    if (!weight) return
+    const user_id = await getUserId()
+    const date = todayStr()
+    const existing = weightLogs.find((w) => w.log_date === date)
+    let error
+    if (existing) {
+      ;({ error } = await supabase.from('weight_logs').update({ weight }).eq('id', existing.id))
+    } else {
+      ;({ error } = await supabase.from('weight_logs').insert({ log_date: date, weight, user_id }))
+    }
+    if (error) { setError(error.message); return }
+    const { data: weightData } = await supabase.from('weight_logs').select('*').order('log_date', { ascending: true })
+    setWeightLogs(weightData || [])
   }
 
   async function fetchSummary() {
@@ -356,6 +430,19 @@ export default function GlowUpHubView() {
 
   const monthName = new Date().toLocaleDateString('en-US', { month: 'long' })
   const thisYear = new Date().getFullYear()
+
+  const weightUnit = weightSettings?.unit || 'kg'
+  const startingWeight = weightSettings?.starting_weight ? Number(weightSettings.starting_weight) : null
+  const goalWeight = weightSettings?.goal_weight ? Number(weightSettings.goal_weight) : null
+  const latestWeightLog = weightLogs.length > 0 ? weightLogs[weightLogs.length - 1] : null
+  const currentWeight = latestWeightLog ? Number(latestWeightLog.weight) : startingWeight
+  const totalLost = startingWeight != null && currentWeight != null ? Math.max(0, startingWeight - currentWeight) : 0
+  const totalToLose = startingWeight != null && goalWeight != null ? Math.max(0, startingWeight - goalWeight) : null
+  const goalProgressPct = totalToLose && totalToLose > 0 ? Math.min(100, Math.round((totalLost / totalToLose) * 100)) : 0
+  const remainingToGoal = goalWeight != null && currentWeight != null ? Math.max(0, currentWeight - goalWeight) : null
+  const achievementThresholds = weightUnit === 'lbs' ? WEIGHT_ACHIEVEMENTS_KG.map((a) => ({ ...a, at: Math.round(a.at * 2.20462 * 10) / 10 })) : WEIGHT_ACHIEVEMENTS_KG
+  const unlockedAchievements = achievementThresholds.filter((a) => totalLost >= a.at)
+  const nextAchievement = achievementThresholds.find((a) => totalLost < a.at)
 
   function summaryStats(logs) {
     const avgWater = average(logs.map((l) => l.water_glasses))
@@ -887,6 +974,138 @@ export default function GlowUpHubView() {
               })}
             </div>
           </div>
+        </>
+      )}
+
+      {tab === 'weight' && weightSettings && (
+        <>
+          {!startingWeight ? (
+            <div className="calendar-card">
+              <p className="module-group-label">⚖️ LET'S START YOUR GLOW DOWN</p>
+              <p className="field-hint">Set your starting weight and goal to begin tracking. You've got this, bestie. 💖</p>
+              <div className="field-row" style={{ marginTop: 10 }}>
+                <div className="field">
+                  <label>Starting weight</label>
+                  <input type="number" value={startWeightInput} onChange={(e) => setStartWeightInput(e.target.value)} placeholder="e.g. 75" />
+                </div>
+                <div className="field">
+                  <label>Goal weight</label>
+                  <input type="number" value={goalWeightInput} onChange={(e) => setGoalWeightInput(e.target.value)} placeholder="e.g. 65" />
+                </div>
+              </div>
+              <div className="toggle-group" style={{ marginBottom: 14 }}>
+                <button type="button" className={`toggle-btn ${weightUnit === 'kg' ? 'toggle-btn-active' : ''}`} onClick={() => setWeightUnit('kg')}>kg</button>
+                <button type="button" className={`toggle-btn ${weightUnit === 'lbs' ? 'toggle-btn-active' : ''}`} onClick={() => setWeightUnit('lbs')}>lbs</button>
+              </div>
+              <button className="btn-primary" onClick={saveWeightGoal}>Start my journey ✨</button>
+            </div>
+          ) : (
+            <>
+              <div className="calendar-card booknook-progress-card">
+                <p className="module-group-label">👑 YOUR GLOW DOWN JOURNEY</p>
+                <div className="booknook-stats-grid">
+                  <div className="booknook-stat">
+                    <span className="booknook-stat-label">⚖️ Current</span>
+                    <span className="booknook-stat-value booknook-stat-small">{currentWeight != null ? `${currentWeight}${weightUnit}` : '—'}</span>
+                  </div>
+                  <div className="booknook-stat">
+                    <span className="booknook-stat-label">🌸 Lost so far</span>
+                    <span className="booknook-stat-value booknook-stat-small">{totalLost.toFixed(1)}{weightUnit}</span>
+                  </div>
+                  {goalWeight != null && (
+                    <div className="booknook-stat">
+                      <span className="booknook-stat-label">🎯 To goal</span>
+                      <span className="booknook-stat-value booknook-stat-small">{remainingToGoal != null ? `${remainingToGoal.toFixed(1)}${weightUnit}` : '—'}</span>
+                    </div>
+                  )}
+                </div>
+                {totalToLose != null && (
+                  <>
+                    <div className="momentum-track" style={{ marginTop: 14 }}>
+                      <div className="momentum-fill" style={{ width: `${goalProgressPct}%` }} />
+                    </div>
+                    <p className="momentum-caption">{goalProgressPct}% of the way to your goal ✨</p>
+                  </>
+                )}
+                <div className="log-value-row" style={{ marginTop: 14 }}>
+                  {editingWeightGoal ? (
+                    <>
+                      <input type="number" className="log-value-input" value={startWeightInput} onChange={(e) => setStartWeightInput(e.target.value)} placeholder="Starting" />
+                      <input type="number" className="log-value-input" value={goalWeightInput} onChange={(e) => setGoalWeightInput(e.target.value)} placeholder="Goal" />
+                      <button className="btn-check log-value-btn" onClick={saveWeightGoal}>Save</button>
+                    </>
+                  ) : (
+                    <button className="weather-location-link" onClick={() => setEditingWeightGoal(true)}>🎯 Edit starting / goal weight</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="upnext-section">
+                <p className="module-group-label">📝 LOG TODAY'S WEIGHT</p>
+                <div className="calendar-card">
+                  <div className="log-value-row">
+                    <input
+                      type="number"
+                      className="log-value-input"
+                      placeholder={`Weight in ${weightUnit}`}
+                      value={weightInput}
+                      onChange={(e) => setWeightInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && logWeight()}
+                    />
+                    <button className="btn-check log-value-btn" onClick={logWeight}>Log it 💖</button>
+                  </div>
+                </div>
+              </div>
+
+              {nextAchievement && (
+                <div className="upnext-section">
+                  <p className="module-group-label">🔮 NEXT UP</p>
+                  <div className="calendar-card">
+                    <p className="momentum-caption">
+                      {(nextAchievement.at - totalLost).toFixed(1)}{weightUnit} to unlock {nextAchievement.icon} "{nextAchievement.name}"
+                    </p>
+                    <div className="momentum-track" style={{ marginTop: 8 }}>
+                      <div className="momentum-fill" style={{ width: `${Math.min(100, (totalLost / nextAchievement.at) * 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="upnext-section">
+                <p className="module-group-label">🏆 ACHIEVEMENTS</p>
+                <div className="finished-shelf">
+                  {achievementThresholds.map((a) => {
+                    const unlocked = totalLost >= a.at
+                    return (
+                      <div
+                        className="library-card library-card-small"
+                        key={a.name}
+                        style={{ opacity: unlocked ? 1 : 0.4, borderTop: unlocked ? '4px solid #D9A8B8' : undefined }}
+                      >
+                        <h3 className="contact-name">{a.icon} {a.name}</h3>
+                        <p className="contact-relationship">{a.at}{weightUnit} lost</p>
+                        {unlocked && <p className="progress-label">✓ Unlocked</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {weightLogs.length > 0 && (
+                <div className="upnext-section">
+                  <p className="module-group-label">📈 RECENT WEIGH-INS</p>
+                  <div className="calendar-card goals-summary-card">
+                    {weightLogs.slice(-10).reverse().map((w) => (
+                      <div className="goals-summary-row" key={w.id}>
+                        <span className="goals-summary-label">{formatDateShort(w.log_date)}</span>
+                        <span className="goals-summary-value">{w.weight}{weightUnit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </>
       )}
 

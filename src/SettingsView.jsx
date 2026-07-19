@@ -42,6 +42,7 @@ const TODO_SUB_SPACES = [
 const GLOWUP_SUB_SPACES = [
   { key: 'today', label: '✨ Today' },
   { key: 'cycle', label: '🌸 Cycle' },
+  { key: 'weight', label: '⚖️ Weight Journey' },
   { key: 'summary', label: '📊 Summary' },
 ]
 
