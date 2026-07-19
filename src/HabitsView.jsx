@@ -72,6 +72,64 @@ function logsInRange(logs, start, end) {
   })
 }
 
+const RANGE_OPTIONS = [
+  { key: 'week', label: 'Last Week', days: 7 },
+  { key: 'month', label: 'Last Month', days: 30 },
+  { key: '3months', label: '3 Months', days: 90 },
+  { key: '6months', label: '6 Months', days: 180 },
+  { key: 'year', label: '1 Year', days: 365 },
+  { key: 'all', label: 'Total History', days: null },
+]
+
+function getRangeBounds(rangeKey, habits) {
+  const end = new Date()
+  end.setHours(0, 0, 0, 0)
+  const opt = RANGE_OPTIONS.find((r) => r.key === rangeKey)
+  if (!opt.days) {
+    const earliestStart = habits.reduce((min, h) => {
+      if (!h.start_date) return min
+      const d = parseLocalDate(h.start_date)
+      return !min || d < min ? d : min
+    }, null)
+    return { start: earliestStart || new Date(2020, 0, 1), end }
+  }
+  const start = new Date(end)
+  start.setDate(start.getDate() - opt.days + 1)
+  return { start, end }
+}
+
+function expectedCount(habit, start, end) {
+  const dayMs = 86400000
+  const totalDays = Math.floor((end - start) / dayMs) + 1
+  if (habit.task_days_mode === 'specific_days_of_week') {
+    const days = habit.task_days_value?.days || []
+    if (days.length === 0) return totalDays
+    let count = 0
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (days.includes(DAY_KEYS[d.getDay()])) count++
+    }
+    return count
+  }
+  if (habit.task_days_mode === 'specific_days_of_month') {
+    const days = habit.task_days_value?.days || []
+    if (days.length === 0) return totalDays
+    let count = 0
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (days.includes(d.getDate())) count++
+    }
+    return count
+  }
+  if (habit.task_days_mode === 'days_per_week') {
+    const weeks = Math.max(1, Math.ceil(totalDays / 7))
+    return weeks * (habit.task_days_value?.count || 1)
+  }
+  if (habit.task_days_mode === 'days_per_month') {
+    const months = Math.max(1, Math.ceil(totalDays / 30))
+    return months * (habit.task_days_value?.count || 1)
+  }
+  return totalDays
+}
+
 function progressFor(habit, logs, refDate) {
   const { start, end } = getPeriodBounds(habit.goal_period, refDate)
   const periodLogs = logsInRange(logs, start, end)
@@ -135,6 +193,8 @@ export default function HabitsView() {
   const [valueInputs, setValueInputs] = useState({})
   const [draggedId, setDraggedId] = useState(null)
   const [, setTick] = useState(0)
+  const [pageView, setPageView] = useState('list')
+  const [rangeFilter, setRangeFilter] = useState('week')
 
   const todayStr = toISO(new Date())
   const today = new Date()
@@ -427,6 +487,24 @@ export default function HabitsView() {
     })
   }, [habits, logsByHabit])
 
+  const overviewStats = useMemo(() => {
+    if (habits.length === 0) return { perHabit: [], totalCheckins: 0, avgRate: 0 }
+    const { start, end } = getRangeBounds(rangeFilter, habits)
+    const perHabit = habits.map((h) => {
+      const logs = logsByHabit[h.id] || []
+      const inRange = logs.filter((l) => {
+        const d = parseLocalDate(l.logged_date)
+        return d >= start && d <= end
+      })
+      const expected = expectedCount(h, start, end)
+      const rate = expected > 0 ? Math.min(100, Math.round((inRange.length / expected) * 100)) : 0
+      return { habit: h, checkins: inRange.length, expected, rate }
+    })
+    const totalCheckins = perHabit.reduce((sum, p) => sum + p.checkins, 0)
+    const avgRate = perHabit.length > 0 ? Math.round(perHabit.reduce((sum, p) => sum + p.rate, 0) / perHabit.length) : 0
+    return { perHabit, totalCheckins, avgRate, start, end }
+  }, [habits, logsByHabit, rangeFilter])
+
   const weekDates = useMemo(() => {
     const now = new Date()
     now.setHours(0, 0, 0, 0)
@@ -451,6 +529,15 @@ export default function HabitsView() {
         </div>
       </div>
 
+      <div className="filter-row">
+        <button className={`filter-pill ${pageView === 'list' ? 'filter-pill-active' : ''}`} onClick={() => setPageView('list')}>
+          🔥 Habits
+        </button>
+        <button className={`filter-pill ${pageView === 'overview' ? 'filter-pill-active' : ''}`} onClick={() => setPageView('overview')}>
+          📊 Overview
+        </button>
+      </div>
+
       {loading && <p className="loading">Warming up your streaks… 🔥</p>}
       {error && <p className="error-msg">{error}</p>}
 
@@ -461,7 +548,7 @@ export default function HabitsView() {
         </div>
       )}
 
-      {!loading && !error && habits.length > 0 && (
+      {!loading && !error && habits.length > 0 && pageView === 'list' && (
         <div className="habit-list">
           {enriched.map((h, i) => {
             const unitLabel = UNIT_LABELS[h.unit_type]
@@ -564,6 +651,60 @@ export default function HabitsView() {
             )
           })}
         </div>
+      )}
+
+      {!loading && !error && habits.length > 0 && pageView === 'overview' && (
+        <>
+          <div className="filter-row">
+            {RANGE_OPTIONS.map((r) => (
+              <button
+                key={r.key}
+                className={`filter-pill ${rangeFilter === r.key ? 'filter-pill-active' : ''}`}
+                onClick={() => setRangeFilter(r.key)}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="calendar-card goals-summary-card">
+            <p className="module-group-label">
+              {RANGE_OPTIONS.find((r) => r.key === rangeFilter)?.label.toUpperCase()} SUMMARY
+            </p>
+            <div className="goals-summary-row">
+              <span className="goals-summary-label">✅ Total check-ins</span>
+              <span className="goals-summary-value">{overviewStats.totalCheckins}</span>
+            </div>
+            <div className="goals-summary-row">
+              <span className="goals-summary-label">📊 Average completion</span>
+              <span className="goals-summary-value">{overviewStats.avgRate}%</span>
+            </div>
+          </div>
+
+          <div className="habit-list" style={{ marginTop: 16 }}>
+            {overviewStats.perHabit.map(({ habit: h, checkins, expected, rate }, i) => (
+              <div className="habit-row" key={h.id} style={{ borderLeftColor: CARD_COLORS[i % CARD_COLORS.length] }}>
+                <div className="habit-row-info">
+                  <div className="habit-header-row">
+                    <h3 className="contact-name" title={h.name}>{h.icon || '✨'} {h.name}</h3>
+                    <span className={`type-badge ${h.type === 'quit' ? 'type-badge-quit' : 'type-badge-build'}`}>
+                      {h.type === 'quit' ? '🚫 Quit' : '🌱 Build'}
+                    </span>
+                  </div>
+                  <div className="progress-row">
+                    <div className="progress-track">
+                      <div className="progress-fill" style={{ width: `${rate}%`, background: CARD_COLORS[i % CARD_COLORS.length] }} />
+                    </div>
+                    <span className="progress-label">{checkins}/{expected} check-ins · {rate}%</span>
+                  </div>
+                </div>
+                <div className="habit-row-actions">
+                  <span className="streak-number">{h.streak > 0 ? '🔥' : ''}{h.streak}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {modalOpen && (
