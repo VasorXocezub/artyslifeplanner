@@ -3653,3 +3653,119 @@
   text-transform: none;
   letter-spacing: normal;
 }
+
+/* ---------- To-Do: hype coach treatment (Personal tab) ---------- */
+.todo-hype-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.todo-hype-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 8px;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.todo-hype-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(107, 27, 61, 0.1);
+}
+
+.todo-hype-stat-icon {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.todo-hype-stat-value {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.todo-hype-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.todo-reflection-card {
+  background: linear-gradient(120deg, var(--coral-soft) 0%, var(--pink-soft) 100%);
+  margin-bottom: 20px;
+}
+
+.todo-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.todo-badge-chip {
+  background: var(--surface);
+  border: 2px solid var(--coral);
+  color: var(--coral);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.celebration-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: celebrationPop 1.8s ease forwards;
+}
+
+.celebration-sparkles {
+  animation: sparkleSpin 1s ease infinite;
+}
+
+@keyframes celebrationPop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.9); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  85% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.96); }
+}
+
+@keyframes sparkleSpin {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(15deg); }
+}
+
+.recur-builder {
+  margin-top: 12px;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.recur-builder .field {
+  margin-bottom: 14px;
+}
+
+.recur-builder .field:last-child {
+  margin-bottom: 0;
+}
