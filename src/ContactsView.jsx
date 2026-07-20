@@ -574,7 +574,7 @@ export default function ContactsView() {
             <button className="btn-check cake-profile-edit-btn" onClick={() => setProfileMode(false)}>✏️ Edit Details</button>
 
             <div className="cake-profile-section">
-              <p className="module-group-label">🎁 GIFT VAULT</p>
+              <p className="cake-section-heading">🎁 Gift Vault</p>
               {(form.fave_flowers || form.fave_store || form.coffee_order || form.gift_ideas) ? (
                 <>
                   {form.fave_flowers && <div className="goals-summary-row"><span className="goals-summary-label">💐 Flowers</span><span className="goals-summary-value">{form.fave_flowers}</span></div>}
@@ -588,7 +588,7 @@ export default function ContactsView() {
             </div>
 
             <div className="cake-profile-section">
-              <p className="module-group-label">💬 NOTES & CONVERSATIONS</p>
+              <p className="cake-section-heading">💬 Notes</p>
               {form.gift_notes ? (
                 <p className="brain-dump-content">{form.gift_notes}</p>
               ) : (
@@ -606,9 +606,9 @@ export default function ContactsView() {
             </div>
 
             <div className="cake-profile-section">
-              <p className="module-group-label">🛍️ PURCHASES</p>
+              <p className="cake-section-heading">🛍️ Purchases</p>
               {form.no_gift ? (
-                <p className="cake-gift-status cake-gift-status-ready">✅ No gift needed for this person</p>
+                <p className="cake-gift-status cake-gift-status-ready">✅ No gift needed</p>
               ) : (
                 <>
                   <p className={`cake-gift-status ${form.gift_purchased ? 'cake-gift-status-purchased' : 'cake-gift-status-needed'}`}>
@@ -630,7 +630,7 @@ export default function ContactsView() {
             </div>
 
             <div className="cake-profile-section">
-              <p className="module-group-label">📅 IMPORTANT DATES</p>
+              <p className="cake-section-heading">📅 Important Dates</p>
               <div className="goals-summary-row">
                 <span className="goals-summary-label">🎂 Birthday</span>
                 <span className="goals-summary-value">
@@ -649,7 +649,7 @@ export default function ContactsView() {
             </div>
 
             <div className="cake-profile-section cake-profile-section-archive">
-              <p className="module-group-label">🗃️ ARCHIVE</p>
+              <p className="cake-section-heading">🗃️ Archive</p>
               <p className="field-hint">Move them out of Cake Club without deleting their info. You can't undo this from here.</p>
               <button
                 type="button"

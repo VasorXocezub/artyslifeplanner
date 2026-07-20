@@ -3643,3 +3643,13 @@
 .cake-profile-section-archive {
   opacity: 0.85;
 }
+
+.cake-section-heading {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 10px 0;
+  text-transform: none;
+  letter-spacing: normal;
+}
