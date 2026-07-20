@@ -1445,6 +1445,7 @@
 }
 
 .cal-cell {
+  position: relative;
   min-height: 64px;
   border-radius: 14px;
   padding: 6px;
@@ -3320,4 +3321,264 @@
   font-weight: 800;
   color: #fff;
   height: 14px;
+}
+
+/* ---------- Cake Club refinements ---------- */
+.cake-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cake-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 16px 10px;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cake-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(107, 27, 61, 0.1);
+}
+
+.cake-stat-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.cake-stat-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cake-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.cake-search-row {
+  margin-bottom: 12px;
+}
+
+.cake-search-input {
+  width: 100%;
+}
+
+.cake-clear-filter {
+  display: inline-block;
+  margin: 4px 0 14px 0;
+}
+
+.cake-card {
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.cake-card:hover {
+  transform: translateY(-3px) scale(1.01);
+}
+
+.cake-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cake-relationship-tag {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.cake-quick-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.cake-card:hover .cake-quick-actions,
+.cake-card:focus-within .cake-quick-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (hover: none) {
+  .cake-quick-actions {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cake-qa-btn {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.cake-qa-btn:hover {
+  transform: scale(1.12);
+  background: var(--surface);
+}
+
+.cake-qa-btn:active {
+  transform: scale(0.94);
+}
+
+.cake-qa-btn-active {
+  background: var(--coral-soft);
+  border-color: var(--coral);
+}
+
+/* Countdown ring */
+.countdown-ring-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.countdown-ring-fill {
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.countdown-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.countdown-ring-num {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.countdown-ring-unit {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.countdown-ring-today {
+  font-size: 18px;
+}
+
+/* Calendar: today + selected + tooltip */
+.cal-cell-today {
+  border: 2px solid var(--coral) !important;
+  font-weight: 800;
+}
+
+.cal-cell-selected {
+  background: var(--coral-soft) !important;
+}
+
+.cal-chip-more {
+  background: var(--bg) !important;
+  color: var(--ink-dim) !important;
+  font-weight: 700;
+}
+
+.cal-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  z-index: 5;
+  pointer-events: none;
+  animation: tooltipFade 0.12s ease;
+}
+
+@keyframes tooltipFade {
+  from { opacity: 0; transform: translateX(-50%) translateY(3px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Confetti */
+.confetti-burst {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -10px;
+  width: 6px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confettiFall 1.4s ease-in forwards;
+}
+
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(140px) rotate(360deg); opacity: 0; }
+}
+
+/* Profile drawer */
+.cake-profile-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.cake-profile-icon {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cake-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.cake-profile-vault {
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.cake-profile-empty {
+  padding: 20px 10px;
 }
