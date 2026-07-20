@@ -3759,11 +3759,13 @@
   margin-top: 12px;
   background: var(--bg);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 16px 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .recur-builder .field {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .recur-builder .field:last-child {
@@ -3814,5 +3816,6 @@
 .recur-pill-col {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }

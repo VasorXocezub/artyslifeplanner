@@ -376,47 +376,44 @@ function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange, setFreqOnly
             </div>
           )}
 
-          <div className="recur-two-col">
-            <div className="field">
-              <label>Ends</label>
-              <div className="recur-pill-col">
-                {END_TYPE_OPTIONS.map((e) => (
-                  <button
-                    type="button"
-                    key={e.key}
-                    className={`filter-pill ${rule.endType === e.key ? 'filter-pill-active' : ''}`}
-                    onClick={() => update({ endType: e.key })}
-                  >
-                    {e.label}
-                  </button>
-                ))}
-              </div>
+          <div className="field">
+            <label>Ends</label>
+            <div className="recur-pill-col">
+              {END_TYPE_OPTIONS.map((e) => (
+                <button
+                  type="button"
+                  key={e.key}
+                  className={`filter-pill ${rule.endType === e.key ? 'filter-pill-active' : ''}`}
+                  onClick={() => update({ endType: e.key })}
+                >
+                  {e.label}
+                </button>
+              ))}
               {rule.endType === 'on_date' && (
-                <input type="date" value={rule.endDate || ''} onChange={(ev) => update({ endDate: ev.target.value })} style={{ marginTop: 8 }} />
+                <input type="date" value={rule.endDate || ''} onChange={(ev) => update({ endDate: ev.target.value })} />
               )}
               {rule.endType === 'after_n' && (
                 <input
-                  type="number" min="1" className="log-value-input"
-                  style={{ marginTop: 8 }}
+                  type="number" min="1" className="log-value-input recur-interval-input"
                   value={rule.endCount} onChange={(ev) => update({ endCount: parseInt(ev.target.value, 10) || 1 })}
                 />
               )}
             </div>
+          </div>
 
-            <div className="field">
-              <label>If I miss it…</label>
-              <div className="recur-pill-col">
-                {MISSED_OPTIONS.map((m) => (
-                  <button
-                    type="button"
-                    key={m.key}
-                    className={`filter-pill ${rule.missed === m.key ? 'filter-pill-active' : ''}`}
-                    onClick={() => update({ missed: m.key })}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
+          <div className="field">
+            <label>If I miss it…</label>
+            <div className="recur-pill-col">
+              {MISSED_OPTIONS.map((m) => (
+                <button
+                  type="button"
+                  key={m.key}
+                  className={`filter-pill ${rule.missed === m.key ? 'filter-pill-active' : ''}`}
+                  onClick={() => update({ missed: m.key })}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
           </div>
 
