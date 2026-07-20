@@ -376,44 +376,46 @@ function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange, setFreqOnly
             </div>
           )}
 
-          <div className="field">
-            <label>Ends</label>
-            <div className="recur-pill-col">
-              {END_TYPE_OPTIONS.map((e) => (
-                <button
-                  type="button"
-                  key={e.key}
-                  className={`filter-pill ${rule.endType === e.key ? 'filter-pill-active' : ''}`}
-                  onClick={() => update({ endType: e.key })}
-                >
-                  {e.label}
-                </button>
-              ))}
-              {rule.endType === 'on_date' && (
-                <input type="date" value={rule.endDate || ''} onChange={(ev) => update({ endDate: ev.target.value })} />
-              )}
-              {rule.endType === 'after_n' && (
-                <input
-                  type="number" min="1" className="log-value-input recur-interval-input"
-                  value={rule.endCount} onChange={(ev) => update({ endCount: parseInt(ev.target.value, 10) || 1 })}
-                />
-              )}
+          <div className="recur-two-col">
+            <div className="field">
+              <label>Ends</label>
+              <div className="recur-pill-col">
+                {END_TYPE_OPTIONS.map((e) => (
+                  <button
+                    type="button"
+                    key={e.key}
+                    className={`filter-pill ${rule.endType === e.key ? 'filter-pill-active' : ''}`}
+                    onClick={() => update({ endType: e.key })}
+                  >
+                    {e.label}
+                  </button>
+                ))}
+                {rule.endType === 'on_date' && (
+                  <input type="date" value={rule.endDate || ''} onChange={(ev) => update({ endDate: ev.target.value })} />
+                )}
+                {rule.endType === 'after_n' && (
+                  <input
+                    type="number" min="1" className="log-value-input recur-interval-input"
+                    value={rule.endCount} onChange={(ev) => update({ endCount: parseInt(ev.target.value, 10) || 1 })}
+                  />
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="field">
-            <label>If I miss it…</label>
-            <div className="recur-pill-col">
-              {MISSED_OPTIONS.map((m) => (
-                <button
-                  type="button"
-                  key={m.key}
-                  className={`filter-pill ${rule.missed === m.key ? 'filter-pill-active' : ''}`}
-                  onClick={() => update({ missed: m.key })}
-                >
-                  {m.label}
-                </button>
-              ))}
+            <div className="field">
+              <label>If I miss it…</label>
+              <div className="recur-pill-col">
+                {MISSED_OPTIONS.map((m) => (
+                  <button
+                    type="button"
+                    key={m.key}
+                    className={`filter-pill ${rule.missed === m.key ? 'filter-pill-active' : ''}`}
+                    onClick={() => update({ missed: m.key })}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -1052,7 +1054,7 @@ export default function TodoView() {
 
                 <div className={`todo-notes-collapse ${editingRecurId === t.id ? 'todo-notes-collapse-open' : ''}`}>
                   <div className="todo-notes-collapse-inner">
-                    <div className="todo-notes-panel">
+                    <div className="todo-notes-panel todo-recur-panel">
                       <RecurrenceBuilder
                         freq={editingFreq}
                         rule={editingRule}
