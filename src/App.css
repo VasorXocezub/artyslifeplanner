@@ -3769,3 +3769,50 @@
 .recur-builder .field:last-child {
   margin-bottom: 0;
 }
+
+.recur-radio-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.recur-radio-row:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Recurrence builder: compact horizontal layout ---------- */
+.recur-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.recur-interval-input {
+  width: 56px;
+  flex: 0 0 56px;
+}
+
+.recur-unit-select {
+  flex: 0 0 auto;
+}
+
+.recur-inline-days {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.recur-two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.recur-pill-col {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

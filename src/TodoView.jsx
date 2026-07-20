@@ -15,19 +15,19 @@ const CATEGORIES = [
 ]
 
 const ENERGY_TYPES = [
-  { key: 'big_girl_job', label: '🔥 Big Girl Job', color: '#1E5C57' },
+  { key: 'big_girl_job', label: '💪 Big Girl Jobs', color: '#1E5C57' },
   { key: 'deep_focus', label: '🧠 Deep Focus', color: '#B896C9' },
-  { key: 'quick_win', label: '⚡ Quick Win', color: '#E4CBA0' },
-  { key: 'soft_task', label: '☕ Soft Task', color: '#8FC2BE' },
+  { key: 'quick_win', label: '⚡ Quick Wins', color: '#E4CBA0' },
+  { key: 'soft_task', label: '☕ Soft Tasks', color: '#8FC2BE' },
   { key: 'self_care', label: '🌸 Self Care', color: '#D9A8B8' },
 ]
 const ENERGY_ORDER = { big_girl_job: 0, deep_focus: 1, quick_win: 2, soft_task: 3, self_care: 4 }
 
-const VIBE_FILTERS = [
-  { key: 'all', label: '✨ Everything', energies: null },
-  { key: 'lets_go', label: "🔥 Let's Go", energies: ['big_girl_job', 'deep_focus'] },
-  { key: 'easy_wins', label: '🌱 Easy Wins', energies: ['quick_win'] },
-  { key: 'future_me', label: '🌙 Future Me', energies: ['soft_task', 'self_care'] },
+const STATUS_FILTERS = [
+  { key: 'all', label: '✨ Everything' },
+  { key: 'right_now', label: '🔥 Right Now' },
+  { key: 'next_up', label: '🌱 Next Up' },
+  { key: 'completed', label: '✅ Completed' },
 ]
 
 const HYPE_MESSAGES = [
@@ -241,6 +241,11 @@ function isOverdue(d) {
   return new Date(d + 'T00:00:00') < today
 }
 
+function taskUrgency(t) {
+  if (!t.due_date) return 'next_up'
+  return (isOverdue(t.due_date) || t.due_date === todayStr()) ? 'right_now' : 'next_up'
+}
+
 function todayStr() {
   return new Date().toISOString().split('T')[0]
 }
@@ -275,7 +280,7 @@ function calcStreak(completedDates) {
 }
 
 /* ---------------- Recurrence builder sub-component ---------------- */
-function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange }) {
+function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange, setFreqOnly }) {
   function update(patch) {
     onRuleChange({ ...rule, ...patch })
   }
@@ -293,28 +298,25 @@ function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange }) {
         <div className="recur-builder">
           <p className="cake-section-heading" style={{ fontSize: 15 }}>🌸 Custom Repeat</p>
 
-          <div className="log-value-row" style={{ marginBottom: 12 }}>
+          <div className="recur-row">
             <span className="field-hint" style={{ margin: 0 }}>Repeat every</span>
             <input
               type="number"
               min="1"
-              className="log-value-input"
-              style={{ maxWidth: 70 }}
+              className="log-value-input recur-interval-input"
               value={rule.interval}
               onChange={(e) => update({ interval: parseInt(e.target.value, 10) || 1 })}
             />
             <select
+              className="recur-unit-select"
               value={unitFromFreq(rule.freq)}
               onChange={(e) => update({ freq: freqFromUnit(e.target.value) })}
             >
               {UNIT_OPTIONS.map((u) => <option key={u.key} value={u.key}>{u.label}</option>)}
             </select>
-          </div>
 
-          {rule.freq === 'weekly' && (
-            <div className="field">
-              <label>On:</label>
-              <div className="custom-days-row">
+            {rule.freq === 'weekly' && (
+              <div className="custom-days-row recur-inline-days">
                 {DAY_KEYS.map((d) => (
                   <button
                     key={d}
@@ -326,83 +328,96 @@ function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange }) {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {rule.freq === 'monthly' && (
-            <div className="field">
+            <div className="recur-row" style={{ marginTop: 4 }}>
               {MONTH_MODE_OPTIONS.map((m) => (
-                <label key={m.key} className="savings-toggle-label" style={{ display: 'block', marginBottom: 6 }}>
-                  <input type="radio" name="monthMode" checked={rule.monthMode === m.key} onChange={() => update({ monthMode: m.key })} />
-                  {' '}{m.label}
-                  {m.key === 'day_of_month' && rule.monthMode === 'day_of_month' && (
-                    <input
-                      type="number" min="1" max="31" className="log-value-input" style={{ maxWidth: 60, marginLeft: 8 }}
-                      value={rule.monthDay} onChange={(e) => update({ monthDay: parseInt(e.target.value, 10) || 1 })}
-                    />
-                  )}
-                  {m.key === 'nth_weekday' && rule.monthMode === 'nth_weekday' && (
-                    <span style={{ marginLeft: 8 }}>
-                      <select value={rule.monthNth} onChange={(e) => update({ monthNth: parseInt(e.target.value, 10) })}>
-                        {NTH_OPTIONS.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
-                      </select>
-                      <select value={rule.monthWeekday} onChange={(e) => update({ monthWeekday: e.target.value })} style={{ marginLeft: 6 }}>
-                        {DAY_KEYS.map((d) => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
-                      </select>
-                    </span>
-                  )}
-                  {m.key === 'last_weekday' && rule.monthMode === 'last_weekday' && (
-                    <select value={rule.monthWeekday} onChange={(e) => update({ monthWeekday: e.target.value })} style={{ marginLeft: 8 }}>
-                      {DAY_KEYS.map((d) => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
-                    </select>
-                  )}
-                </label>
+                <button
+                  type="button"
+                  key={m.key}
+                  className={`filter-pill ${rule.monthMode === m.key ? 'filter-pill-active' : ''}`}
+                  onClick={() => update({ monthMode: m.key })}
+                >
+                  {m.label}
+                </button>
               ))}
+              {rule.monthMode === 'day_of_month' && (
+                <input
+                  type="number" min="1" max="31" className="log-value-input recur-interval-input"
+                  value={rule.monthDay} onChange={(e) => update({ monthDay: parseInt(e.target.value, 10) || 1 })}
+                />
+              )}
+              {rule.monthMode === 'nth_weekday' && (
+                <>
+                  <select value={rule.monthNth} onChange={(e) => update({ monthNth: parseInt(e.target.value, 10) })}>
+                    {NTH_OPTIONS.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
+                  </select>
+                  <select value={rule.monthWeekday} onChange={(e) => update({ monthWeekday: e.target.value })}>
+                    {DAY_KEYS.map((d) => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
+                  </select>
+                </>
+              )}
+              {rule.monthMode === 'last_weekday' && (
+                <select value={rule.monthWeekday} onChange={(e) => update({ monthWeekday: e.target.value })}>
+                  {DAY_KEYS.map((d) => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
+                </select>
+              )}
             </div>
           )}
 
           {rule.freq === 'yearly' && (
-            <div className="field-row">
-              <div className="field">
-                <label>Month</label>
-                <select value={rule.yearMonth} onChange={(e) => update({ yearMonth: parseInt(e.target.value, 10) })}>
-                  {MONTH_LABELS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <label>Day</label>
-                <input type="number" min="1" max="31" value={rule.yearDay} onChange={(e) => update({ yearDay: parseInt(e.target.value, 10) || 1 })} />
-              </div>
+            <div className="recur-row" style={{ marginTop: 4 }}>
+              <select value={rule.yearMonth} onChange={(e) => update({ yearMonth: parseInt(e.target.value, 10) })}>
+                {MONTH_LABELS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+              </select>
+              <input type="number" min="1" max="31" className="log-value-input recur-interval-input" value={rule.yearDay} onChange={(e) => update({ yearDay: parseInt(e.target.value, 10) || 1 })} />
             </div>
           )}
 
-          <div className="field">
-            <label>Ends</label>
-            {END_TYPE_OPTIONS.map((e) => (
-              <label key={e.key} className="savings-toggle-label" style={{ display: 'block', marginBottom: 6 }}>
-                <input type="radio" name="endType" checked={rule.endType === e.key} onChange={() => update({ endType: e.key })} />
-                {' '}{e.label}
-                {e.key === 'on_date' && rule.endType === 'on_date' && (
-                  <input type="date" value={rule.endDate || ''} onChange={(ev) => update({ endDate: ev.target.value })} style={{ marginLeft: 8 }} />
-                )}
-                {e.key === 'after_n' && rule.endType === 'after_n' && (
-                  <input
-                    type="number" min="1" className="log-value-input" style={{ maxWidth: 70, marginLeft: 8 }}
-                    value={rule.endCount} onChange={(ev) => update({ endCount: parseInt(ev.target.value, 10) || 1 })}
-                  />
-                )}
-              </label>
-            ))}
-          </div>
+          <div className="recur-two-col">
+            <div className="field">
+              <label>Ends</label>
+              <div className="recur-pill-col">
+                {END_TYPE_OPTIONS.map((e) => (
+                  <button
+                    type="button"
+                    key={e.key}
+                    className={`filter-pill ${rule.endType === e.key ? 'filter-pill-active' : ''}`}
+                    onClick={() => update({ endType: e.key })}
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+              {rule.endType === 'on_date' && (
+                <input type="date" value={rule.endDate || ''} onChange={(ev) => update({ endDate: ev.target.value })} style={{ marginTop: 8 }} />
+              )}
+              {rule.endType === 'after_n' && (
+                <input
+                  type="number" min="1" className="log-value-input"
+                  style={{ marginTop: 8 }}
+                  value={rule.endCount} onChange={(ev) => update({ endCount: parseInt(ev.target.value, 10) || 1 })}
+                />
+              )}
+            </div>
 
-          <div className="field">
-            <label>If I miss it…</label>
-            {MISSED_OPTIONS.map((m) => (
-              <label key={m.key} className="savings-toggle-label" style={{ display: 'block', marginBottom: 6 }}>
-                <input type="radio" name="missed" checked={rule.missed === m.key} onChange={() => update({ missed: m.key })} />
-                {' '}{m.label}
-              </label>
-            ))}
+            <div className="field">
+              <label>If I miss it…</label>
+              <div className="recur-pill-col">
+                {MISSED_OPTIONS.map((m) => (
+                  <button
+                    type="button"
+                    key={m.key}
+                    className={`filter-pill ${rule.missed === m.key ? 'filter-pill-active' : ''}`}
+                    onClick={() => update({ missed: m.key })}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <p className="momentum-caption">{buildSummary(rule)}</p>
@@ -415,7 +430,11 @@ function RecurrenceBuilder({ freq, rule, onFreqChange, onRuleChange }) {
                   type="button"
                   key={p.key}
                   className="filter-pill"
-                  onClick={() => { onRuleChange(p.build(rule.anchorDate || todayStr())); onFreqChange(p.build(rule.anchorDate).freq) }}
+                  onClick={() => {
+                    const built = p.build(rule.anchorDate || todayStr())
+                    onRuleChange(built)
+                    setFreqOnly('custom')
+                  }}
                 >
                   {p.icon} {p.name}
                 </button>
@@ -452,7 +471,8 @@ export default function TodoView() {
   const [adding, setAdding] = useState(false)
   const [showCompleted, setShowCompleted] = useState(false)
   const [priorityFilter, setPriorityFilter] = useState('all')
-  const [vibeFilter, setVibeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [energyFilter, setEnergyFilter] = useState('all')
   const [expandedNotes, setExpandedNotes] = useState({})
   const [notesByTodo, setNotesByTodo] = useState({})
   const [newNoteInputs, setNewNoteInputs] = useState({})
@@ -693,13 +713,14 @@ export default function TodoView() {
 
   const isPersonal = category === 'personal'
   const categoryTodos = todos.filter((t) => (t.category || 'personal') === category)
+  const isCompletedView = isPersonal && statusFilter === 'completed'
 
   const filteredOpen = categoryTodos.filter((t) => {
     if (t.completed) return false
     if (!isPersonal) return priorityFilter === 'all' || t.priority === priorityFilter
-    const vibe = VIBE_FILTERS.find((v) => v.key === vibeFilter)
-    if (!vibe || !vibe.energies) return true
-    return vibe.energies.includes(t.energy || 'quick_win')
+    if (statusFilter !== 'all' && statusFilter !== 'completed' && taskUrgency(t) !== statusFilter) return false
+    if (energyFilter !== 'all' && (t.energy || 'quick_win') !== energyFilter) return false
+    return true
   })
 
   const openTodos = filteredOpen.sort((a, b) => {
@@ -718,6 +739,9 @@ export default function TodoView() {
     return 0
   })
   const completedTodos = categoryTodos.filter((t) => t.completed)
+  const filteredCompleted = isPersonal && energyFilter !== 'all'
+    ? completedTodos.filter((t) => (t.energy || 'quick_win') === energyFilter)
+    : completedTodos
 
   const momentumPct = categoryTodos.length > 0
     ? Math.round((completedTodos.length / categoryTodos.length) * 100)
@@ -905,51 +929,71 @@ export default function TodoView() {
         rule={newRule}
         onFreqChange={handleNewFreqChange}
         onRuleChange={setNewRule}
+        setFreqOnly={setNewFreq}
       />
 
-      <div className="filter-row">
-        {isPersonal ? (
-          VIBE_FILTERS.map((v) => (
-            <button
-              key={v.key}
-              className={`filter-pill ${vibeFilter === v.key ? 'filter-pill-active' : ''}`}
-              onClick={() => setVibeFilter(v.key)}
-            >
-              {v.label}
-            </button>
-          ))
-        ) : (
-          <>
-            <button
-              className={`filter-pill ${priorityFilter === 'all' ? 'filter-pill-active' : ''}`}
-              onClick={() => setPriorityFilter('all')}
-            >
-              All
-            </button>
-            {PRIORITIES.map((p) => (
+      {isPersonal ? (
+        <>
+          <div className="filter-row">
+            {STATUS_FILTERS.map((s) => (
               <button
-                key={p.key}
-                className={`filter-pill ${priorityFilter === p.key ? 'filter-pill-active' : ''}`}
-                onClick={() => setPriorityFilter(p.key)}
+                key={s.key}
+                className={`filter-pill ${statusFilter === s.key ? 'filter-pill-active' : ''}`}
+                onClick={() => setStatusFilter(s.key)}
               >
-                {p.label}
+                {s.label}
               </button>
             ))}
-          </>
-        )}
-      </div>
+          </div>
+          <div className="filter-row">
+            <button
+              className={`filter-pill ${energyFilter === 'all' ? 'filter-pill-active' : ''}`}
+              onClick={() => setEnergyFilter('all')}
+            >
+              🌈 All Energy
+            </button>
+            {ENERGY_TYPES.map((en) => (
+              <button
+                key={en.key}
+                className={`filter-pill ${energyFilter === en.key ? 'filter-pill-active' : ''}`}
+                onClick={() => setEnergyFilter(en.key)}
+              >
+                {en.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="filter-row">
+          <button
+            className={`filter-pill ${priorityFilter === 'all' ? 'filter-pill-active' : ''}`}
+            onClick={() => setPriorityFilter('all')}
+          >
+            All
+          </button>
+          {PRIORITIES.map((p) => (
+            <button
+              key={p.key}
+              className={`filter-pill ${priorityFilter === p.key ? 'filter-pill-active' : ''}`}
+              onClick={() => setPriorityFilter(p.key)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading && <p className="loading">Rounding up your tasks… 📋✨</p>}
       {error && <p className="error-msg">{error}</p>}
 
-      {!loading && !error && openTodos.length === 0 && completedTodos.length === 0 && (
+      {!loading && !error && !isCompletedView && openTodos.length === 0 && completedTodos.length === 0 && (
         <div className="empty-state">
           <h3>Nothing here yet, iconic ✨</h3>
           <p>Add your first task above — let's get this bread, bestie.</p>
         </div>
       )}
 
-      {!loading && !error && openTodos.length > 0 && (
+      {!loading && !error && !isCompletedView && openTodos.length > 0 && (
         <div className="todo-list">
           {openTodos.map((t) => {
             const pInfo = priorityInfo(t.priority)
@@ -1017,6 +1061,7 @@ export default function TodoView() {
                         rule={editingRule}
                         onFreqChange={(f) => handleEditingFreqChange(f, t)}
                         onRuleChange={setEditingRule}
+                        setFreqOnly={setEditingFreq}
                       />
                       <div className="log-value-row" style={{ marginTop: 10 }}>
                         <button className="btn-cancel" onClick={() => setEditingRecurId(null)}>Cancel</button>
@@ -1065,7 +1110,31 @@ export default function TodoView() {
         </div>
       )}
 
-      {completedTodos.length > 0 && (
+      {isCompletedView && (
+        <>
+          {filteredCompleted.length === 0 ? (
+            <div className="empty-state">
+              <h3>Nothing crushed yet ✨</h3>
+              <p>Once you check something off, it'll show up here.</p>
+            </div>
+          ) : (
+            <div className="todo-list">
+              {filteredCompleted.map((t) => (
+                <div className="todo-row todo-row-done" key={t.id}>
+                  <button className="todo-checkbox todo-checkbox-checked" onClick={() => toggleComplete(t)} aria-label="Mark not done">
+                    ✓
+                  </button>
+                  <span className="todo-text todo-text-done">{t.text}</span>
+                  {t.recur_rule && <span className="todo-recurring-badge todo-recurring-badge-on">🔄</span>}
+                  <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {!isPersonal && completedTodos.length > 0 && (
         <div className="todo-completed-section">
           <button className="btn-ghost todo-toggle-completed" onClick={() => setShowCompleted(!showCompleted)}>
             {showCompleted ? 'Hide' : 'Show'} completed ({completedTodos.length})
