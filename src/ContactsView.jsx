@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 
 const MONTH_NAMES = [
@@ -38,13 +38,14 @@ function formatMonthDay(month, day) {
 }
 
 function relationshipLabel(key) {
-  return RELATIONSHIPS.find((r) => r.key === key)?.label || null
+  if (!key) return null
+  return RELATIONSHIPS.find((r) => r.key === key)?.label || `💫 ${key}`
 }
 
 const emptyForm = {
   name: '', icon: '🎂', birthday: '', relationship: '', phone: '',
   fave_flowers: '', fave_store: '', coffee_order: '', gift_ideas: '', gift_notes: '',
-  gift_purchased: false,
+  gift_purchased: false, no_gift: false,
 }
 
 function ConfettiBurst() {
@@ -122,6 +123,7 @@ export default function ContactsView() {
   const [activeFilter, setActiveFilter] = useState(null)
   const [dateFilter, setDateFilter] = useState(null)
   const [hoveredDay, setHoveredDay] = useState(null)
+  const calendarRef = useRef(null)
 
   useEffect(() => {
     fetchContacts()
@@ -174,6 +176,7 @@ export default function ContactsView() {
       gift_ideas: contact.gift_ideas || '',
       gift_notes: contact.gift_notes || '',
       gift_purchased: !!contact.gift_purchased,
+      no_gift: !!contact.no_gift,
     })
   }
 
@@ -192,7 +195,7 @@ export default function ContactsView() {
       name: form.name.trim(),
       icon: form.icon || '🎂',
       birthday: form.birthday,
-      relationship: form.relationship || null,
+      relationship: form.relationship.trim() || null,
       phone: form.phone.trim() || null,
       fave_flowers: form.fave_flowers.trim() || null,
       fave_store: form.fave_store.trim() || null,
@@ -200,6 +203,7 @@ export default function ContactsView() {
       gift_ideas: form.gift_ideas.trim() || null,
       gift_notes: form.gift_notes.trim() || null,
       gift_purchased: form.gift_purchased,
+      no_gift: form.no_gift,
     }
 
     let error
@@ -251,10 +255,19 @@ export default function ContactsView() {
   function sendMessage(contact, e) {
     e?.stopPropagation()
     if (!contact.phone) {
+      alert(`No phone number saved for ${contact.name} yet — add one and you'll be able to text them straight from here. Opening their details now.`)
       openEdit(contact)
       return
     }
     window.location.href = `sms:${contact.phone}`
+  }
+
+  function jumpToDate(targetMonth, targetDay) {
+    setViewDate(new Date(year, targetMonth, 1))
+    setDateFilter({ month: targetMonth, day: targetDay })
+    setTimeout(() => {
+      calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
   }
 
   const year = viewDate.getFullYear()
@@ -308,7 +321,7 @@ export default function ContactsView() {
     if (activeFilter === 'this_month') list = list.filter((c) => c.daysAway <= 31 && c.nextDate.getMonth() === today.getMonth())
     else if (activeFilter === 'next_30') list = list.filter((c) => c.daysAway <= 30)
     else if (activeFilter === 'next_90') list = list.filter((c) => c.daysAway <= 90)
-    else if (activeFilter === 'gift_needed') list = list.filter((c) => !c.gift_purchased)
+    else if (activeFilter === 'gift_needed') list = list.filter((c) => !c.gift_purchased && !c.no_gift)
     else if (activeFilter === 'gift_purchased') list = list.filter((c) => c.gift_purchased)
     else if (['family', 'friends', 'work', 'partner'].includes(activeFilter)) list = list.filter((c) => c.relationship === activeFilter)
     return list
@@ -318,7 +331,7 @@ export default function ContactsView() {
 
   const stats = useMemo(() => {
     const giftsPlanned = contacts.filter((c) => c.gift_ideas).length
-    const giftsRemaining = contacts.filter((c) => !c.gift_purchased).length
+    const giftsRemaining = contacts.filter((c) => !c.gift_purchased && !c.no_gift).length
     const next = upcoming[0]
     return {
       total: contacts.length,
@@ -439,17 +452,28 @@ export default function ContactsView() {
                         <CountdownRing daysAway={c.daysAway} color={color} />
                       </div>
                       <div className="cake-quick-actions">
-                        <button className="cake-qa-btn" title="Peek Inside" onClick={(e) => { e.stopPropagation(); openProfile(c) }}>🎁</button>
-                        <button className="cake-qa-btn" title="Edit" onClick={(e) => { e.stopPropagation(); openEdit(c) }}>✏️</button>
-                        <button
-                          className={`cake-qa-btn ${c.gift_purchased ? 'cake-qa-btn-active' : ''}`}
-                          title={c.gift_purchased ? 'Gift purchased' : 'Mark gift purchased'}
-                          onClick={(e) => toggleGiftPurchased(c, e)}
-                        >
-                          {c.gift_purchased ? '✅' : '🛍️'}
+                        <button className="cake-qa-btn" onClick={(e) => { e.stopPropagation(); openProfile(c) }}>
+                          <span className="cake-qa-icon">🎁</span><span className="cake-qa-label">Vault</span>
                         </button>
-                        <button className="cake-qa-btn" title="Send message" onClick={(e) => sendMessage(c, e)}>💬</button>
-                        <button className="cake-qa-btn" title="Archive" onClick={(e) => archiveContact(c, e)}>🗄️</button>
+                        <button className="cake-qa-btn" onClick={(e) => { e.stopPropagation(); openEdit(c) }}>
+                          <span className="cake-qa-icon">✏️</span><span className="cake-qa-label">Edit</span>
+                        </button>
+                        <button
+                          className={`cake-qa-btn ${c.gift_purchased || c.no_gift ? 'cake-qa-btn-active' : ''}`}
+                          onClick={(e) => { if (c.no_gift) { e.stopPropagation(); return } toggleGiftPurchased(c, e) }}
+                        >
+                          <span className="cake-qa-icon">{c.no_gift ? '🚫' : c.gift_purchased ? '✅' : '🛍️'}</span>
+                          <span className="cake-qa-label">{c.no_gift ? 'No gift' : c.gift_purchased ? 'Bought' : 'Buy'}</span>
+                        </button>
+                        <button className="cake-qa-btn" onClick={(e) => sendMessage(c, e)}>
+                          <span className="cake-qa-icon">💬</span><span className="cake-qa-label">Text</span>
+                        </button>
+                        <button className="cake-qa-btn" onClick={(e) => { e.stopPropagation(); jumpToDate(c.month, c.day) }}>
+                          <span className="cake-qa-icon">📅</span><span className="cake-qa-label">Calendar</span>
+                        </button>
+                        <button className="cake-qa-btn" onClick={(e) => archiveContact(c, e)}>
+                          <span className="cake-qa-icon">🗄️</span><span className="cake-qa-label">Archive</span>
+                        </button>
                       </div>
                     </div>
                   )
@@ -465,7 +489,7 @@ export default function ContactsView() {
             </div>
           )}
 
-          <div className="calendar-card">
+          <div className="calendar-card" ref={calendarRef}>
             <div className="calendar-nav">
               <button className="cal-nav-btn" onClick={() => goToMonth(-1)}>‹</button>
               <span className="cal-month-label">{MONTH_NAMES[month]} {year}</span>
@@ -565,17 +589,29 @@ export default function ContactsView() {
 
             <div className="cake-profile-actions">
               <button className="btn-check" onClick={() => setProfileMode(false)}>✏️ Edit</button>
-              <button
-                className={`btn-check ${form.gift_purchased ? 'btn-check-done' : ''}`}
-                onClick={() => {
-                  const c = contacts.find((x) => x.id === editingId)
-                  if (c) toggleGiftPurchased(c)
-                  setForm((f) => ({ ...f, gift_purchased: !f.gift_purchased }))
-                }}
-              >
-                {form.gift_purchased ? '✅ Gift Purchased' : '🛍️ Mark Purchased'}
-              </button>
+              {form.no_gift ? (
+                <span className="cake-relationship-tag">🚫 No gift needed</span>
+              ) : (
+                <button
+                  className={`btn-check ${form.gift_purchased ? 'btn-check-done' : ''}`}
+                  onClick={() => {
+                    const c = contacts.find((x) => x.id === editingId)
+                    if (c) toggleGiftPurchased(c)
+                    setForm((f) => ({ ...f, gift_purchased: !f.gift_purchased }))
+                  }}
+                >
+                  {form.gift_purchased ? '✅ Gift Purchased' : '🛍️ Mark Purchased'}
+                </button>
+              )}
               {form.phone && <button className="btn-check" onClick={() => { window.location.href = `sms:${form.phone}` }}>💬 Message</button>}
+              {form.birthday && (
+                <button
+                  className="btn-check"
+                  onClick={() => { const bd = parseLocalDate(form.birthday); closeModal(); jumpToDate(bd.month, bd.day) }}
+                >
+                  📅 View in Calendar
+                </button>
+              )}
             </div>
 
             {(form.fave_flowers || form.fave_store || form.coffee_order || form.gift_ideas || form.gift_notes) ? (
@@ -661,10 +697,23 @@ export default function ContactsView() {
                 </div>
                 <div className="field">
                   <label>Relationship</label>
-                  <select value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })}>
+                  <select
+                    value={RELATIONSHIPS.some((r) => r.key === form.relationship) || form.relationship === '' ? form.relationship : 'custom'}
+                    onChange={(e) => setForm({ ...form, relationship: e.target.value === 'custom' ? ' ' : e.target.value })}
+                  >
                     <option value="">Select…</option>
                     {RELATIONSHIPS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                    <option value="custom">✏️ Other…</option>
                   </select>
+                  {!RELATIONSHIPS.some((r) => r.key === form.relationship) && form.relationship !== '' && (
+                    <input
+                      style={{ marginTop: 8 }}
+                      value={form.relationship.trim()}
+                      onChange={(e) => setForm({ ...form, relationship: e.target.value })}
+                      placeholder="e.g. Cousin, Neighbor, Bestie…"
+                      autoFocus
+                    />
+                  )}
                 </div>
               </div>
 
@@ -681,11 +730,22 @@ export default function ContactsView() {
               <label className="savings-toggle-label">
                 <input
                   type="checkbox"
-                  checked={form.gift_purchased}
-                  onChange={(e) => setForm({ ...form, gift_purchased: e.target.checked })}
+                  checked={form.no_gift}
+                  onChange={(e) => setForm({ ...form, no_gift: e.target.checked, gift_purchased: e.target.checked ? false : form.gift_purchased })}
                 />
-                {' '}✅ Gift already purchased
+                {' '}🚫 No gift needed for this person
               </label>
+
+              {!form.no_gift && (
+                <label className="savings-toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={form.gift_purchased}
+                    onChange={(e) => setForm({ ...form, gift_purchased: e.target.checked })}
+                  />
+                  {' '}✅ Gift already purchased
+                </label>
+              )}
 
               <div className="gift-vault-divider">
                 <span className="module-group-label">🔐 GIFT VAULT</span>

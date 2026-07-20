@@ -3408,41 +3408,39 @@
 
 .cake-quick-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 14px;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.cake-card:hover .cake-quick-actions,
-.cake-card:focus-within .cake-quick-actions {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@media (hover: none) {
-  .cake-quick-actions {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 .cake-qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   background: var(--bg);
   border: 2px solid var(--border);
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 12px;
+  padding: 6px 8px 5px;
+  min-width: 46px;
   transition: transform 0.1s ease, background 0.1s ease;
 }
 
+.cake-qa-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.cake-qa-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .cake-qa-btn:hover {
-  transform: scale(1.12);
+  transform: scale(1.06);
   background: var(--surface);
 }
 
