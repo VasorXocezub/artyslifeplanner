@@ -42,6 +42,12 @@ function relationshipLabel(key) {
   return RELATIONSHIPS.find((r) => r.key === key)?.label || `💫 ${key}`
 }
 
+function giftStatus(c) {
+  if (c.no_gift) return { icon: '✅', text: 'Ready to Celebrate', tone: 'ready' }
+  if (c.gift_purchased) return { icon: '🛍️', text: 'Gift Purchased', tone: 'purchased' }
+  return { icon: '🎁', text: 'Gift Needed', tone: 'needed' }
+}
+
 const emptyForm = {
   name: '', icon: '🎂', birthday: '', relationship: '', phone: '',
   fave_flowers: '', fave_store: '', coffee_order: '', gift_ideas: '', gift_notes: '',
@@ -435,6 +441,7 @@ export default function ContactsView() {
               <div className="card-grid">
                 {upNext.map((c, i) => {
                   const color = CHIP_COLORS[i % CHIP_COLORS.length]
+                  const status = giftStatus(c)
                   return (
                     <div
                       className="contact-card upnext-card cake-card"
@@ -451,30 +458,10 @@ export default function ContactsView() {
                         </div>
                         <CountdownRing daysAway={c.daysAway} color={color} />
                       </div>
-                      <div className="cake-quick-actions">
-                        <button className="cake-qa-btn" onClick={(e) => { e.stopPropagation(); openProfile(c) }}>
-                          <span className="cake-qa-icon">🎁</span><span className="cake-qa-label">Vault</span>
-                        </button>
-                        <button className="cake-qa-btn" onClick={(e) => { e.stopPropagation(); openEdit(c) }}>
-                          <span className="cake-qa-icon">✏️</span><span className="cake-qa-label">Edit</span>
-                        </button>
-                        <button
-                          className={`cake-qa-btn ${c.gift_purchased || c.no_gift ? 'cake-qa-btn-active' : ''}`}
-                          onClick={(e) => { if (c.no_gift) { e.stopPropagation(); return } toggleGiftPurchased(c, e) }}
-                        >
-                          <span className="cake-qa-icon">{c.no_gift ? '🚫' : c.gift_purchased ? '✅' : '🛍️'}</span>
-                          <span className="cake-qa-label">{c.no_gift ? 'No gift' : c.gift_purchased ? 'Bought' : 'Buy'}</span>
-                        </button>
-                        <button className="cake-qa-btn" onClick={(e) => sendMessage(c, e)}>
-                          <span className="cake-qa-icon">💬</span><span className="cake-qa-label">Text</span>
-                        </button>
-                        <button className="cake-qa-btn" onClick={(e) => { e.stopPropagation(); jumpToDate(c.month, c.day) }}>
-                          <span className="cake-qa-icon">📅</span><span className="cake-qa-label">Calendar</span>
-                        </button>
-                        <button className="cake-qa-btn" onClick={(e) => archiveContact(c, e)}>
-                          <span className="cake-qa-icon">🗄️</span><span className="cake-qa-label">Archive</span>
-                        </button>
-                      </div>
+                      <span className={`cake-gift-status cake-gift-status-${status.tone}`}>{status.icon} {status.text}</span>
+                      <button className="cake-view-profile-btn" onClick={(e) => { e.stopPropagation(); openProfile(c) }}>
+                        💌 View Profile →
+                      </button>
                     </div>
                   )
                 })}
@@ -582,31 +569,78 @@ export default function ContactsView() {
               <span className="cake-profile-icon">{form.icon}</span>
               <h2>{form.name}</h2>
               {form.relationship && <span className="cake-relationship-tag">{relationshipLabel(form.relationship)}</span>}
-              <p className="field-hint">
-                {form.birthday && `${MONTH_NAMES[parseLocalDate(form.birthday).month]} ${parseLocalDate(form.birthday).day}`}
-              </p>
             </div>
 
-            <div className="cake-profile-actions">
-              <button className="btn-check" onClick={() => setProfileMode(false)}>✏️ Edit</button>
-              {form.no_gift ? (
-                <span className="cake-relationship-tag">🚫 No gift needed</span>
+            <button className="btn-check cake-profile-edit-btn" onClick={() => setProfileMode(false)}>✏️ Edit Details</button>
+
+            <div className="cake-profile-section">
+              <p className="module-group-label">🎁 GIFT VAULT</p>
+              {(form.fave_flowers || form.fave_store || form.coffee_order || form.gift_ideas) ? (
+                <>
+                  {form.fave_flowers && <div className="goals-summary-row"><span className="goals-summary-label">💐 Flowers</span><span className="goals-summary-value">{form.fave_flowers}</span></div>}
+                  {form.fave_store && <div className="goals-summary-row"><span className="goals-summary-label">🛍️ Store</span><span className="goals-summary-value">{form.fave_store}</span></div>}
+                  {form.coffee_order && <div className="goals-summary-row"><span className="goals-summary-label">☕ Coffee</span><span className="goals-summary-value">{form.coffee_order}</span></div>}
+                  {form.gift_ideas && <p className="brain-dump-content">{form.gift_ideas}</p>}
+                </>
               ) : (
-                <button
-                  className={`btn-check ${form.gift_purchased ? 'btn-check-done' : ''}`}
-                  onClick={() => {
-                    const c = contacts.find((x) => x.id === editingId)
-                    if (c) toggleGiftPurchased(c)
-                    setForm((f) => ({ ...f, gift_purchased: !f.gift_purchased }))
-                  }}
-                >
-                  {form.gift_purchased ? '✅ Gift Purchased' : '🛍️ Mark Purchased'}
+                <p className="field-hint">No gift ideas saved yet — tap Edit to add some. ✨</p>
+              )}
+            </div>
+
+            <div className="cake-profile-section">
+              <p className="module-group-label">💬 NOTES & CONVERSATIONS</p>
+              {form.gift_notes ? (
+                <p className="brain-dump-content">{form.gift_notes}</p>
+              ) : (
+                <p className="field-hint">Gift hints, things they've mentioned, anything worth remembering.</p>
+              )}
+              {form.phone ? (
+                <button className="weather-location-link" style={{ marginTop: 8 }} onClick={() => { window.location.href = `sms:${form.phone}` }}>
+                  💬 Send a text
+                </button>
+              ) : (
+                <button className="weather-location-link" style={{ marginTop: 8 }} onClick={() => setProfileMode(false)}>
+                  + Add a phone number to text them
                 </button>
               )}
-              {form.phone && <button className="btn-check" onClick={() => { window.location.href = `sms:${form.phone}` }}>💬 Message</button>}
+            </div>
+
+            <div className="cake-profile-section">
+              <p className="module-group-label">🛍️ PURCHASES</p>
+              {form.no_gift ? (
+                <p className="cake-gift-status cake-gift-status-ready">✅ No gift needed for this person</p>
+              ) : (
+                <>
+                  <p className={`cake-gift-status ${form.gift_purchased ? 'cake-gift-status-purchased' : 'cake-gift-status-needed'}`}>
+                    {form.gift_purchased ? '🛍️ Gift Purchased' : '🎁 Gift Needed'}
+                  </p>
+                  <button
+                    className="btn-check"
+                    style={{ marginTop: 8 }}
+                    onClick={() => {
+                      const c = contacts.find((x) => x.id === editingId)
+                      if (c) toggleGiftPurchased(c)
+                      setForm((f) => ({ ...f, gift_purchased: !f.gift_purchased }))
+                    }}
+                  >
+                    {form.gift_purchased ? '↩️ Mark as not purchased' : '✅ Mark as purchased'}
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="cake-profile-section">
+              <p className="module-group-label">📅 IMPORTANT DATES</p>
+              <div className="goals-summary-row">
+                <span className="goals-summary-label">🎂 Birthday</span>
+                <span className="goals-summary-value">
+                  {form.birthday && `${MONTH_NAMES[parseLocalDate(form.birthday).month]} ${parseLocalDate(form.birthday).day}`}
+                </span>
+              </div>
               {form.birthday && (
                 <button
-                  className="btn-check"
+                  className="weather-location-link"
+                  style={{ marginTop: 6 }}
                   onClick={() => { const bd = parseLocalDate(form.birthday); closeModal(); jumpToDate(bd.month, bd.day) }}
                 >
                   📅 View in Calendar
@@ -614,27 +648,21 @@ export default function ContactsView() {
               )}
             </div>
 
-            {(form.fave_flowers || form.fave_store || form.coffee_order || form.gift_ideas || form.gift_notes) ? (
-              <div className="cake-profile-vault">
-                <p className="module-group-label">🎁 GIFT VAULT</p>
-                {form.fave_flowers && <div className="goals-summary-row"><span className="goals-summary-label">💐 Flowers</span><span className="goals-summary-value">{form.fave_flowers}</span></div>}
-                {form.fave_store && <div className="goals-summary-row"><span className="goals-summary-label">🛍️ Store</span><span className="goals-summary-value">{form.fave_store}</span></div>}
-                {form.coffee_order && <div className="goals-summary-row"><span className="goals-summary-label">☕ Coffee</span><span className="goals-summary-value">{form.coffee_order}</span></div>}
-                {form.gift_ideas && <p className="brain-dump-content"><strong>Gift ideas:</strong> {form.gift_ideas}</p>}
-                {form.gift_notes && <p className="brain-dump-content"><strong>Notes:</strong> {form.gift_notes}</p>}
-              </div>
-            ) : (
-              <div className="empty-state cake-profile-empty">
-                <p>No gift vault details yet — tap Edit to add some. ✨</p>
-              </div>
-            )}
+            <div className="cake-profile-section cake-profile-section-archive">
+              <p className="module-group-label">🗃️ ARCHIVE</p>
+              <p className="field-hint">Move them out of Cake Club without deleting their info. You can't undo this from here.</p>
+              <button
+                type="button"
+                className="btn-delete"
+                style={{ marginTop: 8 }}
+                onClick={(e) => { const c = contacts.find((x) => x.id === editingId); if (c) archiveContact(c, e); closeModal() }}
+              >
+                🗄️ Archive this person
+              </button>
+            </div>
 
             <div className="modal-actions">
-              <div>
-                <button type="button" className="btn-delete" onClick={(e) => { const c = contacts.find((x) => x.id === editingId); if (c) archiveContact(c, e); closeModal() }}>
-                  🗄️ Archive
-                </button>
-              </div>
+              <div />
               <div className="modal-actions-right">
                 <button type="button" className="btn-cancel" onClick={closeModal}>Close</button>
               </div>
