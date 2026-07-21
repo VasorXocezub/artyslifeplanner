@@ -16,22 +16,25 @@ import SocialCalendarView from './SocialCalendarView'
 import BrainDumpView from './BrainDumpView'
 import SpillTheTeaView from './SpillTheTeaView'
 import WishlistView from './WishlistView'
+import InboxView from './InboxView'
+import QuickCaptureModal from './QuickCaptureModal'
 import './App.css'
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
   { key: 'contacts', label: 'Cake Club', num: '01', enabled: true },
   { key: 'social', label: 'Social Club', num: '02', enabled: true },
-  { key: 'goals', label: 'Dream Board', num: '03', enabled: true },
-  { key: 'habits', label: 'Daily Habits', num: '04', enabled: true },
-  { key: 'todos', label: 'To-Do List', num: '05', enabled: true },
-  { key: 'glowup', label: 'Glow Up Hub', num: '06', enabled: true },
-  { key: 'braindump', label: 'Brain Dump', num: '07', enabled: true },
-  { key: 'booknook', label: 'Book Nook', num: '08', enabled: true },
-  { key: 'finances', label: 'Rich Girl Era', num: '09', enabled: true },
-  { key: 'shopping', label: 'Kitchen Club', num: '10', enabled: true },
-  { key: 'wishlist', label: 'Wishlist', num: '11', enabled: true },
-  { key: 'spillthetea', label: 'Spill the Tea', num: '12', enabled: true },
+  { key: 'inbox', label: 'Inbox', num: '03', enabled: true },
+  { key: 'goals', label: 'Dream Board', num: '04', enabled: true },
+  { key: 'habits', label: 'Daily Habits', num: '05', enabled: true },
+  { key: 'todos', label: 'To-Do List', num: '06', enabled: true },
+  { key: 'glowup', label: 'Glow Up Hub', num: '07', enabled: true },
+  { key: 'braindump', label: 'Brain Dump', num: '08', enabled: true },
+  { key: 'booknook', label: 'Book Nook', num: '09', enabled: true },
+  { key: 'finances', label: 'Rich Girl Era', num: '10', enabled: true },
+  { key: 'shopping', label: 'Kitchen Club', num: '11', enabled: true },
+  { key: 'wishlist', label: 'Wishlist', num: '12', enabled: true },
+  { key: 'spillthetea', label: 'Spill the Tea', num: '13', enabled: true },
 ]
 
 function App() {
@@ -44,6 +47,7 @@ function App() {
   const [session, setSession] = useState(undefined)
   const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
   const [hasUnseenTea, setHasUnseenTea] = useState(false)
+  const [quickCaptureOpen, setQuickCaptureOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -145,6 +149,7 @@ function App() {
         {view === 'booknook' && <BookNookView />}
         {view === 'glowup' && <GlowUpHubView />}
         {view === 'social' && <SocialCalendarView />}
+        {view === 'inbox' && <InboxView />}
         {view === 'braindump' && <BrainDumpView />}
         {view === 'spillthetea' && <SpillTheTeaView />}
         {view === 'wishlist' && <WishlistView />}
@@ -157,6 +162,11 @@ function App() {
           />
         )}
       </main>
+
+      <button className="quick-capture-fab" onClick={() => setQuickCaptureOpen(true)} title="Quick Capture">
+        📥
+      </button>
+      {quickCaptureOpen && <QuickCaptureModal onClose={() => setQuickCaptureOpen(false)} />}
     </div>
   )
 }

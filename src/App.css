@@ -3829,3 +3829,257 @@
   align-items: center;
   gap: 6px;
 }
+
+/* ---------- Inbox ---------- */
+.inbox-search-row {
+  margin-bottom: 12px;
+}
+
+.inbox-search-input {
+  width: 100%;
+}
+
+.inbox-filter-row {
+  align-items: center;
+}
+
+.inbox-sort-select {
+  margin-left: auto;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.inbox-note-card {
+  cursor: pointer;
+}
+
+.inbox-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inbox-pin-icon {
+  margin-right: 4px;
+}
+
+.inbox-card-preview {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.inbox-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.inbox-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--pink-soft);
+  color: var(--coral);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.inbox-tag-chip-small {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
+.inbox-tag-chip button {
+  background: none;
+  border: none;
+  color: var(--coral);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+
+.inbox-tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.inbox-tag-field {
+  border: none;
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  width: 90px;
+}
+
+.inbox-empty-state {
+  padding: 60px 20px;
+}
+
+.inbox-empty-emoji {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.inbox-empty-state p {
+  max-width: 380px;
+  margin: 0 auto 20px auto;
+  font-size: 15px;
+}
+
+.inbox-editor-modal {
+  width: 620px;
+  max-width: 94vw;
+}
+
+.inbox-editor-title {
+  width: 100%;
+  border: none;
+  background: none;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 0 0 12px 0;
+  outline: none;
+}
+
+.inbox-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.inbox-toolbar button {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.inbox-toolbar button:hover {
+  background: var(--surface);
+  border-color: var(--coral);
+}
+
+.inbox-editor-content {
+  min-height: 220px;
+  max-height: 45vh;
+  overflow-y: auto;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  outline: none;
+}
+
+.inbox-editor-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+}
+
+.inbox-editor-content ul, .inbox-editor-content ol {
+  padding-left: 22px;
+}
+
+.inbox-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.inbox-template-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.inbox-template-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--coral);
+}
+
+.inbox-template-icon {
+  font-size: 24px;
+}
+
+.inbox-quick-capture {
+  width: 420px;
+  max-width: 92vw;
+}
+
+.inbox-quick-textarea {
+  width: 100%;
+  min-height: 140px;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.inbox-quick-textarea:focus {
+  border-color: var(--coral);
+}
+
+.quick-capture-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--coral);
+  color: #fff;
+  font-size: 22px;
+  border: none;
+  box-shadow: 0 6px 18px rgba(30, 92, 87, 0.3);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quick-capture-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 22px rgba(30, 92, 87, 0.4);
+}
+
+.quick-capture-fab:active {
+  transform: scale(0.96);
+}

@@ -13,6 +13,7 @@ const SPACES = [
   { key: 'booknook', label: 'Book Nook', icon: '📚' },
   { key: 'glowup', label: 'Glow Up Hub', icon: '✨' },
   { key: 'social', label: 'Social Club', icon: '💌' },
+  { key: 'inbox', label: 'Inbox', icon: '📥' },
   { key: 'braindump', label: 'Brain Dump', icon: '📖' },
   { key: 'spillthetea', label: 'Spill the Tea', icon: '🫖' },
 ]
