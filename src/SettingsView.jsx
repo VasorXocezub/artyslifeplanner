@@ -16,6 +16,7 @@ const SPACES = [
   { key: 'inbox', label: 'Inbox', icon: '📥' },
   { key: 'braindump', label: 'Brain Dump', icon: '📖' },
   { key: 'spillthetea', label: 'Spill the Tea', icon: '🫖' },
+  { key: 'updates', label: 'Updates', icon: '📣' },
 ]
 
 const FINANCE_SUB_SPACES = [

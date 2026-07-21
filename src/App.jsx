@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea } from './lib/localPrefs'
+import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates } from './lib/localPrefs'
 import Auth from './Auth'
 import SettingsView from './SettingsView'
 import Dashboard from './Dashboard'
@@ -18,6 +18,7 @@ import SpillTheTeaView from './SpillTheTeaView'
 import WishlistView from './WishlistView'
 import InboxView from './InboxView'
 import QuickCaptureModal from './QuickCaptureModal'
+import UpdatesView from './UpdatesView'
 import './App.css'
 
 const NAV_ITEMS = [
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { key: 'shopping', label: 'Kitchen Club', num: '11', enabled: true },
   { key: 'wishlist', label: 'Wishlist', num: '12', enabled: true },
   { key: 'spillthetea', label: 'Spill the Tea', num: '13', enabled: true },
+  { key: 'updates', label: 'Updates', num: '14', enabled: true },
 ]
 
 function App() {
@@ -47,6 +49,7 @@ function App() {
   const [session, setSession] = useState(undefined)
   const [hiddenModules, setHiddenModulesState] = useState(getHiddenModules())
   const [hasUnseenTea, setHasUnseenTea] = useState(false)
+  const [hasUnseenUpdates, setHasUnseenUpdates] = useState(false)
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false)
 
   useEffect(() => {
@@ -64,12 +67,17 @@ function App() {
   useEffect(() => {
     if (!session) return
     checkUnseenTea()
+    checkUnseenUpdates()
   }, [session])
 
   useEffect(() => {
     if (view === 'spillthetea' && hasUnseenTea) {
       setLastSeenTea(new Date().toISOString())
       setHasUnseenTea(false)
+    }
+    if (view === 'updates' && hasUnseenUpdates) {
+      setLastSeenUpdates(new Date().toISOString())
+      setHasUnseenUpdates(false)
     }
   }, [view])
 
@@ -79,6 +87,14 @@ function App() {
     if (lastSeen) query = query.gt('created_at', lastSeen)
     const { count } = await query
     setHasUnseenTea((count || 0) > 0)
+  }
+
+  async function checkUnseenUpdates() {
+    const lastSeen = getLastSeenUpdates()
+    let query = supabase.from('app_updates').select('id', { count: 'exact', head: true })
+    if (lastSeen) query = query.gt('created_at', lastSeen)
+    const { count } = await query
+    setHasUnseenUpdates((count || 0) > 0)
   }
 
   useEffect(() => {
@@ -122,6 +138,7 @@ function App() {
               {item.label}
               {!item.enabled && ' (soon)'}
               {item.key === 'spillthetea' && hasUnseenTea && <span className="nav-notification-dot" />}
+              {item.key === 'updates' && hasUnseenUpdates && <span className="nav-notification-dot" />}
             </button>
           ))}
         </nav>
@@ -152,6 +169,7 @@ function App() {
         {view === 'inbox' && <InboxView />}
         {view === 'braindump' && <BrainDumpView />}
         {view === 'spillthetea' && <SpillTheTeaView />}
+        {view === 'updates' && <UpdatesView />}
         {view === 'wishlist' && <WishlistView />}
         {view === 'settings' && (
           <SettingsView

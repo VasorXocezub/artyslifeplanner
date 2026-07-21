@@ -47,6 +47,13 @@ export function setWellnessGoals(goals) {
   localStorage.setItem('wellnessGoals', JSON.stringify(goals))
 }
 
+export function getLastSeenUpdates() {
+  return localStorage.getItem('lastSeenUpdates') || null
+}
+export function setLastSeenUpdates(iso) {
+  localStorage.setItem('lastSeenUpdates', iso)
+}
+
 export function getLastSeenTea() {
   return localStorage.getItem('lastSeenTea') || null
 }
