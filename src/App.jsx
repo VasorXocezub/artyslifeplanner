@@ -1,25 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
 import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates } from './lib/localPrefs'
 import Auth from './Auth'
-import SettingsView from './SettingsView'
-import Dashboard from './Dashboard'
-import ContactsView from './ContactsView'
-import GoalsView from './GoalsView'
-import HabitsView from './HabitsView'
-import FinancesView from './FinancesView'
-import TodoView from './TodoView'
-import ShoppingListView from './ShoppingListView'
-import BookNookView from './BookNookView'
-import GlowUpHubView from './GlowUpHubView'
-import SocialCalendarView from './SocialCalendarView'
-import BrainDumpView from './BrainDumpView'
-import SpillTheTeaView from './SpillTheTeaView'
-import WishlistView from './WishlistView'
-import InboxView from './InboxView'
-import QuickCaptureModal from './QuickCaptureModal'
-import UpdatesView from './UpdatesView'
 import './App.css'
+
+const SettingsView = lazy(() => import('./SettingsView'))
+const Dashboard = lazy(() => import('./Dashboard'))
+const ContactsView = lazy(() => import('./ContactsView'))
+const GoalsView = lazy(() => import('./GoalsView'))
+const HabitsView = lazy(() => import('./HabitsView'))
+const FinancesView = lazy(() => import('./FinancesView'))
+const TodoView = lazy(() => import('./TodoView'))
+const ShoppingListView = lazy(() => import('./ShoppingListView'))
+const BookNookView = lazy(() => import('./BookNookView'))
+const GlowUpHubView = lazy(() => import('./GlowUpHubView'))
+const SocialCalendarView = lazy(() => import('./SocialCalendarView'))
+const BrainDumpView = lazy(() => import('./BrainDumpView'))
+const SpillTheTeaView = lazy(() => import('./SpillTheTeaView'))
+const WishlistView = lazy(() => import('./WishlistView'))
+const InboxView = lazy(() => import('./InboxView'))
+const QuickCaptureModal = lazy(() => import('./QuickCaptureModal'))
+const UpdatesView = lazy(() => import('./UpdatesView'))
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
@@ -97,6 +98,12 @@ function App() {
     setHasUnseenUpdates((count || 0) > 0)
   }
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [view])
+
   useEffect(() => {
     if (hiddenModules.includes(view)) setView('home')
   }, [hiddenModules, view])
@@ -125,7 +132,15 @@ function App() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      <button
+        className="mobile-menu-toggle"
+        onClick={() => setMobileMenuOpen((v) => !v)}
+        aria-label="Toggle menu"
+      >
+        {mobileMenuOpen ? '✕' : '☰'}
+      </button>
+      {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />}
+      <aside className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
         <nav className="nav">
           {NAV_ITEMS.filter((item) => !hiddenModules.includes(item.key)).map((item) => (
             <button
@@ -156,35 +171,41 @@ function App() {
         </button>
       </aside>
       <main className="main">
-        {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
-        {view === 'contacts' && <ContactsView />}
-        {view === 'goals' && <GoalsView />}
-        {view === 'habits' && <HabitsView />}
-        {view === 'finances' && <FinancesView />}
-        {view === 'todos' && <TodoView />}
-        {view === 'shopping' && <ShoppingListView />}
-        {view === 'booknook' && <BookNookView />}
-        {view === 'glowup' && <GlowUpHubView />}
-        {view === 'social' && <SocialCalendarView />}
-        {view === 'inbox' && <InboxView />}
-        {view === 'braindump' && <BrainDumpView />}
-        {view === 'spillthetea' && <SpillTheTeaView />}
-        {view === 'updates' && <UpdatesView />}
-        {view === 'wishlist' && <WishlistView />}
-        {view === 'settings' && (
-          <SettingsView
-            session={session}
-            hiddenModules={hiddenModules}
-            onSaveModules={handleSaveModules}
-            onLogout={handleLogout}
-          />
-        )}
+        <Suspense fallback={<p className="loading">Loading… ✨</p>}>
+          {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
+          {view === 'contacts' && <ContactsView />}
+          {view === 'goals' && <GoalsView />}
+          {view === 'habits' && <HabitsView />}
+          {view === 'finances' && <FinancesView />}
+          {view === 'todos' && <TodoView />}
+          {view === 'shopping' && <ShoppingListView />}
+          {view === 'booknook' && <BookNookView />}
+          {view === 'glowup' && <GlowUpHubView />}
+          {view === 'social' && <SocialCalendarView />}
+          {view === 'inbox' && <InboxView />}
+          {view === 'braindump' && <BrainDumpView />}
+          {view === 'spillthetea' && <SpillTheTeaView />}
+          {view === 'updates' && <UpdatesView />}
+          {view === 'wishlist' && <WishlistView />}
+          {view === 'settings' && (
+            <SettingsView
+              session={session}
+              hiddenModules={hiddenModules}
+              onSaveModules={handleSaveModules}
+              onLogout={handleLogout}
+            />
+          )}
+        </Suspense>
       </main>
 
       <button className="quick-capture-fab" onClick={() => setQuickCaptureOpen(true)} title="Quick Capture">
         📥
       </button>
-      {quickCaptureOpen && <QuickCaptureModal onClose={() => setQuickCaptureOpen(false)} />}
+      {quickCaptureOpen && (
+        <Suspense fallback={null}>
+          <QuickCaptureModal onClose={() => setQuickCaptureOpen(false)} />
+        </Suspense>
+      )}
     </div>
   )
 }
