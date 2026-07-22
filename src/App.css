@@ -162,12 +162,15 @@
   flex: 1;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 40px 48px;
   max-width: 1280px;
+  min-width: 0;
 }
 
 .view-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
   margin-bottom: 28px;
@@ -249,6 +252,7 @@
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
@@ -1535,8 +1539,10 @@
   border-radius: 16px;
   padding: 12px 16px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 6px 12px;
   cursor: pointer;
   transition: transform 0.1s ease;
 }
@@ -2571,12 +2577,13 @@
 
 .field-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
 .field-row .field {
   flex: 1;
-  min-width: 0;
+  min-width: 140px;
 }
 
 .day-grid {
@@ -3277,6 +3284,9 @@
 .week-tick-strip {
   display: flex;
   gap: 5px;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .week-tick-cell {
@@ -3962,6 +3972,7 @@
 
 .inbox-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 10px;
   padding-bottom: 10px;
