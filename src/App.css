@@ -4215,3 +4215,44 @@
     font-size: 19px;
   }
 }
+
+/* ---------- Habit reorder buttons (works on touch, unlike drag) ---------- */
+.habit-reorder-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.habit-reorder-btn {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  width: 26px;
+  height: 22px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.habit-reorder-btn:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--coral);
+  color: var(--coral);
+  transform: scale(1.08);
+}
+
+.habit-reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+@media (max-width: 880px) {
+  .habit-row-drag {
+    display: none;
+  }
+}

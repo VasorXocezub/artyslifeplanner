@@ -283,6 +283,17 @@ export default function HabitsView() {
     )
   }
 
+  function moveHabit(id, direction) {
+    const current = [...habits]
+    const idx = current.findIndex((h) => h.id === id)
+    const targetIdx = idx + direction
+    if (idx === -1 || targetIdx < 0 || targetIdx >= current.length) return
+    const [moved] = current.splice(idx, 1)
+    current.splice(targetIdx, 0, moved)
+    setHabits(current)
+    persistOrder(current)
+  }
+
   function openAdd() {
     setEditingId(null)
     setForm(emptyForm)
@@ -574,6 +585,26 @@ export default function HabitsView() {
                 >
                   ⠿⠿
                 </span>
+                <div className="habit-reorder-btns">
+                  <button
+                    type="button"
+                    className="habit-reorder-btn"
+                    onClick={() => moveHabit(h.id, -1)}
+                    disabled={i === 0}
+                    title="Move up"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    className="habit-reorder-btn"
+                    onClick={() => moveHabit(h.id, 1)}
+                    disabled={i === enriched.length - 1}
+                    title="Move down"
+                  >
+                    ▼
+                  </button>
+                </div>
 
                 <div className="habit-row-info">
                   <div className="habit-header-row">
