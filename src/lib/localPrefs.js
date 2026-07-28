@@ -47,6 +47,13 @@ export function setWellnessGoals(goals) {
   localStorage.setItem('wellnessGoals', JSON.stringify(goals))
 }
 
+export function getTheme() {
+  return localStorage.getItem('appTheme') || 'classic'
+}
+export function setTheme(theme) {
+  localStorage.setItem('appTheme', theme)
+}
+
 export function getLastSeenUpdates() {
   return localStorage.getItem('lastSeenUpdates') || null
 }

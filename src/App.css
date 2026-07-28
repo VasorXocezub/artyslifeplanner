@@ -4256,3 +4256,49 @@
     display: none;
   }
 }
+
+/* ---------- Theme picker ---------- */
+.theme-picker-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.theme-picker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 20px;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.theme-picker-card:hover {
+  transform: translateY(-2px);
+}
+
+.theme-picker-card-active {
+  border-color: var(--coral);
+  border-width: 3px;
+}
+
+.theme-picker-swatches {
+  display: flex;
+  gap: 4px;
+}
+
+.theme-picker-swatches span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-picker-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}

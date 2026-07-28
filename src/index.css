@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Loved+by+the+King&family=Yeseva+One&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Loved+by+the+King&family=Yeseva+One&family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   --bg: #FAF6F0;
@@ -38,6 +38,55 @@
   --font-display: 'Yeseva One', serif;
   --font-body: 'Montserrat', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+}
+
+[data-theme="bold"] {
+  --bg: #EAE3D3;
+  --surface: #F7F3E8;
+  --sidebar-bg: #153026;
+  --sidebar-text: #EAE3D3;
+
+  --ink: #153026;
+  --text-primary: #2A2A22;
+  --ink-dim: #6B6B5C;
+  --ink-faint: #9C9A89;
+
+  --pink: #D9822E;
+  --pink-soft: #F3DDBB;
+  --coral: #D9822E;
+  --coral-soft: #F3DDBB;
+  --olive: #1F4A3A;
+  --olive-dark: #153026;
+  --maroon: #2A2A22;
+  --maroon-soft: #E2D9C0;
+  --baby: #D6C9A3;
+  --butter: #D9822E;
+  --butter-soft: #F3DDBB;
+  --lavender: #D9822E;
+  --lavender-soft: #F3DDBB;
+  --peach: #D6C9A3;
+  --peach-soft: #EFE7D1;
+
+  --border: #D2C6A5;
+  --border-strong: #C1B48C;
+  --border-soft: #E2D9C0;
+  --danger: #B4472E;
+
+  --font-brand: 'Bebas Neue', sans-serif;
+  --font-script: 'Bebas Neue', sans-serif;
+  --font-quote: 'Bebas Neue', sans-serif;
+  --font-display: 'Yeseva One', serif;
+  --font-body: 'Montserrat', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+[data-theme="bold"] body {
+  background-color: var(--bg);
+  background-image: repeating-linear-gradient(45deg, rgba(21, 48, 38, 0.05) 0px, rgba(21, 48, 38, 0.05) 2px, transparent 2px, transparent 14px);
+}
+
+[data-theme="bold"] .hero-quote-highlight::before {
+  background: var(--coral-soft);
 }
 
 * { box-sizing: border-box; }

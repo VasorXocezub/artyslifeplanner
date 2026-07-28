@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/currency'
-import { getEra, setEra as saveEra } from './lib/localPrefs'
+import { getEra, setEra as saveEra, getTheme } from './lib/localPrefs'
 import WeatherWidget from './WeatherWidget'
 
 const ERAS = [
@@ -31,6 +31,17 @@ const ROTATING_MESSAGES = [
   { text: 'Make your energy the prettiest thing about you.', highlight: 'energy' },
   { text: 'The Plot Twist? She became everything she said she would.', highlight: 'Plot Twist' },
   { text: 'Girl, date yourself.', highlight: 'date yourself' },
+]
+
+const MASCULINE_MESSAGES = [
+  { text: "Don't let the hard days win.", highlight: 'hard days' },
+  { text: 'Whatever it takes.', highlight: 'Whatever it takes' },
+  { text: 'Be the best version of you.', highlight: 'best version' },
+  { text: 'The goal is simple: better than yesterday.', highlight: 'better than yesterday' },
+  { text: "Bro, you've got this.", highlight: 'got this' },
+  { text: 'They sleep, you grind.', highlight: 'you grind' },
+  { text: 'Remember why you started.', highlight: 'why you started' },
+  { text: 'Take the risk.', highlight: 'the risk' },
 ]
 
 const MODULES = [
@@ -97,7 +108,8 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   const [era, setEraState] = useState(getEra())
 
   const dayNumber = Math.floor(Date.now() / 86400000)
-  const msgIndex = ((dayNumber % ROTATING_MESSAGES.length) + ROTATING_MESSAGES.length) % ROTATING_MESSAGES.length
+  const activeMessages = getTheme() === 'bold' ? MASCULINE_MESSAGES : ROTATING_MESSAGES
+  const msgIndex = ((dayNumber % activeMessages.length) + activeMessages.length) % activeMessages.length
 
   function handleEraChange(e) {
     const value = e.target.value
@@ -357,7 +369,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
         </div>
         <div className="hero-quote-card" key={msgIndex}>
           <p className="hero-quote-label">💌 Today's Note</p>
-          <p className="hero-quote-text">{renderQuote(ROTATING_MESSAGES[msgIndex])}</p>
+          <p className="hero-quote-text">{renderQuote(activeMessages[msgIndex])}</p>
         </div>
       </div>
 

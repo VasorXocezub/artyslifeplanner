@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates } from './lib/localPrefs'
+import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates, getTheme } from './lib/localPrefs'
 import Auth from './Auth'
 import './App.css'
 
@@ -99,6 +99,10 @@ function App() {
   }
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = getTheme()
+  }, [])
 
   useEffect(() => {
     setMobileMenuOpen(false)

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './lib/supabase'
-import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs, getHiddenGlowupTabs, setHiddenGlowupTabs, getHiddenBraindumpTabs, setHiddenBraindumpTabs } from './lib/localPrefs'
+import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs, getHiddenGlowupTabs, setHiddenGlowupTabs, getHiddenBraindumpTabs, setHiddenBraindumpTabs, getTheme, setTheme } from './lib/localPrefs'
 
 const SPACES = [
   { key: 'contacts', label: 'Cake Club', icon: '🎂' },
@@ -68,6 +68,13 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState(null)
   const [passwordError, setPasswordError] = useState(null)
+  const [theme, setThemeState] = useState(getTheme())
+
+  function handleThemeChange(t) {
+    setTheme(t)
+    setThemeState(t)
+    document.documentElement.dataset.theme = t
+  }
 
   async function handleSaveName(e) {
     e.preventDefault()
@@ -180,6 +187,36 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
         <div>
           <h1 className="view-title">Settings</h1>
           <p className="view-subtitle">Your account, your Spaces, your rules ✨</p>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <p className="module-group-label">THEME</p>
+        <div className="calendar-card theme-picker-row">
+          <button
+            type="button"
+            className={`theme-picker-card ${theme === 'classic' ? 'theme-picker-card-active' : ''}`}
+            onClick={() => handleThemeChange('classic')}
+          >
+            <span className="theme-picker-swatches">
+              <span style={{ background: '#1E5C57' }} />
+              <span style={{ background: '#B896C9' }} />
+              <span style={{ background: '#FAF6F0' }} />
+            </span>
+            <span className="theme-picker-label">✨ Classic</span>
+          </button>
+          <button
+            type="button"
+            className={`theme-picker-card ${theme === 'bold' ? 'theme-picker-card-active' : ''}`}
+            onClick={() => handleThemeChange('bold')}
+          >
+            <span className="theme-picker-swatches">
+              <span style={{ background: '#153026' }} />
+              <span style={{ background: '#D9822E' }} />
+              <span style={{ background: '#EAE3D3' }} />
+            </span>
+            <span className="theme-picker-label">🔥 Bold</span>
+          </button>
         </div>
       </div>
 
