@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
+import { getActiveFocusSession, remainingSecondsFor } from './lib/focusSession'
 import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates, getTheme } from './lib/localPrefs'
 import Auth from './Auth'
 import './App.css'
@@ -54,6 +55,27 @@ function App() {
   const [hasUnseenTea, setHasUnseenTea] = useState(false)
   const [hasUnseenUpdates, setHasUnseenUpdates] = useState(false)
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false)
+  const [focusRemaining, setFocusRemaining] = useState(null)
+
+  useEffect(() => {
+    function poll() {
+      const stored = getActiveFocusSession()
+      if (!stored) {
+        setFocusRemaining(null)
+        return
+      }
+      setFocusRemaining(remainingSecondsFor(stored))
+    }
+    poll()
+    const id = setInterval(poll, 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  function formatFocusRemaining(seconds) {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -163,6 +185,11 @@ function App() {
             </button>
           ))}
         </nav>
+        {focusRemaining != null && (
+          <button className="focus-sidebar-badge" onClick={() => setView('focustimer')}>
+            🧜‍♀️ {focusRemaining > 0 ? formatFocusRemaining(focusRemaining) : 'Session complete!'}
+          </button>
+        )}
         <div className="sidebar-footer">
           your whole<br />
           life, organized<br />

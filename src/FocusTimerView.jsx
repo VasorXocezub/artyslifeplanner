@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
+import { getActiveFocusSession, setActiveFocusSession, clearActiveFocusSession, remainingSecondsFor } from './lib/focusSession'
 
 /* ---------------- Constants ---------------- */
 
@@ -248,12 +249,39 @@ export default function FocusTimerView() {
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   useEffect(() => {
-    fetchAll()
+    fetchAll().then(rehydrateSession)
   }, [])
+
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') rehydrateSession(profile)
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [profile])
 
   useEffect(() => {
     return () => clearInterval(intervalRef.current)
   }, [])
+
+  function rehydrateSession(freshProfile) {
+    const stored = getActiveFocusSession()
+    if (!stored) return
+    const remaining = remainingSecondsFor(stored)
+    setSessionId(stored.sessionId)
+    setTotalSeconds(stored.totalSeconds)
+    setRemainingSeconds(remaining)
+    setPaused(!!stored.paused)
+    setWilted(false)
+    setCompletionData(null)
+    if (remaining <= 0 && !stored.paused) {
+      setRunning(false)
+      completeSession(stored.sessionId, stored.totalSeconds, freshProfile)
+    } else {
+      setRunning(true)
+      if (!stored.paused) runInterval()
+    }
+  }
 
   async function fetchAll() {
     setLoading(true)
@@ -276,6 +304,7 @@ export default function FocusTimerView() {
     setSessions(sess || [])
 
     setLoading(false)
+    return prof
   }
 
   /* -------- timer controls -------- */
@@ -286,13 +315,18 @@ export default function FocusTimerView() {
     const { data, error } = await supabase.from('focus_sessions').insert({ duration_minutes: minutes, user_id }).select().single()
     if (error) return
 
+    const totalSecs = minutes * 60
     setSessionId(data.id)
-    setTotalSeconds(minutes * 60)
-    setRemainingSeconds(minutes * 60)
+    setTotalSeconds(totalSecs)
+    setRemainingSeconds(totalSecs)
     setRunning(true)
     setPaused(false)
     setWilted(false)
     setCompletionData(null)
+
+    setActiveFocusSession({
+      sessionId: data.id, totalSeconds: totalSecs, endTime: Date.now() + totalSecs * 1000, paused: false, remainingAtPause: null,
+    })
 
     runInterval()
   }
@@ -300,47 +334,51 @@ export default function FocusTimerView() {
   function runInterval() {
     clearInterval(intervalRef.current)
     intervalRef.current = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current)
-          completeSession()
-          return 0
-        }
-        return prev - 1
-      })
+      const stored = getActiveFocusSession()
+      if (!stored) return
+      const remaining = remainingSecondsFor(stored)
+      setRemainingSeconds(remaining)
+      if (remaining <= 0) {
+        clearInterval(intervalRef.current)
+        completeSession(stored.sessionId, stored.totalSeconds)
+      }
     }, 1000)
   }
 
   function togglePause() {
+    const stored = getActiveFocusSession()
+    if (!stored) return
     if (paused) {
+      const newEndTime = Date.now() + stored.remainingAtPause * 1000
+      setActiveFocusSession({ ...stored, paused: false, endTime: newEndTime, remainingAtPause: null })
       setPaused(false)
       runInterval()
     } else {
       clearInterval(intervalRef.current)
+      const remaining = remainingSecondsFor(stored)
+      setActiveFocusSession({ ...stored, paused: true, remainingAtPause: remaining })
       setPaused(true)
     }
   }
 
-  function resetTimer() {
-    clearInterval(intervalRef.current)
-    setRunning(false)
-    setPaused(false)
-    setSessionId(null)
-  }
-
   function giveUp() {
-    if (!confirm("Leaving now means this session won't count. Are you sure?")) return
+    if (!confirm("Give up on this session? It won't count.")) return
     clearInterval(intervalRef.current)
     if (sessionId) supabase.from('focus_sessions').delete().eq('id', sessionId)
+    clearActiveFocusSession()
     setRunning(false)
     setPaused(false)
     setSessionId(null)
     setWilted(true)
   }
 
-  async function completeSession() {
+  async function completeSession(idOverride, totalSecondsOverride, profileOverride) {
     setRunning(false)
-    const minutes = Math.round(totalSeconds / 60)
+    const targetSessionId = idOverride || sessionId
+    const targetTotalSeconds = totalSecondsOverride || totalSeconds
+    const prof = profileOverride || profile
+    clearActiveFocusSession()
+    const minutes = Math.round(targetTotalSeconds / 60)
     const xpEarned = minutes
     const pearlsEarned = Math.round(minutes * 0.2) + (minutes >= 60 ? 5 : 0)
     const foundBonus = Math.random() < 0.18
@@ -349,10 +387,10 @@ export default function FocusTimerView() {
     await supabase.from('focus_sessions').update({
       completed: true, completed_at: new Date().toISOString(),
       xp_earned: xpEarned, pearls_earned: pearlsEarned + bonusPearls,
-    }).eq('id', sessionId)
+    }).eq('id', targetSessionId)
 
-    const oldLevel = levelForXp(profile.xp)
-    const newXp = profile.xp + xpEarned
+    const oldLevel = levelForXp(prof.xp)
+    const newXp = prof.xp + xpEarned
     const newLevel = levelForXp(newXp)
 
     // streak logic
@@ -360,20 +398,20 @@ export default function FocusTimerView() {
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
-    let newStreak = profile.streak
-    if (profile.last_session_date === today) {
+    let newStreak = prof.streak
+    if (prof.last_session_date === today) {
       // already counted today
-    } else if (profile.last_session_date === yesterdayStr) {
-      newStreak = profile.streak + 1
+    } else if (prof.last_session_date === yesterdayStr) {
+      newStreak = prof.streak + 1
     } else {
       newStreak = 1
     }
 
-    const newPearls = profile.pearls + pearlsEarned + bonusPearls
-    const updatedProfile = { ...profile, xp: newXp, pearls: newPearls, streak: newStreak, last_session_date: today }
+    const newPearls = prof.pearls + pearlsEarned + bonusPearls
+    const updatedProfile = { ...prof, xp: newXp, pearls: newPearls, streak: newStreak, last_session_date: today }
     await supabase.from('cove_profile').update({
       xp: newXp, pearls: newPearls, streak: newStreak, last_session_date: today, updated_at: new Date().toISOString(),
-    }).eq('id', profile.id)
+    }).eq('id', prof.id)
     setProfile(updatedProfile)
 
     // streak milestone reward
@@ -386,7 +424,7 @@ export default function FocusTimerView() {
         await supabase.from('cove_inventory').insert({ item_key: milestone.item, user_id: uid })
       }
       if (milestone.pearls) {
-        await supabase.from('cove_profile').update({ pearls: newPearls + milestone.pearls }).eq('id', profile.id)
+        await supabase.from('cove_profile').update({ pearls: newPearls + milestone.pearls }).eq('id', prof.id)
         setProfile((p) => ({ ...p, pearls: newPearls + milestone.pearls }))
       }
     }

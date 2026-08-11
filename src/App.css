@@ -4653,3 +4653,23 @@
     animation: none !important;
   }
 }
+
+.focus-sidebar-badge {
+  display: block;
+  width: 100%;
+  background: rgba(228, 203, 160, 0.18);
+  border: 1px solid rgba(228, 203, 160, 0.4);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--sidebar-text);
+  text-align: center;
+  animation: focusBadgePulse 2s ease infinite;
+}
+
+@keyframes focusBadgePulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
