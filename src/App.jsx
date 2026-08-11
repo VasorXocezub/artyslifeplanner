@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { key: 'inbox', label: 'Inbox', num: '03', enabled: true },
   { key: 'goals', label: 'Dream Board', num: '04', enabled: true },
   { key: 'habits', label: 'Daily Habits', num: '05', enabled: true },
-  { key: 'focustimer', label: 'Focus Timer', num: '06', enabled: true },
+  { key: 'focustimer', label: 'Mermaid Cove', num: '06', enabled: true },
   { key: 'todos', label: 'To-Do List', num: '07', enabled: true },
   { key: 'glowup', label: 'Glow Up Hub', num: '08', enabled: true },
   { key: 'braindump', label: 'Brain Dump', num: '09', enabled: true },

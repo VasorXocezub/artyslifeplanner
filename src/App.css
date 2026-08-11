@@ -4358,3 +4358,298 @@
 .focus-garden-plant:hover {
   transform: scale(1.15);
 }
+
+/* ---------- Mermaid Cove ---------- */
+.cove-top-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.cove-pearl-counter {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.cove-streak-pill {
+  background: var(--coral-soft);
+  color: var(--coral);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.cove-xp-block {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+
+.cove-level-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.cove-level-badge {
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.cove-level-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cove-scene {
+  position: relative;
+  border-radius: 22px;
+  padding: 22px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  min-height: 140px;
+}
+
+.cove-stage-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  margin: 0 0 12px 0;
+}
+
+.cove-items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cove-placed-item {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.15s ease;
+}
+
+.cove-placed-item:hover {
+  transform: scale(1.15);
+}
+
+.cove-empty-hint {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.cove-bubble {
+  position: absolute;
+  bottom: -10px;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.cove-scene-animated .cove-bubble-1 { left: 20%; animation: coveBubbleRise 6s ease-in infinite; }
+.cove-scene-animated .cove-bubble-2 { left: 55%; animation: coveBubbleRise 8s ease-in infinite 1.5s; }
+.cove-scene-animated .cove-bubble-3 { left: 75%; animation: coveBubbleRise 7s ease-in infinite 3s; }
+
+@keyframes coveBubbleRise {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  15% { opacity: 0.8; }
+  100% { transform: translateY(-160px) scale(1.1); opacity: 0; }
+}
+
+.cove-completion-card {
+  background: linear-gradient(120deg, var(--coral-soft) 0%, var(--pink-soft) 100%);
+}
+
+.cove-reward-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 10px 0;
+}
+
+.cove-goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cove-goal-select {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.focus-timer-stat-value {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 4px 0;
+}
+
+/* Shop */
+.cove-shop-modal {
+  width: 620px;
+  max-width: 94vw;
+}
+
+.cove-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.cove-shop-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.cove-shop-item-emoji {
+  font-size: 28px;
+}
+
+.cove-shop-item-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cove-rarity-chip {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.cove-owned-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--coral);
+}
+
+/* Achievements */
+.cove-achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.cove-achievement-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 8px;
+  text-align: center;
+  opacity: 0.55;
+}
+
+.cove-achievement-unlocked {
+  opacity: 1;
+  border-color: var(--coral);
+  background: var(--coral-soft);
+}
+
+.cove-achievement-icon {
+  font-size: 24px;
+}
+
+.cove-achievement-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cove-achievement-progress {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-faint);
+}
+
+.cove-levelup-modal {
+  width: 340px;
+}
+
+/* Focus mode (minimal UI while timer runs) */
+.cove-focus-mode {
+  max-width: 480px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.cove-focus-mode-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.cove-scene-focus {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cove-focus-mermaid {
+  font-size: 56px;
+  animation: coveMermaidSway 4s ease-in-out infinite;
+}
+
+@keyframes coveMermaidSway {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cove-bubble, .cove-focus-mermaid {
+    animation: none !important;
+  }
+}
