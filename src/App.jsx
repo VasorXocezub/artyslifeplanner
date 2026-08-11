@@ -21,6 +21,7 @@ const WishlistView = lazy(() => import('./WishlistView'))
 const InboxView = lazy(() => import('./InboxView'))
 const QuickCaptureModal = lazy(() => import('./QuickCaptureModal'))
 const UpdatesView = lazy(() => import('./UpdatesView'))
+const FocusTimerView = lazy(() => import('./FocusTimerView'))
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
@@ -29,15 +30,16 @@ const NAV_ITEMS = [
   { key: 'inbox', label: 'Inbox', num: '03', enabled: true },
   { key: 'goals', label: 'Dream Board', num: '04', enabled: true },
   { key: 'habits', label: 'Daily Habits', num: '05', enabled: true },
-  { key: 'todos', label: 'To-Do List', num: '06', enabled: true },
-  { key: 'glowup', label: 'Glow Up Hub', num: '07', enabled: true },
-  { key: 'braindump', label: 'Brain Dump', num: '08', enabled: true },
-  { key: 'booknook', label: 'Book Nook', num: '09', enabled: true },
-  { key: 'finances', label: 'Rich Girl Era', num: '10', enabled: true },
-  { key: 'shopping', label: 'Kitchen Club', num: '11', enabled: true },
-  { key: 'wishlist', label: 'Wishlist', num: '12', enabled: true },
-  { key: 'spillthetea', label: 'Spill the Tea', num: '13', enabled: true },
-  { key: 'updates', label: 'Updates', num: '14', enabled: true },
+  { key: 'focustimer', label: 'Focus Timer', num: '06', enabled: true },
+  { key: 'todos', label: 'To-Do List', num: '07', enabled: true },
+  { key: 'glowup', label: 'Glow Up Hub', num: '08', enabled: true },
+  { key: 'braindump', label: 'Brain Dump', num: '09', enabled: true },
+  { key: 'booknook', label: 'Book Nook', num: '10', enabled: true },
+  { key: 'finances', label: 'Rich Girl Era', num: '11', enabled: true },
+  { key: 'shopping', label: 'Kitchen Club', num: '12', enabled: true },
+  { key: 'wishlist', label: 'Wishlist', num: '13', enabled: true },
+  { key: 'spillthetea', label: 'Spill the Tea', num: '14', enabled: true },
+  { key: 'updates', label: 'Updates', num: '15', enabled: true },
 ]
 
 function App() {
@@ -190,6 +192,7 @@ function App() {
           {view === 'braindump' && <BrainDumpView />}
           {view === 'spillthetea' && <SpillTheTeaView />}
           {view === 'updates' && <UpdatesView />}
+          {view === 'focustimer' && <FocusTimerView />}
           {view === 'wishlist' && <WishlistView />}
           {view === 'settings' && (
             <SettingsView

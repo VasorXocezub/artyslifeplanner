@@ -6,6 +6,7 @@ const SPACES = [
   { key: 'contacts', label: 'Cake Club', icon: '🎂' },
   { key: 'goals', label: 'Dream Board', icon: '🌱' },
   { key: 'habits', label: 'Daily Habits', icon: '🔥' },
+  { key: 'focustimer', label: 'Focus Timer', icon: '🌱' },
   { key: 'finances', label: 'Rich Girl Era', icon: '💸' },
   { key: 'todos', label: 'To-Do List', icon: '📋' },
   { key: 'shopping', label: 'Kitchen Club', icon: '🍎' },
