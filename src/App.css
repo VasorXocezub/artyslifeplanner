@@ -4422,9 +4422,13 @@
   position: relative;
   border-radius: 22px;
   padding: 22px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   overflow: hidden;
-  min-height: 140px;
+  min-height: 260px;
+}
+
+.cove-scene-decorate {
+  box-shadow: inset 0 0 0 3px var(--coral);
 }
 
 .cove-stage-label {
@@ -4436,20 +4440,38 @@
   margin: 0 0 12px 0;
 }
 
-.cove-items-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
 .cove-placed-item {
-  font-size: 26px;
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  transition: transform 0.15s ease;
+  transition: transform 0.1s ease;
+  touch-action: none;
+  user-select: none;
 }
 
 .cove-placed-item:hover {
-  transform: scale(1.15);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.cove-placed-item-draggable {
+  cursor: grab;
+}
+
+.cove-placed-item-draggable:hover {
+  outline: 2px dashed rgba(255, 255, 255, 0.6);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+.cove-placed-item-dragging {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.2);
+  z-index: 10;
 }
 
 .cove-empty-hint {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getActiveFocusSession, setActiveFocusSession, clearActiveFocusSession, remainingSecondsFor } from './lib/focusSession'
+import CoveIcon from './CoveIcons'
 
 /* ---------------- Constants ---------------- */
 
@@ -205,7 +206,7 @@ function ShopItemCard({ item, owned, pearls, onBuy }) {
   const rarity = RARITIES[item.rarity]
   return (
     <div className="cove-shop-item" style={{ borderColor: owned ? rarity.color : undefined }}>
-      <span className="cove-shop-item-emoji">{item.emoji}</span>
+      <CoveIcon itemKey={item.key} size={40} />
       <span className="cove-shop-item-name">{item.name}</span>
       <span className="cove-rarity-chip" style={{ background: rarity.color }}>{rarity.label}</span>
       {owned ? (
@@ -213,6 +214,84 @@ function ShopItemCard({ item, owned, pearls, onBuy }) {
       ) : (
         <button className="btn-check" disabled={pearls < item.price} onClick={() => onBuy(item)}>
           💎 {item.price}
+        </button>
+      )}
+    </div>
+  )
+}
+
+function defaultPosition(index) {
+  // staggered fallback grid so un-placed items still show up sensibly
+  const cols = 6
+  const col = index % cols
+  const row = Math.floor(index / cols)
+  return { x: 10 + col * 15, y: 20 + row * 22 }
+}
+
+function CoveScene({ coveStage, placedItems, reducedMotion, decorateMode, onToggleDecorate, onMoveItem }) {
+  const sceneRef = useRef(null)
+  const [draggingId, setDraggingId] = useState(null)
+
+  function handlePointerDown(e, itemId) {
+    if (!decorateMode) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDraggingId(itemId)
+  }
+
+  function handlePointerMove(e) {
+    if (!draggingId || !sceneRef.current) return
+    const rect = sceneRef.current.getBoundingClientRect()
+    const x = Math.min(96, Math.max(2, ((e.clientX - rect.left) / rect.width) * 100))
+    const y = Math.min(90, Math.max(6, ((e.clientY - rect.top) / rect.height) * 100))
+    onMoveItem(draggingId, x, y, false)
+  }
+
+  function handlePointerUp(e) {
+    if (!draggingId || !sceneRef.current) return
+    const rect = sceneRef.current.getBoundingClientRect()
+    const x = Math.min(96, Math.max(2, ((e.clientX - rect.left) / rect.width) * 100))
+    const y = Math.min(90, Math.max(6, ((e.clientY - rect.top) / rect.height) * 100))
+    onMoveItem(draggingId, x, y, true)
+    setDraggingId(null)
+  }
+
+  return (
+    <div>
+      <div
+        ref={sceneRef}
+        className={`cove-scene ${reducedMotion ? '' : 'cove-scene-animated'} ${decorateMode ? 'cove-scene-decorate' : ''}`}
+        style={{ background: coveStage.gradient }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {!reducedMotion && (
+          <>
+            <span className="cove-bubble cove-bubble-1">🫧</span>
+            <span className="cove-bubble cove-bubble-2">🫧</span>
+          </>
+        )}
+        <p className="cove-stage-label">{coveStage.name}</p>
+        {placedItems.length === 0 && <span className="cove-empty-hint">✨ Your cove is waiting to be decorated</span>}
+        {placedItems.map((i, idx) => {
+          const item = catalogItem(i.item_key)
+          if (!item) return null
+          const pos = i.pos_x != null ? { x: i.pos_x, y: i.pos_y } : defaultPosition(idx)
+          return (
+            <div
+              key={i.id}
+              className={`cove-placed-item ${decorateMode ? 'cove-placed-item-draggable' : ''} ${draggingId === i.id ? 'cove-placed-item-dragging' : ''}`}
+              style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+              title={item.name}
+              onPointerDown={(e) => handlePointerDown(e, i.id)}
+            >
+              <CoveIcon itemKey={item.key} size={36} />
+            </div>
+          )
+        })}
+      </div>
+      {placedItems.length > 0 && (
+        <button className="weather-location-link" style={{ marginBottom: 18 }} onClick={onToggleDecorate}>
+          {decorateMode ? '✓ Done decorating' : '🪄 Decorate my cove'}
         </button>
       )}
     </div>
@@ -244,6 +323,8 @@ export default function FocusTimerView() {
   const [cabinetOpen, setCabinetOpen] = useState(false)
   const [selectedAchievement, setSelectedAchievement] = useState(null)
   const [toast, setToast] = useState(null)
+  const [decorateMode, setDecorateMode] = useState(false)
+  const moveSaveTimeout = useRef(null)
 
   const intervalRef = useRef(null)
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -457,6 +538,14 @@ export default function FocusTimerView() {
 
   /* -------- shop -------- */
 
+  function moveItem(itemId, x, y, commit) {
+    setInventory((inv) => inv.map((i) => (i.id === itemId ? { ...i, pos_x: x, pos_y: y } : i)))
+    if (commit) {
+      clearTimeout(moveSaveTimeout.current)
+      supabase.from('cove_inventory').update({ pos_x: x, pos_y: y }).eq('id', itemId)
+    }
+  }
+
   async function buyItem(item) {
     if (profile.pearls < item.price) return
     const uid = await getUserId()
@@ -560,23 +649,14 @@ export default function FocusTimerView() {
       <XPProgress xp={profile.xp} level={level} />
 
       {/* Cove scene */}
-      <div className={`cove-scene ${reducedMotion ? '' : 'cove-scene-animated'}`} style={{ background: coveStage.gradient }}>
-        {!reducedMotion && (
-          <>
-            <span className="cove-bubble cove-bubble-1">🫧</span>
-            <span className="cove-bubble cove-bubble-2">🫧</span>
-          </>
-        )}
-        <p className="cove-stage-label">{coveStage.name}</p>
-        <div className="cove-items-grid">
-          {placedItems.length === 0 && <span className="cove-empty-hint">✨ Your cove is waiting to be decorated</span>}
-          {placedItems.map((i) => {
-            const item = catalogItem(i.item_key)
-            if (!item) return null
-            return <span key={i.id} className="cove-placed-item" title={item.name}>{item.emoji}</span>
-          })}
-        </div>
-      </div>
+      <CoveScene
+        coveStage={coveStage}
+        placedItems={placedItems}
+        reducedMotion={reducedMotion}
+        decorateMode={decorateMode}
+        onToggleDecorate={() => setDecorateMode((v) => !v)}
+        onMoveItem={moveItem}
+      />
 
       {/* Timer setup */}
       {wilted ? (
