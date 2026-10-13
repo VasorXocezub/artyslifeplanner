@@ -54,6 +54,16 @@ const BRAINDUMP_SUB_SPACES = [
   { key: 'archive', label: '📖 Lore Archive' },
 ]
 
+// Children first, parents after. Shared tables (app_updates, dev_feedback) are never touched.
+const RESET_TABLES = [
+  'todo_notes', 'todos', 'habit_logs', 'habits', 'reading_logs', 'books',
+  'cove_inventory', 'cove_achievements', 'cove_profile', 'focus_sessions',
+  'meal_plans', 'recipes', 'pantry_items', 'grocery_budget', 'shopping_items',
+  'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings',
+  'wellness_logs', 'cycle_logs', 'cycle_settings', 'weight_logs', 'weight_settings',
+  'social_events', 'brain_dump_entries', 'inbox_notes', 'goals', 'contacts',
+]
+
 export default function SettingsView({ session, hiddenModules, onSaveModules, onLogout }) {
   const [nameInput, setNameInput] = useState(session.user.user_metadata?.full_name || '')
   const [nameSaved, setNameSaved] = useState(false)
@@ -70,6 +80,31 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const [passwordMessage, setPasswordMessage] = useState(null)
   const [passwordError, setPasswordError] = useState(null)
   const [theme, setThemeState] = useState(getTheme())
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resetText, setResetText] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [resetError, setResetError] = useState(null)
+
+  async function handleResetAll() {
+    if (resetText.trim().toUpperCase() !== 'RESET') return
+    setResetting(true)
+    setResetError(null)
+    const uid = session.user.id
+    const failed = []
+    for (const table of RESET_TABLES) {
+      const { error } = await supabase.from(table).delete().eq('user_id', uid)
+      if (error) failed.push(`${table}: ${error.message}`)
+    }
+    if (failed.length) {
+      setResetError(`Some data couldn't be cleared — ${failed.join('; ')}`)
+      setResetting(false)
+      return
+    }
+    try {
+      Object.keys(localStorage).filter(k => !k.startsWith('sb-')).forEach(k => localStorage.removeItem(k))
+    } catch { /* ignore */ }
+    window.location.reload()
+  }
 
   function handleThemeChange(t) {
     setTheme(t)
@@ -418,6 +453,31 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
         <button className="btn-primary settings-save-spaces" onClick={handleSaveSpaces}>
           {spacesSaved ? 'Saved ✓' : 'Save Spaces'}
         </button>
+      </div>
+
+      <div className="settings-section settings-danger">
+        <p className="module-group-label">Danger zone</p>
+        <h3 className="settings-danger-title">Reset all data</h3>
+        <p className="settings-danger-text">
+          Permanently deletes everything you've added — contacts, to-dos, habits, finances, recipes, Mermaid Cove progress and more —
+          and resets your preferences. Your login stays. This can't be undone.
+        </p>
+        {!resetOpen ? (
+          <button className="btn-cancel settings-danger-btn" onClick={() => setResetOpen(true)}>Reset all data…</button>
+        ) : (
+          <div className="settings-danger-confirm">
+            <label htmlFor="reset-confirm">Type <strong>RESET</strong> to confirm</label>
+            <input id="reset-confirm" type="text" value={resetText} autoComplete="off"
+              onChange={e => setResetText(e.target.value)} placeholder="RESET" disabled={resetting} />
+            {resetError && <p className="settings-danger-error">{resetError}</p>}
+            <div className="settings-danger-actions">
+              <button className="btn-cancel" disabled={resetting}
+                onClick={() => { setResetOpen(false); setResetText(''); setResetError(null) }}>Cancel</button>
+              <button className="settings-danger-btn settings-danger-go" disabled={resetting || resetText.trim().toUpperCase() !== 'RESET'}
+                onClick={handleResetAll}>{resetting ? 'Resetting…' : 'Delete everything'}</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="settings-section">

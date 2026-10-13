@@ -4695,3 +4695,15 @@
   0%, 100% { opacity: 0.85; }
   50% { opacity: 1; }
 }
+
+/* Settings: danger zone */
+.settings-danger { border: 1px solid #e8a0a0; }
+.settings-danger-title { margin: 4px 0 6px; font-family: inherit; }
+.settings-danger-text { font-size: 0.9rem; opacity: 0.8; margin: 0 0 12px; line-height: 1.45; }
+.settings-danger-btn { border: 1px solid #d96b6b; color: #b83b3b; background: transparent; padding: 9px 16px; border-radius: inherit; cursor: pointer; font: inherit; }
+.settings-danger-go { background: #d96b6b; color: #fff; }
+.settings-danger-go:disabled { opacity: 0.45; cursor: not-allowed; }
+.settings-danger-confirm { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+.settings-danger-confirm input { width: 100%; box-sizing: border-box; }
+.settings-danger-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.settings-danger-error { color: #b83b3b; font-size: 0.85rem; margin: 0; }
