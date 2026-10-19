@@ -199,6 +199,7 @@ export default function GlowUpHubView() {
   const [weightLogs, setWeightLogs] = useState([])
   const [weightInput, setWeightInput] = useState('')
   const [startWeightInput, setStartWeightInput] = useState('')
+  const [startDateInput, setStartDateInput] = useState('')
   const [goalWeightInput, setGoalWeightInput] = useState('')
   const [editingWeightGoal, setEditingWeightGoal] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -298,6 +299,7 @@ export default function GlowUpHubView() {
     }
     setWeightSettings(existingWeightSettings)
     setStartWeightInput(existingWeightSettings.starting_weight != null ? String(existingWeightSettings.starting_weight) : '')
+    setStartDateInput(existingWeightSettings.start_date || todayStr())
     setGoalWeightInput(existingWeightSettings.goal_weight != null ? String(existingWeightSettings.goal_weight) : '')
 
     const { data: weightData } = await supabase
@@ -314,6 +316,7 @@ export default function GlowUpHubView() {
       .from('weight_settings')
       .update({
         starting_weight: parseFloat(startWeightInput) || null,
+        start_date: startDateInput || null,
         goal_weight: parseFloat(goalWeightInput) || null,
       })
       .eq('id', weightSettings.id)
@@ -996,6 +999,10 @@ export default function GlowUpHubView() {
                   <input type="number" value={goalWeightInput} onChange={(e) => setGoalWeightInput(e.target.value)} placeholder="e.g. 65" />
                 </div>
               </div>
+              <div className="field">
+                <label>Start date (when you began — can be in the past)</label>
+                <input type="date" value={startDateInput} max={todayStr()} onChange={(e) => setStartDateInput(e.target.value)} />
+              </div>
               <div className="toggle-group" style={{ marginBottom: 14 }}>
                 <button type="button" className={`toggle-btn ${weightUnit === 'kg' ? 'toggle-btn-active' : ''}`} onClick={() => setWeightUnit('kg')}>kg</button>
                 <button type="button" className={`toggle-btn ${weightUnit === 'lbs' ? 'toggle-btn-active' : ''}`} onClick={() => setWeightUnit('lbs')}>lbs</button>
@@ -1022,6 +1029,11 @@ export default function GlowUpHubView() {
                     </div>
                   )}
                 </div>
+                {weightSettings.start_date && (
+                  <p className="momentum-caption" style={{ marginTop: 10 }}>
+                    🌱 Started {formatDateShort(weightSettings.start_date)} at {startingWeight}{weightUnit} · day {Math.max(1, Math.round((new Date(todayStr() + 'T00:00:00') - new Date(weightSettings.start_date + 'T00:00:00')) / 86400000) + 1)}
+                  </p>
+                )}
                 {totalToLose != null && (
                   <>
                     <div className="momentum-track" style={{ marginTop: 14 }}>
@@ -1035,10 +1047,11 @@ export default function GlowUpHubView() {
                     <>
                       <input type="number" className="log-value-input" value={startWeightInput} onChange={(e) => setStartWeightInput(e.target.value)} placeholder="Starting" />
                       <input type="number" className="log-value-input" value={goalWeightInput} onChange={(e) => setGoalWeightInput(e.target.value)} placeholder="Goal" />
+                      <input type="date" className="log-value-input" value={startDateInput} max={todayStr()} onChange={(e) => setStartDateInput(e.target.value)} aria-label="Start date" />
                       <button className="btn-check log-value-btn" onClick={saveWeightGoal}>Save</button>
                     </>
                   ) : (
-                    <button className="weather-location-link" onClick={() => setEditingWeightGoal(true)}>🎯 Edit starting / goal weight</button>
+                    <button className="weather-location-link" onClick={() => setEditingWeightGoal(true)}>🎯 Edit starting weight, date &amp; goal</button>
                   )}
                 </div>
               </div>
@@ -1104,6 +1117,12 @@ export default function GlowUpHubView() {
                         <span className="goals-summary-value">{w.weight}{weightUnit}</span>
                       </div>
                     ))}
+                    {weightSettings.start_date && startingWeight != null && weightLogs.length <= 10 && (
+                      <div className="goals-summary-row">
+                        <span className="goals-summary-label">🌱 {formatDateShort(weightSettings.start_date)} (start)</span>
+                        <span className="goals-summary-value">{startingWeight}{weightUnit}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

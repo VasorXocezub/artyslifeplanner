@@ -17,6 +17,7 @@ export default function GlpTracker() {
   const [injections, setInjections] = useState([])
   const [weights, setWeights] = useState([])
   const [unit, setUnit] = useState('kg')
+  const [wSettings, setWSettings] = useState(null)
   const [editingSettings, setEditingSettings] = useState(false)
   const [sForm, setSForm] = useState({ medication: MEDS[0], dose: '', interval_days: 7 })
   const [form, setForm] = useState({ injected_on: todayStr(), dose: '', site: '', notes: '' })
@@ -31,7 +32,7 @@ export default function GlpTracker() {
       supabase.from('glp1_settings').select('*').limit(1).maybeSingle(),
       supabase.from('glp1_injections').select('*').order('injected_on', { ascending: false }),
       supabase.from('weight_logs').select('log_date, weight').order('log_date', { ascending: true }),
-      supabase.from('weight_settings').select('unit').limit(1).maybeSingle(),
+      supabase.from('weight_settings').select('unit, starting_weight, start_date').limit(1).maybeSingle(),
     ])
     if (s.error || i.error) {
       setError((s.error || i.error).message + ' — have you run the GLP-1 SQL in Supabase?')
@@ -42,6 +43,7 @@ export default function GlpTracker() {
     setInjections(i.data || [])
     setWeights(w.data || [])
     if (ws.data?.unit) setUnit(ws.data.unit)
+    setWSettings(ws.data || null)
     if (s.data) {
       setForm(f => ({ ...f, dose: f.dose || s.data.dose || '' }))
       setSForm({ medication: s.data.medication, dose: s.data.dose || '', interval_days: s.data.interval_days })
@@ -105,11 +107,13 @@ export default function GlpTracker() {
 
   const first = injections[injections.length - 1]
   let weightLine = null
-  if (first && weights.length) {
-    const atStart = [...weights].reverse().find(w => w.log_date <= first.injected_on) || weights[0]
+  if (first) {
+    const before = [...weights].reverse().find(w => w.log_date <= first.injected_on)
+    const startW = wSettings?.starting_weight != null && wSettings?.start_date && wSettings.start_date <= first.injected_on
+      ? { log_date: wSettings.start_date, weight: wSettings.starting_weight } : null
+    const atStart = before || startW || weights[0]
     const latest = weights[weights.length - 1]
-    const diff = Number(latest.weight) - Number(atStart.weight)
-    weightLine = { start: atStart, latest, diff }
+    if (atStart && latest) weightLine = { start: atStart, latest, diff: Number(latest.weight) - Number(atStart.weight) }
   }
 
   if (loading) return <p className="loading">Checking your schedule… 💉</p>
