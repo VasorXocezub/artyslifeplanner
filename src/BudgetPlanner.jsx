@@ -21,6 +21,7 @@ export default function BudgetPlanner({ currency }) {
   const [newKind, setNewKind] = useState('expense')
   const { categories: knownCats, savedRows, addCategory, removeCategory } = useFinanceCategories()
   const [catInput, setCatInput] = useState('')
+  const [customCat, setCustomCat] = useState(false)
 
   const mk = monthKey(viewMonth)
 
@@ -63,7 +64,7 @@ export default function BudgetPlanner({ currency }) {
     const { error } = await supabase.from('budget_items').insert({ user_id, month: mk, category: cat, planned_amount: amt, kind: newKind })
     if (error) { setError(error.message); return }
     await addCategory(cat)
-    setNewCat(''); setNewAmt('')
+    setNewCat(''); setNewAmt(''); setCustomCat(false)
     load()
   }
 
@@ -194,8 +195,15 @@ export default function BudgetPlanner({ currency }) {
                 <option value="expense">Spending</option>
                 <option value="income">Income</option>
               </select>
-              <input list="budget-cats" placeholder="Category (e.g. Groceries)" value={newCat} onChange={e => setNewCat(e.target.value)} />
-              <datalist id="budget-cats">{knownCats.map(c => <option key={c} value={c} />)}</datalist>
+              <select value={newCat === '' ? '' : (knownCats.some(c => c.toLowerCase() === newCat.toLowerCase()) ? newCat : '__new')}
+                onChange={e => { setNewCat(e.target.value === '__new' ? ' ' : e.target.value); setCustomCat(e.target.value === '__new') }} aria-label="Category">
+                <option value="">Choose category…</option>
+                {knownCats.map(c => <option key={c} value={c}>{c}</option>)}
+                <option value="__new">＋ New category…</option>
+              </select>
+              {customCat && (
+                <input placeholder="New category name" value={newCat.trimStart()} onChange={e => setNewCat(e.target.value)} autoFocus />
+              )}
               <input type="number" step="0.01" min="0" placeholder="0" value={newAmt} onChange={e => setNewAmt(e.target.value)} aria-label="Planned amount" />
               <button className="btn-primary" type="submit">Add</button>
             </div>
