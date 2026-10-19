@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getHiddenGlowupTabs, getWellnessGoals, setWellnessGoals, getHiddenWellnessMetrics, setHiddenWellnessMetrics } from './lib/localPrefs'
+
+const GlpTracker = lazy(() => import('./GlpTracker'))
 
 const MOODS = [
   '👑 Main Character', '✨ Glowing', '🌸 Soft & Happy', '💖 Loved Up', '🔥 Unstoppable',
@@ -134,6 +136,7 @@ const TABS = [
   { key: 'today', label: '✨ Today' },
   { key: 'cycle', label: '🌸 Cycle' },
   { key: 'weight', label: '⚖️ Weight Journey' },
+  { key: 'glp1', label: '💉 GLP-1' },
   { key: 'summary', label: '📊 Summary' },
 ]
 
@@ -1107,6 +1110,10 @@ export default function GlowUpHubView() {
             </>
           )}
         </>
+      )}
+
+      {tab === 'glp1' && (
+        <Suspense fallback={<p className="loading">Loading… 💉</p>}><GlpTracker /></Suspense>
       )}
 
       {tab === 'summary' && (

@@ -4729,3 +4729,11 @@
 .budget-cat-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: rgba(184,150,201,0.18); font-size: 0.85rem; }
 .budget-cat-chip button { background: none; border: none; cursor: pointer; opacity: .55; padding: 0 2px; font-size: .75rem; }
 .budget-add-fields input[placeholder^="New"] { grid-column: 1 / -1; }
+
+/* GLP-1 tracker */
+.glp-next { text-align: center; padding: 8px 0 12px; }
+.glp-next-when { font-size: 1.6rem; font-weight: 700; }
+.glp-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.glp-row:last-child { border-bottom: none; }
+.glp-row-main { display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; min-width: 0; }
+.glp-note { opacity: 0.75; font-style: italic; overflow-wrap: anywhere; }
