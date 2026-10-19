@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
 function toMonthly(amount, frequency) {
@@ -12,6 +12,12 @@ export default function FinanceOverview({ currency }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [data, setData] = useState(null)
+  const [acct, setAcct] = useState(null) // { id, starting_balance, start_date } | null
+  const [balance, setBalance] = useState(null)
+  const [editingBal, setEditingBal] = useState(false)
+  const [balInput, setBalInput] = useState('')
+  const [dateInput, setDateInput] = useState('')
+  const [balError, setBalError] = useState(null)
 
   useEffect(() => {
     fetchAll()
@@ -25,13 +31,25 @@ export default function FinanceOverview({ currency }) {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
 
-    const [tx, savings, business, recurring, biz_expenses] = await Promise.all([
+    const [tx, savings, business, recurring, biz_expenses, acctRes] = await Promise.all([
       supabase.from('transactions').select('*').gte('date', monthStart).lte('date', monthEnd),
       supabase.from('savings_goals').select('*'),
       supabase.from('business_settings').select('*').limit(1).maybeSingle(),
       supabase.from('recurring_expenses').select('*').eq('active', true),
       supabase.from('business_expenses').select('*').gte('date', monthStart).lte('date', monthEnd),
+      supabase.from('account_settings').select('*').limit(1).maybeSingle(),
     ])
+
+    // acctRes.error (e.g. table not created yet) just hides the balance card's data
+    const a = acctRes.error ? null : acctRes.data
+    setAcct(a)
+    if (a) {
+      const { data: all } = await supabase.from('transactions').select('type, amount').gte('date', a.start_date)
+      const delta = (all || []).reduce((sum, t) => sum + (t.type === 'income' ? 1 : -1) * Number(t.amount), 0)
+      setBalance(Number(a.starting_balance) + delta)
+    } else {
+      setBalance(null)
+    }
 
     if (tx.error) { setError(tx.error.message); setLoading(false); return }
 
@@ -58,6 +76,30 @@ export default function FinanceOverview({ currency }) {
     setLoading(false)
   }
 
+  function openBalEditor() {
+    setBalInput(acct ? String(acct.starting_balance) : '')
+    setDateInput(acct ? acct.start_date : new Date().toISOString().split('T')[0])
+    setBalError(null)
+    setEditingBal(true)
+  }
+
+  async function saveBalance() {
+    const amount = parseFloat(balInput)
+    if (Number.isNaN(amount)) { setBalError('Enter a number (negative is fine if you start overdrawn).'); return }
+    if (!dateInput) { setBalError('Pick a start date.'); return }
+    const payload = { starting_balance: amount, start_date: dateInput }
+    let error
+    if (acct) {
+      ;({ error } = await supabase.from('account_settings').update(payload).eq('id', acct.id))
+    } else {
+      const user_id = await getUserId()
+      ;({ error } = await supabase.from('account_settings').insert({ ...payload, user_id }))
+    }
+    if (error) { setBalError(error.message); return }
+    setEditingBal(false)
+    fetchAll()
+  }
+
   const monthLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
   return (
@@ -67,6 +109,48 @@ export default function FinanceOverview({ currency }) {
 
       {!loading && !error && data && (
         <>
+          <div className="calendar-card goals-summary-card">
+            <p className="module-group-label">Account balance</p>
+            {!editingBal && acct && balance !== null && (
+              <>
+                <div className="goals-summary-row">
+                  <span className="goals-summary-label">🏦 Balance now</span>
+                  <span className="goals-summary-value">{formatMoney(balance, currency)}</span>
+                </div>
+                <div className="goals-summary-row">
+                  <span className="goals-summary-label">🌱 Started with</span>
+                  <span className="goals-summary-value">
+                    {formatMoney(Number(acct.starting_balance), currency)} · {new Date(acct.start_date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                <button className="btn-cancel" onClick={openBalEditor}>Edit starting balance</button>
+              </>
+            )}
+            {!editingBal && !acct && (
+              <>
+                <p className="settings-danger-text">Add what's in your account today and I'll keep a running balance from your income and expenses.</p>
+                <button className="btn-primary" onClick={openBalEditor}>Set starting balance</button>
+              </>
+            )}
+            {editingBal && (
+              <>
+                <div className="field">
+                  <label>Balance when you start tracking ({currency})</label>
+                  <input type="number" step="0.01" value={balInput} onChange={e => setBalInput(e.target.value)} placeholder="0" autoFocus />
+                </div>
+                <div className="field">
+                  <label>Tracking from</label>
+                  <input type="date" value={dateInput} onChange={e => setDateInput(e.target.value)} />
+                </div>
+                {balError && <p className="error-msg">{balError}</p>}
+                <div className="settings-danger-actions">
+                  <button className="btn-cancel" onClick={() => setEditingBal(false)}>Cancel</button>
+                  <button className="btn-primary" onClick={saveBalance}>Save</button>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="calendar-card goals-summary-card">
             <p className="module-group-label">{monthLabel.toUpperCase()} OVERVIEW</p>
             <div className="goals-summary-row">

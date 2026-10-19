@@ -4707,3 +4707,18 @@
 .settings-danger-confirm input { width: 100%; box-sizing: border-box; }
 .settings-danger-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .settings-danger-error { color: #b83b3b; font-size: 0.85rem; margin: 0; }
+
+/* Budget planner */
+.budget-month-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 4px 0 12px; }
+.budget-row { padding: 10px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.budget-row:last-child { border-bottom: none; }
+.budget-row-top { display: flex; justify-content: space-between; align-items: center; }
+.budget-cat { font-weight: 600; }
+.budget-remove { background: none; border: none; cursor: pointer; opacity: 0.5; padding: 4px 8px; }
+.budget-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.07); margin: 6px 0; overflow: hidden; }
+.budget-bar-fill { height: 100%; border-radius: 999px; background: #8FC2BE; transition: width .3s; }
+.budget-bar-over { background: #d96b6b; }
+.budget-row-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.85rem; }
+.budget-row-bottom input { width: 96px; }
+.budget-add-fields { display: grid; grid-template-columns: 120px 1fr 110px auto; gap: 8px; margin-bottom: 10px; }
+@media (max-width: 600px) { .budget-add-fields { grid-template-columns: 1fr 1fr; } .budget-add-fields input[list] { grid-column: 1 / -1; } }

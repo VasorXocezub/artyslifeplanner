@@ -6,12 +6,14 @@ import PersonalFinances from './PersonalFinances'
 import BusinessTracker from './BusinessTracker'
 import SavingsGoals from './SavingsGoals'
 import RecurringExpenses from './RecurringExpenses'
+import BudgetPlanner from './BudgetPlanner'
 import CurrencyConverter from './CurrencyConverter'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'personal', label: 'Personal' },
   { key: 'business', label: 'Business' },
+  { key: 'budget', label: 'Budget' },
   { key: 'savings', label: 'Savings' },
   { key: 'recurring', label: 'Recurring' },
   { key: 'converter', label: 'Converter' },
@@ -71,6 +73,7 @@ export default function FinancesView() {
       {tab === 'overview' && <FinanceOverview currency={currency} />}
       {tab === 'personal' && <PersonalFinances currency={currency} />}
       {tab === 'business' && <BusinessTracker currency={currency} />}
+      {tab === 'budget' && <BudgetPlanner currency={currency} />}
       {tab === 'savings' && <SavingsGoals currency={currency} />}
       {tab === 'recurring' && <RecurringExpenses currency={currency} />}
       {tab === 'converter' && <CurrencyConverter currency={currency} />}

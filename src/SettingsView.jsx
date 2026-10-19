@@ -24,6 +24,7 @@ const FINANCE_SUB_SPACES = [
   { key: 'overview', label: 'Overview' },
   { key: 'personal', label: 'Personal' },
   { key: 'business', label: 'Business' },
+  { key: 'budget', label: 'Budget' },
   { key: 'savings', label: 'Savings' },
   { key: 'recurring', label: 'Recurring' },
   { key: 'converter', label: 'Converter' },
@@ -59,7 +60,7 @@ const RESET_TABLES = [
   'todo_notes', 'todos', 'habit_logs', 'habits', 'reading_logs', 'books',
   'cove_inventory', 'cove_achievements', 'cove_profile', 'focus_sessions',
   'meal_plans', 'recipes', 'pantry_items', 'grocery_budget', 'shopping_items',
-  'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings',
+  'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings', 'account_settings', 'budget_items',
   'wellness_logs', 'cycle_logs', 'cycle_settings', 'weight_logs', 'weight_settings',
   'social_events', 'brain_dump_entries', 'inbox_notes', 'goals', 'contacts',
 ]
