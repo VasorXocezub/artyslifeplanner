@@ -4722,3 +4722,9 @@
 .budget-row-bottom input { width: 96px; }
 .budget-add-fields { display: grid; grid-template-columns: 120px 1fr 110px auto; gap: 8px; margin-bottom: 10px; }
 @media (max-width: 600px) { .budget-add-fields { grid-template-columns: 1fr 1fr; } .budget-add-fields input[list] { grid-column: 1 / -1; } }
+
+.budget-cat-form { display: flex; gap: 8px; margin-bottom: 10px; }
+.budget-cat-form input { flex: 1; min-width: 0; }
+.budget-cat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.budget-cat-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: rgba(184,150,201,0.18); font-size: 0.85rem; }
+.budget-cat-chip button { background: none; border: none; cursor: pointer; opacity: .55; padding: 0 2px; font-size: .75rem; }

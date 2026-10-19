@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
@@ -94,6 +95,11 @@ export default function RecurringExpenses({ currency }) {
       ;({ error } = await supabase.from('recurring_expenses').insert({ ...payload, user_id }))
     }
 
+    if (!error && payload.category) {
+      await saveFinanceCategory(payload.category)
+      refreshCategories()
+    }
+
     setSaving(false)
     if (error) {
       setError(error.message)
@@ -131,9 +137,7 @@ export default function RecurringExpenses({ currency }) {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const knownCategories = Array.from(
-    new Set(items.map((i) => i.category).filter(Boolean))
-  ).sort()
+  const { categories: knownCategories, refresh: refreshCategories } = useFinanceCategories()
 
   const activeItems = items.filter((i) => {
     if (!i.active) return false

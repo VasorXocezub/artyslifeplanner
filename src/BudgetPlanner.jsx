@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
+import { useFinanceCategories } from './lib/financeCategories'
 
 function monthKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -18,7 +19,8 @@ export default function BudgetPlanner({ currency }) {
   const [newCat, setNewCat] = useState('')
   const [newAmt, setNewAmt] = useState('')
   const [newKind, setNewKind] = useState('expense')
-  const [knownCats, setKnownCats] = useState([])
+  const { categories: knownCats, savedRows, addCategory, removeCategory } = useFinanceCategories()
+  const [catInput, setCatInput] = useState('')
 
   const mk = monthKey(viewMonth)
 
@@ -29,15 +31,13 @@ export default function BudgetPlanner({ currency }) {
     setError(null)
     const start = `${mk}-01`
     const end = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0).toISOString().split('T')[0]
-    const [b, t, c] = await Promise.all([
+    const [b, t] = await Promise.all([
       supabase.from('budget_items').select('*').eq('month', mk).order('created_at', { ascending: true }),
       supabase.from('transactions').select('type, amount, category').gte('date', start).lte('date', end),
-      supabase.from('transactions').select('category').not('category', 'is', null).limit(500),
     ])
     if (b.error) setError(b.error.message)
     else setItems(b.data || [])
     setTx(t.data || [])
-    setKnownCats([...new Set((c.data || []).map(r => r.category).filter(Boolean))].sort())
     setLoading(false)
   }
 
@@ -62,6 +62,7 @@ export default function BudgetPlanner({ currency }) {
     const user_id = await getUserId()
     const { error } = await supabase.from('budget_items').insert({ user_id, month: mk, category: cat, planned_amount: amt, kind: newKind })
     if (error) { setError(error.message); return }
+    await addCategory(cat)
     setNewCat(''); setNewAmt('')
     load()
   }
@@ -78,6 +79,15 @@ export default function BudgetPlanner({ currency }) {
     const { error } = await supabase.from('budget_items').delete().eq('id', id)
     if (error) setError(error.message)
     else setItems(prev => prev.filter(i => i.id !== id))
+  }
+
+  async function handleAddCategory(e) {
+    e.preventDefault()
+    const name = catInput.trim()
+    if (!name) return
+    const { error } = await addCategory(name)
+    if (error) setError(error.message)
+    else setCatInput('')
   }
 
   async function copyFromLast() {
@@ -154,6 +164,27 @@ export default function BudgetPlanner({ currency }) {
             <p className="module-group-label">Spending</p>
             {expenseRows.length === 0 && <p className="settings-danger-text">Nothing planned yet — add your first category below.</p>}
             {expenseRows.map(renderRow)}
+          </div>
+
+          <div className="calendar-card goals-summary-card">
+            <p className="module-group-label">Categories</p>
+            <p className="settings-danger-text">Shared across Personal, Recurring and Budget. New categories show up everywhere.</p>
+            <form className="budget-cat-form" onSubmit={handleAddCategory}>
+              <input placeholder="New category (e.g. Pets)" value={catInput} onChange={e => setCatInput(e.target.value)} aria-label="New category name" />
+              <button className="btn-primary" type="submit">Create</button>
+            </form>
+            <div className="budget-cat-chips">
+              {knownCats.map(c => {
+                const saved = savedRows.some(r => r.name.toLowerCase() === c.toLowerCase())
+                return (
+                  <span key={c} className="budget-cat-chip">
+                    {c}
+                    {saved && <button type="button" aria-label={`Delete category ${c}`} onClick={() => removeCategory(c)}>✕</button>}
+                  </span>
+                )
+              })}
+              {knownCats.length === 0 && <span className="settings-danger-text">No categories yet.</span>}
+            </div>
           </div>
 
           <form className="calendar-card goals-summary-card budget-add" onSubmit={addItem}>

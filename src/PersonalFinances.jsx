@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
+import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
 
 const emptyForm = {
   date: new Date().toISOString().split('T')[0],
@@ -32,6 +33,7 @@ export default function PersonalFinances({ currency }) {
   const [saving, setSaving] = useState(false)
   const [viewMonth, setViewMonth] = useState(new Date())
   const [savingsGoals, setSavingsGoals] = useState([])
+  const { categories: sharedCategories, refresh: refreshCategories } = useFinanceCategories()
 
   useEffect(() => {
     fetchTransactions()
@@ -107,6 +109,11 @@ export default function PersonalFinances({ currency }) {
       ;({ error } = await supabase.from('transactions').insert({ ...payload, user_id }))
     }
 
+    if (!error && !isSavingsContribution && payload.category) {
+      await saveFinanceCategory(payload.category)
+      refreshCategories()
+    }
+
     if (!error && isSavingsContribution && !editingId) {
       const goal = savingsGoals.find((g) => g.id === form.savings_goal_id)
       if (goal) {
@@ -169,9 +176,7 @@ export default function PersonalFinances({ currency }) {
   })()
   const maxCategoryTotal = categoryTotals[0]?.total || 1
 
-  const knownCategories = Array.from(
-    new Set(transactions.map((t) => t.category).filter(Boolean))
-  ).sort()
+  const knownCategories = sharedCategories
 
   const filtered = monthTransactions.filter((t) => {
     const q = search.toLowerCase()
