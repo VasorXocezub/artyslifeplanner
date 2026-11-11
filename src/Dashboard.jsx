@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import { toIso, planItem } from './lib/social'
 import { formatMoney } from './lib/currency'
 import { getEra, setEra as saveEra, getTheme } from './lib/localPrefs'
 import WeatherWidget from './WeatherWidget'
@@ -50,8 +51,7 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Cake Club', desc: 'Because panic-buying gifts isn\'t a personality trait. 🎁', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
-      { key: 'social', title: 'Social Club', desc: '🌸 The group chat\'s HR department.', enabled: true, accent: '#C98A72', tint: '#FBF3EF' },
+      { key: 'contacts', title: 'Social Calendar', desc: 'Birthdays, plans and gifts. “It’s in my head” was never a system, babe. 🎀', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
     ],
   },
   {
@@ -137,6 +137,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     booksReadThisYear: 0,
     wellness: null,
     nextSocialEvent: null,
+    plansThisWeek: 0,
   })
   const [loading, setLoading] = useState(true)
 
@@ -154,9 +155,9 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const { data: todosData } = await supabase.from('todos').select('*').eq('completed', false)
     const { data: shoppingData } = await supabase.from('shopping_items').select('*').eq('completed', false)
     const { data: booksData } = await supabase.from('books').select('*')
-    const todayIso = new Date().toISOString().split('T')[0]
+    const todayIso = toIso(new Date())
     const { data: wellnessData } = await supabase.from('wellness_logs').select('*').eq('log_date', todayIso).maybeSingle()
-    const { data: socialData } = await supabase.from('social_events').select('*').gte('event_date', todayIso).order('event_date', { ascending: true }).limit(1)
+    const { data: socialData } = await supabase.from('social_events').select('*').order('event_date', { ascending: true })
 
     if (error || !data) {
       setLoading(false)
@@ -188,7 +189,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
 
     const goalsInProgress = (goalsData || []).filter((g) => g.status === 'in_progress').length
 
-    const todayStr = now.toISOString().split('T')[0]
+    const todayStr = toIso(now)
     const habitsDoneToday = (habitLogsData || []).filter((l) => l.logged_date === todayStr).length
     const habitsTotal = (habitsData || []).length
 
@@ -212,16 +213,15 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       (b) => b.status === 'finished' && b.finish_date && new Date(b.finish_date + 'T00:00:00').getFullYear() === now.getFullYear()
     ).length
 
-    const nextSocialEvent = (socialData || [])[0]
-      ? (() => {
-          const ev = socialData[0]
-          const evDate = new Date(ev.event_date + 'T00:00:00')
-          const daysAway = Math.round((evDate - new Date(new Date().toDateString())) / 86400000)
-          return { title: ev.title, daysAway }
-        })()
-      : null
+    const upcomingPlans = (socialData || [])
+      .filter((ev) => ev.event_date)
+      .map((ev) => planItem(ev, today))
+      .filter((p) => !p.past)
+      .sort((x, y) => x.nextDate - y.nextDate)
+    const nextSocialEvent = upcomingPlans[0] ? { title: upcomingPlans[0].title, daysAway: upcomingPlans[0].daysAway } : null
+    const plansThisWeek = upcomingPlans.filter((p) => p.daysAway <= 7).length
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, plansThisWeek })
     setLoading(false)
   }
 
@@ -348,6 +348,9 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     if (glowPct > 0) {
       insightItems.push({ icon: '🌿', text: `Glow Score: ${glowPct}%`, nav: 'glowup' })
     }
+  }
+  if (!hiddenModules.includes('social') && stats.plansThisWeek > 0) {
+    insightItems.push({ icon: '💌', text: `${stats.plansThisWeek} plan${stats.plansThisWeek > 1 ? 's' : ''} in the next 7 days`, nav: 'social' })
   }
   if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
     insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month`, nav: 'contacts' })

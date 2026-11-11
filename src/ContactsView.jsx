@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
+import ConfirmSheet from './ConfirmSheet'
+import {
+  MONTH_NAMES, DAY_NAMES, CHIP_COLORS, parseLocalDate, formatMonthDay, todayIso, startOfToday,
+  nextBirthday, giftNeeded, inDays, missingColumnHint,
+} from './lib/social'
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)']
 const ICON_OPTIONS = ['🎂', '🎈', '🎁', '✨', '👑', '💐', '🦋', '🌸', '☕', '🍾', '💌', '🧁']
 
 const RELATIONSHIPS = [
@@ -17,25 +16,16 @@ const RELATIONSHIPS = [
 ]
 
 const FILTERS = [
-  { key: 'this_month', label: 'This Month' },
-  { key: 'next_30', label: 'Next 30 Days' },
-  { key: 'next_90', label: 'Next 90 Days' },
-  { key: 'gift_needed', label: 'Gift Needed' },
-  { key: 'gift_purchased', label: 'Gift Purchased' },
+  { key: 'this_month', label: 'This month' },
+  { key: 'next_30', label: 'Next 30 days' },
+  { key: 'next_90', label: 'Next 90 days' },
+  { key: 'gift_needed', label: 'Gift needed' },
+  { key: 'gift_purchased', label: 'Gift purchased' },
   { key: 'family', label: '👪 Family' },
   { key: 'friends', label: '👯 Friends' },
   { key: 'work', label: '💼 Work' },
   { key: 'partner', label: '💖 Partner' },
 ]
-
-function parseLocalDate(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return { year: y, month: m - 1, day: d }
-}
-
-function formatMonthDay(month, day) {
-  return `${MONTH_NAMES[month].slice(0, 3)} ${day}`
-}
 
 function relationshipLabel(key) {
   if (!key) return null
@@ -43,13 +33,13 @@ function relationshipLabel(key) {
 }
 
 function giftStatus(c) {
-  if (c.no_gift) return { icon: '✅', text: 'Ready to Celebrate', tone: 'ready' }
-  if (c.gift_purchased) return { icon: '🛍️', text: 'Gift Purchased', tone: 'purchased' }
-  return { icon: '🎁', text: 'Gift Needed', tone: 'needed' }
+  if (c.no_gift) return { icon: '✅', text: 'Ready to celebrate', tone: 'ready' }
+  if (c.gift_purchased) return { icon: '🛍️', text: 'Gift purchased', tone: 'purchased' }
+  return { icon: '🎁', text: 'Gift needed', tone: 'needed' }
 }
 
 const emptyForm = {
-  name: '', icon: '🎂', birthday: '', relationship: '', phone: '',
+  name: '', icon: '🎂', birthday: '', birth_year: '', relationship: '', phone: '',
   fave_flowers: '', fave_store: '', coffee_order: '', gift_ideas: '', gift_notes: '',
   gift_purchased: false, no_gift: false,
 }
@@ -115,7 +105,7 @@ function CountdownRing({ daysAway, color, size = 56 }) {
   )
 }
 
-export default function ContactsView() {
+export default function ContactsView({ embedded = false, focus = null, onFocusDone }) {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -130,10 +120,14 @@ export default function ContactsView() {
   const [dateFilter, setDateFilter] = useState(null)
   const [hoveredDay, setHoveredDay] = useState(null)
   const calendarRef = useRef(null)
+  const [archived, setArchived] = useState([])
+  const [showArchived, setShowArchived] = useState(false)
+  const [ask, setAsk] = useState(null)
 
   useEffect(() => {
     fetchContacts()
   }, [])
+
 
   async function fetchContacts() {
     setLoading(true)
@@ -144,14 +138,17 @@ export default function ContactsView() {
       .not('birthday', 'is', null)
       .order('name', { ascending: true })
 
-    if (error) setError(error.message)
-    else setContacts((data || []).filter((c) => !c.archived))
+    if (error) setError(missingColumnHint(error.message))
+    else {
+      setContacts((data || []).filter((c) => !c.archived))
+      setArchived((data || []).filter((c) => c.archived))
+    }
     setLoading(false)
   }
 
   function openAdd(prefillDate) {
     setEditingId(null)
-    setForm({ ...emptyForm, birthday: prefillDate || new Date().toISOString().split('T')[0] })
+    setForm({ ...emptyForm, birthday: prefillDate || todayIso() })
     setProfileMode(false)
     setModalOpen(true)
   }
@@ -162,18 +159,13 @@ export default function ContactsView() {
     setModalOpen(true)
   }
 
-  function openEdit(contact) {
-    populateForm(contact)
-    setProfileMode(false)
-    setModalOpen(true)
-  }
-
   function populateForm(contact) {
     setEditingId(contact.id)
     setForm({
       name: contact.name || '',
       icon: contact.icon || '🎂',
       birthday: contact.birthday || '',
+      birth_year: contact.birth_year ? String(contact.birth_year) : '',
       relationship: contact.relationship || '',
       phone: contact.phone || '',
       fave_flowers: contact.fave_flowers || '',
@@ -185,6 +177,14 @@ export default function ContactsView() {
       no_gift: !!contact.no_gift,
     })
   }
+
+  // Jump straight into add/profile from the All tab
+  useEffect(() => {
+    if (!focus || loading) return
+    if (focus.add) openAdd(focus.date)
+    else if (focus.id) { const c = contacts.find((x) => x.id === focus.id); if (c) openProfile(c) }
+    onFocusDone?.()
+  }, [focus, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function closeModal() {
     setModalOpen(false)
@@ -212,6 +212,10 @@ export default function ContactsView() {
       no_gift: form.no_gift,
     }
 
+    // birth_year is only sent when used, so saving still works before the v2 SQL has been run
+    const prevC = editingId ? contacts.find((x) => x.id === editingId) : null
+    if (form.birth_year || prevC?.birth_year) payload.birth_year = form.birth_year ? Number(form.birth_year) : null
+
     let error
     if (editingId) {
       ;({ error } = await supabase.from('contacts').update(payload).eq('id', editingId))
@@ -222,7 +226,7 @@ export default function ContactsView() {
 
     setSaving(false)
     if (error) {
-      setError(error.message)
+      setError(missingColumnHint(error.message))
       return
     }
     closeModal()
@@ -231,7 +235,6 @@ export default function ContactsView() {
 
   async function handleDelete() {
     if (!editingId) return
-    if (!confirm('Remove this from the Cake Club?')) return
     setSaving(true)
     const { error } = await supabase.from('contacts').delete().eq('id', editingId)
     setSaving(false)
@@ -252,20 +255,15 @@ export default function ContactsView() {
 
   async function archiveContact(contact, e) {
     e?.stopPropagation()
-    if (!confirm(`Archive ${contact.name}? You can always re-add them later.`)) return
     const { error } = await supabase.from('contacts').update({ archived: true }).eq('id', contact.id)
     if (error) { setError(error.message); return }
     fetchContacts()
   }
 
-  function sendMessage(contact, e) {
-    e?.stopPropagation()
-    if (!contact.phone) {
-      alert(`No phone number saved for ${contact.name} yet — add one and you'll be able to text them straight from here. Opening their details now.`)
-      openEdit(contact)
-      return
-    }
-    window.location.href = `sms:${contact.phone}`
+  async function restoreContact(contact) {
+    const { error } = await supabase.from('contacts').update({ archived: false }).eq('id', contact.id)
+    if (error) { setError(error.message); return }
+    fetchContacts()
   }
 
   function jumpToDate(targetMonth, targetDay) {
@@ -278,8 +276,7 @@ export default function ContactsView() {
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = startOfToday()
   const isCurrentMonthView = today.getFullYear() === year && today.getMonth() === month
 
   const birthdaysByDay = useMemo(() => {
@@ -304,16 +301,11 @@ export default function ContactsView() {
   }, [year, month])
 
   const upcoming = useMemo(() => {
-    return contacts
-      .map((c) => {
-        const bd = parseLocalDate(c.birthday)
-        let next = new Date(today.getFullYear(), bd.month, bd.day)
-        if (next < today) next = new Date(today.getFullYear() + 1, bd.month, bd.day)
-        const days = Math.round((next - today) / (1000 * 60 * 60 * 24))
-        return { ...c, nextDate: next, daysAway: days, month: bd.month, day: bd.day }
-      })
-      .sort((a, b) => a.nextDate - b.nextDate)
-  }, [contacts])
+    return contacts.map((c) => nextBirthday(c, today)).sort((a, b) => a.nextDate - b.nextDate)
+  }, [contacts]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const todays = upcoming.filter((c) => c.daysAway === 0)
+  const giftNudge = upcoming.filter((c) => c.daysAway > 0 && c.daysAway <= 14 && giftNeeded(c))
 
   const filtered = useMemo(() => {
     let list = upcoming
@@ -336,15 +328,9 @@ export default function ContactsView() {
   const upNext = dateFilter || search || activeFilter ? filtered.slice(0, 6) : filtered.slice(0, 3)
 
   const stats = useMemo(() => {
-    const giftsPlanned = contacts.filter((c) => c.gift_ideas).length
     const giftsRemaining = contacts.filter((c) => !c.gift_purchased && !c.no_gift).length
-    const next = upcoming[0]
-    return {
-      total: contacts.length,
-      giftsPlanned,
-      giftsRemaining,
-      nextDays: next ? next.daysAway : null,
-    }
+    const giftsPlanned = contacts.filter((c) => c.gift_purchased || (c.gift_ideas && c.gift_ideas.trim())).length
+    return { total: contacts.length, giftsPlanned, giftsRemaining, nextDays: upcoming.length ? upcoming[0].daysAway : null }
   }, [contacts, upcoming])
 
   function goToMonth(delta) {
@@ -357,28 +343,41 @@ export default function ContactsView() {
     if (birthdaysByDay[day]) {
       setDateFilter((prev) => (prev && prev.day === day && prev.month === month ? null : { month, day }))
     } else {
-      const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      openAdd(iso)
+      openAdd(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
     }
   }
 
   return (
     <div>
-      <div className="view-header">
-        <div>
-          <h1 className="view-title">Cake Club</h1>
-          <p className="view-subtitle cake-club-subtitle">Because panic-buying gifts isn't a personality trait. 🎁</p>
-        </div>
+      <div className={embedded ? 'sb-toolbar' : 'view-header'}>
+        {!embedded && (
+          <div>
+            <h1 className="view-title">Birthdays</h1>
+          </div>
+        )}
         <div className="toolbar">
           <button className="btn-primary" onClick={() => openAdd()}>+ Add birthday</button>
         </div>
       </div>
 
-      {loading && <p className="loading">Fetching cake days… 🎂✨</p>}
+      {loading && <p className="loading">Fetching birthdays… 🎂✨</p>}
       {error && <p className="error-msg">{error}</p>}
 
       {!loading && !error && (
         <>
+          {todays.map((c) => (
+            <div className="sc-banner sc-banner-today" key={c.id}>
+              <span>🎉 It's {c.name}'s birthday today{c.turning ? ` — turning ${c.turning}` : ''}!</span>
+              {c.phone && <a className="sc-chip-btn" href={`sms:${c.phone}`}>💬 Text</a>}
+            </div>
+          ))}
+          {giftNudge.length > 0 && (
+            <div className="sc-banner sc-banner-gift">
+              <span>🎁 Gift needed soon: {giftNudge.slice(0, 3).map((c) => `${c.name} (${inDays(c.daysAway)})`).join(', ')}{giftNudge.length > 3 ? ` +${giftNudge.length - 3} more` : ''}</span>
+              <button className="sc-chip-btn" onClick={() => setActiveFilter('gift_needed')}>Show</button>
+            </div>
+          )}
+
           {contacts.length > 0 && (
             <div className="cake-stats-row">
               <div className="cake-stat-card">
@@ -389,17 +388,17 @@ export default function ContactsView() {
               <div className="cake-stat-card">
                 <span className="cake-stat-icon">🎁</span>
                 <span className="cake-stat-value">{stats.giftsPlanned}</span>
-                <span className="cake-stat-label">Gifts Planned</span>
+                <span className="cake-stat-label">Gifts planned</span>
               </div>
               <div className="cake-stat-card">
                 <span className="cake-stat-icon">🎉</span>
                 <span className="cake-stat-value">{stats.nextDays != null ? `${stats.nextDays}d` : '—'}</span>
-                <span className="cake-stat-label">Next Birthday</span>
+                <span className="cake-stat-label">Next birthday</span>
               </div>
               <div className="cake-stat-card">
                 <span className="cake-stat-icon">💌</span>
                 <span className="cake-stat-value">{stats.giftsRemaining}</span>
-                <span className="cake-stat-label">Gifts Remaining</span>
+                <span className="cake-stat-label">Gifts remaining</span>
               </div>
             </div>
           )}
@@ -437,14 +436,14 @@ export default function ContactsView() {
 
           {upNext.length > 0 && (
             <div className="upnext-section">
-              <p className="module-group-label">{dateFilter || search || activeFilter ? 'RESULTS' : 'UP NEXT'}</p>
+              <p className="module-group-label">{dateFilter || search || activeFilter ? 'Results' : 'Up next'}</p>
               <div className="card-grid">
                 {upNext.map((c, i) => {
                   const color = CHIP_COLORS[i % CHIP_COLORS.length]
                   const status = giftStatus(c)
                   return (
                     <div
-                      className="contact-card upnext-card cake-card"
+                      className="contact-card upnext-card cake-card sc-card"
                       key={c.id}
                       onClick={() => openProfile(c)}
                       style={{ borderTopColor: color }}
@@ -453,15 +452,21 @@ export default function ContactsView() {
                       <div className="cake-card-top">
                         <div>
                           <h3 className="contact-name">{c.icon || '🎂'} {c.name}</h3>
-                          <p className="habit-schedule">{formatMonthDay(c.month, c.day)}</p>
+                          <p className="habit-schedule">
+                            {formatMonthDay(c.month, c.day)}{c.turning ? ` · turns ${c.turning}` : ''}
+                          </p>
                           {c.relationship && <span className="cake-relationship-tag">{relationshipLabel(c.relationship)}</span>}
                         </div>
-                        <CountdownRing daysAway={c.daysAway} color={color} />
+                        <CountdownRing daysAway={c.daysAway} color={color} size={48} />
                       </div>
-                      <span className={`cake-gift-status cake-gift-status-${status.tone}`}>{status.icon} {status.text}</span>
-                      <button className="cake-view-profile-btn" onClick={(e) => { e.stopPropagation(); openProfile(c) }}>
-                        💌 View Profile →
-                      </button>
+                      <div className="sc-card-foot">
+                        <span className={`cake-gift-status cake-gift-status-${status.tone}`}>{status.icon} {status.text}</span>
+                        <span className="sc-card-actions">
+                          {c.phone && <a className="sc-icon-btn" href={`sms:${c.phone}`} onClick={(e) => e.stopPropagation()} aria-label={`Text ${c.name}`}>💬</a>}
+                          {c.phone && <a className="sc-icon-btn" href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} aria-label={`Call ${c.name}`}>📞</a>}
+                          {giftNeeded(c) && <button className="sc-icon-btn" onClick={(e) => toggleGiftPurchased(c, e)} aria-label="Mark gift purchased" title="Mark gift purchased">✅</button>}
+                        </span>
+                      </div>
                     </div>
                   )
                 })}
@@ -534,7 +539,7 @@ export default function ContactsView() {
 
           {upcoming.length > 0 && !dateFilter && !search && !activeFilter && (
             <div className="upcoming-section">
-              <p className="module-group-label">UPCOMING</p>
+              <p className="module-group-label">Upcoming</p>
               <div className="upcoming-list">
                 {upcoming.slice(0, 8).map((c, i) => (
                   <div
@@ -545,11 +550,29 @@ export default function ContactsView() {
                   >
                     <span className="upcoming-name">{c.icon || '🎂'} {c.name}</span>
                     <span className="upcoming-date">
-                      {formatMonthDay(c.month, c.day)} · {c.daysAway === 0 ? 'today' : `in ${c.daysAway}d`}
+                      {formatMonthDay(c.month, c.day)} · {inDays(c.daysAway)}
                     </span>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {archived.length > 0 && (
+            <div className="upcoming-section">
+              <button className="weather-location-link" onClick={() => setShowArchived((v) => !v)}>
+                🗄️ Archived ({archived.length}) {showArchived ? '▲' : '▼'}
+              </button>
+              {showArchived && (
+                <div className="upcoming-list">
+                  {archived.map((c) => (
+                    <div className="upcoming-row" key={c.id}>
+                      <span className="upcoming-name">{c.icon || '🎂'} {c.name}</span>
+                      <button className="sc-chip-btn" onClick={() => restoreContact(c)}>Restore</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -560,6 +583,14 @@ export default function ContactsView() {
             </div>
           )}
         </>
+      )}
+
+      {ask && (
+        <ConfirmSheet
+          title={ask.title} body={ask.body} confirmLabel={ask.label} danger
+          onCancel={() => setAsk(null)}
+          onConfirm={() => { const r = ask.run; setAsk(null); r() }}
+        />
       )}
 
       {modalOpen && profileMode && (
@@ -595,9 +626,10 @@ export default function ContactsView() {
                 <p className="field-hint">Gift hints, things they've mentioned, anything worth remembering.</p>
               )}
               {form.phone ? (
-                <button className="weather-location-link" style={{ marginTop: 8 }} onClick={() => { window.location.href = `sms:${form.phone}` }}>
-                  💬 Send a text
-                </button>
+                <div className="sc-card-actions" style={{ marginTop: 8 }}>
+                  <a className="sc-chip-btn" href={`sms:${form.phone}`}>💬 Text</a>
+                  <a className="sc-chip-btn" href={`tel:${form.phone}`}>📞 Call</a>
+                </div>
               ) : (
                 <button className="weather-location-link" style={{ marginTop: 8 }} onClick={() => setProfileMode(false)}>
                   + Add a phone number to text them
@@ -650,12 +682,12 @@ export default function ContactsView() {
 
             <div className="cake-profile-section cake-profile-section-archive">
               <p className="cake-section-heading">🗃️ Archive</p>
-              <p className="field-hint">Move them out of Cake Club without deleting their info. You can't undo this from here.</p>
+              <p className="field-hint">Move them out of the list without deleting their info. Restore them any time from Archived.</p>
               <button
                 type="button"
                 className="btn-delete"
                 style={{ marginTop: 8 }}
-                onClick={(e) => { const c = contacts.find((x) => x.id === editingId); if (c) archiveContact(c, e); closeModal() }}
+                onClick={() => { const c = contacts.find((x) => x.id === editingId); if (c) setAsk({ title: `Archive ${c.name}?`, body: 'They move out of the list. You can restore them any time from Archived.', label: 'Archive', run: () => { archiveContact(c); closeModal() } }) }}
               >
                 🗄️ Archive this person
               </button>
@@ -724,6 +756,17 @@ export default function ContactsView() {
                   />
                 </div>
                 <div className="field">
+                  <label>Birth year (optional)</label>
+                  <input
+                    type="number" inputMode="numeric" min="1900" max={new Date().getFullYear()}
+                    value={form.birth_year}
+                    onChange={(e) => setForm({ ...form, birth_year: e.target.value })}
+                    placeholder="Shows their age"
+                  />
+                </div>
+              </div>
+              <div className="field-row">
+                <div className="field">
                   <label>Relationship</label>
                   <select
                     value={RELATIONSHIPS.some((r) => r.key === form.relationship) || form.relationship === '' ? form.relationship : 'custom'}
@@ -746,7 +789,7 @@ export default function ContactsView() {
               </div>
 
               <div className="field">
-                <label>Phone (optional, for Send Message)</label>
+                <label>Phone (optional, for text and call)</label>
                 <input
                   type="tel"
                   value={form.phone}
@@ -776,7 +819,7 @@ export default function ContactsView() {
               )}
 
               <div className="gift-vault-divider">
-                <span className="module-group-label">🔐 GIFT VAULT</span>
+                <span className="module-group-label">🔐 Gift vault</span>
                 <p className="field-hint">Their favorites, so you're always ready.</p>
               </div>
 
@@ -829,7 +872,7 @@ export default function ContactsView() {
               <div className="modal-actions">
                 <div>
                   {editingId && (
-                    <button type="button" className="btn-delete" onClick={handleDelete} disabled={saving}>
+                    <button type="button" className="btn-delete" onClick={() => setAsk({ title: 'Delete this birthday?', body: 'This removes them completely.', label: 'Delete', run: handleDelete })} disabled={saving}>
                       Delete
                     </button>
                   )}

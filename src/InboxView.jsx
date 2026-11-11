@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
+import { toIso } from './lib/social'
 
 const EMPTY_MESSAGES = [
   "💅 Hot girls don't remember everything... they have an Inbox.",
@@ -28,8 +29,8 @@ const TEMPLATES = [
 
 const CONVERT_TARGETS = [
   { key: 'todo', icon: '📝', label: 'To-Do Task' },
-  { key: 'social', icon: '💌', label: 'Social Club Event' },
-  { key: 'gift', icon: '🎁', label: 'Cake Club Gift Idea' },
+  { key: 'social', icon: '💌', label: 'Social Calendar plan' },
+  { key: 'gift', icon: '🎁', label: 'Birthday gift idea' },
   { key: 'book', icon: '📚', label: 'Book Nook Reading Note' },
   { key: 'recipe', icon: '🍓', label: 'Kitchen Club Recipe' },
   { key: 'goal', icon: '🌱', label: 'Dream Board Goal' },
@@ -262,7 +263,7 @@ function ConvertModal({ note, onClose, onConverted }) {
     if (target === 'todo') {
       await supabase.from('todos').insert({ text: title, category: 'personal', energy: 'quick_win', user_id })
     } else if (target === 'social') {
-      await supabase.from('social_events').insert({ title, event_date: new Date().toISOString().split('T')[0], event_type: 'reminder', user_id })
+      await supabase.from('social_events').insert({ title, event_date: toIso(new Date()), event_type: 'reminder', user_id })
     } else if (target === 'gift' && selectedContact) {
       const { data: c } = await supabase.from('contacts').select('gift_ideas').eq('id', selectedContact).single()
       const merged = c?.gift_ideas ? `${c.gift_ideas}\n${content}` : content

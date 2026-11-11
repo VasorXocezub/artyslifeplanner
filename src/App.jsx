@@ -7,7 +7,6 @@ import './App.css'
 
 const SettingsView = lazy(() => import('./SettingsView'))
 const Dashboard = lazy(() => import('./Dashboard'))
-const ContactsView = lazy(() => import('./ContactsView'))
 const GoalsView = lazy(() => import('./GoalsView'))
 const HabitsView = lazy(() => import('./HabitsView'))
 const FinancesView = lazy(() => import('./FinancesView'))
@@ -15,7 +14,7 @@ const TodoView = lazy(() => import('./TodoView'))
 const ShoppingListView = lazy(() => import('./ShoppingListView'))
 const BookNookView = lazy(() => import('./BookNookView'))
 const GlowUpHubView = lazy(() => import('./GlowUpHubView'))
-const SocialCalendarView = lazy(() => import('./SocialCalendarView'))
+const SocialButterflyView = lazy(() => import('./SocialButterflyView'))
 const BrainDumpView = lazy(() => import('./BrainDumpView'))
 const SpillTheTeaView = lazy(() => import('./SpillTheTeaView'))
 const WishlistView = lazy(() => import('./WishlistView'))
@@ -26,21 +25,20 @@ const FocusTimerView = lazy(() => import('./FocusTimerView'))
 
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', num: '00', enabled: true },
-  { key: 'contacts', label: 'Cake Club', num: '01', enabled: true },
-  { key: 'social', label: 'Social Club', num: '02', enabled: true },
-  { key: 'inbox', label: 'Inbox', num: '03', enabled: true },
-  { key: 'goals', label: 'Dream Board', num: '04', enabled: true },
-  { key: 'habits', label: 'Daily Habits', num: '05', enabled: true },
-  { key: 'focustimer', label: 'Mermaid Cove', num: '06', enabled: true },
-  { key: 'todos', label: 'To-Do List', num: '07', enabled: true },
-  { key: 'glowup', label: 'Glow Up Hub', num: '08', enabled: true },
-  { key: 'braindump', label: 'Brain Dump', num: '09', enabled: true },
-  { key: 'booknook', label: 'Book Nook', num: '10', enabled: true },
-  { key: 'finances', label: 'Rich Girl Era', num: '11', enabled: true },
-  { key: 'shopping', label: 'Kitchen Club', num: '12', enabled: true },
-  { key: 'wishlist', label: 'Wishlist', num: '13', enabled: true },
-  { key: 'spillthetea', label: 'Spill the Tea', num: '14', enabled: true },
-  { key: 'updates', label: 'Updates', num: '15', enabled: true },
+  { key: 'contacts', label: 'Social Calendar', num: '01', enabled: true },
+  { key: 'inbox', label: 'Inbox', num: '02', enabled: true },
+  { key: 'goals', label: 'Dream Board', num: '03', enabled: true },
+  { key: 'habits', label: 'Daily Habits', num: '04', enabled: true },
+  { key: 'focustimer', label: 'Mermaid Cove', num: '05', enabled: true },
+  { key: 'todos', label: 'To-Do List', num: '06', enabled: true },
+  { key: 'glowup', label: 'Glow Up Hub', num: '07', enabled: true },
+  { key: 'braindump', label: 'Brain Dump', num: '08', enabled: true },
+  { key: 'booknook', label: 'Book Nook', num: '09', enabled: true },
+  { key: 'finances', label: 'Rich Girl Era', num: '10', enabled: true },
+  { key: 'shopping', label: 'Kitchen Club', num: '11', enabled: true },
+  { key: 'wishlist', label: 'Wishlist', num: '12', enabled: true },
+  { key: 'spillthetea', label: 'Spill the Tea', num: '13', enabled: true },
+  { key: 'updates', label: 'Updates', num: '14', enabled: true },
 ]
 
 function App() {
@@ -170,10 +168,10 @@ function App() {
       {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />}
       <aside className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
         <nav className="nav">
-          {NAV_ITEMS.filter((item) => !hiddenModules.includes(item.key)).map((item) => (
+          {NAV_ITEMS.filter((item) => item.key === 'contacts' ? !(hiddenModules.includes('contacts') && hiddenModules.includes('social')) : !hiddenModules.includes(item.key)).map((item) => (
             <button
               key={item.key}
-              className={`nav-item ${view === item.key ? 'active' : ''}`}
+              className={`nav-item ${view === item.key || (item.key === 'contacts' && view === 'social') ? 'active' : ''}`}
               onClick={() => item.enabled && setView(item.key)}
               disabled={!item.enabled}
             >
@@ -206,7 +204,7 @@ function App() {
       <main className="main">
         <Suspense fallback={<p className="loading">Loading… ✨</p>}>
           {view === 'home' && <Dashboard onNavigate={setView} user={session.user} hiddenModules={hiddenModules} />}
-          {view === 'contacts' && <ContactsView />}
+          {(view === 'contacts' || view === 'social') && <SocialButterflyView initialTab={view} onTabChange={(t) => setView(t)} />}
           {view === 'goals' && <GoalsView />}
           {view === 'habits' && <HabitsView />}
           {view === 'finances' && <FinancesView />}
@@ -214,7 +212,6 @@ function App() {
           {view === 'shopping' && <ShoppingListView />}
           {view === 'booknook' && <BookNookView />}
           {view === 'glowup' && <GlowUpHubView />}
-          {view === 'social' && <SocialCalendarView />}
           {view === 'inbox' && <InboxView />}
           {view === 'braindump' && <BrainDumpView />}
           {view === 'spillthetea' && <SpillTheTeaView />}

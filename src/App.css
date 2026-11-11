@@ -3449,7 +3449,7 @@
   font-size: 9px;
   font-weight: 700;
   color: var(--ink-dim);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.02em;
 }
 
@@ -4943,3 +4943,57 @@
 .bd-rule-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; }
 .bd-rule-list li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 @media (max-width: 520px) { .bd-import-row { grid-template-columns: auto 1fr; } .bd-import-row select { grid-column: 2; } .bd-rule-form { grid-template-columns: 1fr; } }
+
+/* Social Butterfly: merged birthdays + plans */
+.sb-tagline { font-family: inherit; font-size: 13px; font-weight: 600; color: var(--ink-dim); margin: 2px 0 0; }
+:root:not([data-theme="bold"]) .sb-tagline { font-size: 13px; }
+.sb-header { margin-bottom: 10px; }
+.sb-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+.sb-tab { background: var(--surface); border: 2px solid var(--border); border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 700; color: var(--ink-dim); white-space: nowrap; cursor: pointer; }
+.sb-tab.active { background: var(--pink); border-color: var(--pink); color: var(--ink); }
+.sb-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.sb-toolbar .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-pill { white-space: nowrap; }
+.calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cake-stat-card { padding: 10px 8px; }
+.cake-stat-card:hover { transform: none; box-shadow: none; }
+.cake-stat-icon { font-size: 16px; margin-bottom: 0; }
+.cake-stat-value { font-size: 18px; }
+@media (max-width: 640px) {
+  .cake-stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+}
+.sb-header .sb-tagline { background: none; padding: 0; border-radius: 0; display: block; }
+.sb-header .view-title { margin-bottom: 0; }
+.cake-stat-card { flex-direction: row; justify-content: center; gap: 8px; padding: 8px 10px; border-radius: 14px; }
+.cake-stat-label { font-size: 11px; }
+.cake-search-row + .filter-row, .filter-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.filter-row::-webkit-scrollbar { display: none; }
+.sb-toolbar { margin-top: -4px; }
+
+/* Social Calendar v2 */
+.sc-card::before { display: none; }
+.sc-card { padding: 12px 14px; }
+.sc-card .cake-card-top { align-items: center; }
+.sc-card .contact-name { font-size: 16px; margin: 0; }
+.sc-card .contact-relationship { margin: 4px 0 0; font-size: 12px; }
+.sc-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.sc-card-foot .cake-gift-status { margin-top: 0; padding: 3px 10px; font-size: 11px; }
+.sc-card-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.sc-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); font-size: 14px; text-decoration: none; cursor: pointer; padding: 0; }
+.sc-icon-btn:hover { border-color: var(--pink); }
+.sc-chip-btn { display: inline-flex; align-items: center; border-radius: 999px; border: 2px solid var(--border); background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 700; padding: 4px 12px; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.sc-chip-btn:hover { border-color: var(--pink); }
+.sc-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 14px; padding: 8px 12px; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+.sc-banner-today { background: var(--accent-tint); color: var(--ink); }
+.sc-banner-gift { background: var(--pink-soft); color: var(--coral); }
+.sc-day-list { border-top: 1px dashed var(--border); margin-top: 12px; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.sc-wrap { flex-wrap: wrap !important; overflow: visible !important; }
+.sc-confirm { max-width: 380px; }
+.cal-cell-selected { outline: 2px solid var(--coral); }
+@media (max-width: 640px) {
+  .cal-cell .cal-chip-stack { flex-direction: row; flex-wrap: wrap; gap: 2px; justify-content: center; }
+  .cal-cell .cal-chip { font-size: 0; width: 7px; height: 7px; padding: 0; min-width: 0; border-radius: 50%; }
+  .cal-cell .cal-chip-more { display: none; }
+}
+.sc-card .contact-relationship { text-transform: none; letter-spacing: 0; }
+.upcoming-section, .upnext-section { margin-bottom: 16px; }

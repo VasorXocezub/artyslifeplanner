@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase'
 import { getHiddenFinanceTabs, setHiddenFinanceTabs, getHiddenShoppingTabs, setHiddenShoppingTabs, getHiddenTodoTabs, setHiddenTodoTabs, getHiddenGlowupTabs, setHiddenGlowupTabs, getHiddenBraindumpTabs, setHiddenBraindumpTabs, getTheme, setTheme } from './lib/localPrefs'
 
 const SPACES = [
-  { key: 'contacts', label: 'Cake Club', icon: '🎂' },
+  { key: 'contacts', label: 'Social Calendar: birthdays', icon: '🎂' },
   { key: 'goals', label: 'Dream Board', icon: '🌱' },
   { key: 'habits', label: 'Daily Habits', icon: '🔥' },
   { key: 'focustimer', label: 'Mermaid Cove', icon: '🧜‍♀️' },
@@ -13,7 +13,7 @@ const SPACES = [
   { key: 'wishlist', label: 'Wishlist', icon: '🎀' },
   { key: 'booknook', label: 'Book Nook', icon: '📚' },
   { key: 'glowup', label: 'Glow Up Hub', icon: '✨' },
-  { key: 'social', label: 'Social Club', icon: '💌' },
+  { key: 'social', label: 'Social Calendar: plans', icon: '💌' },
   { key: 'inbox', label: 'Inbox', icon: '📥' },
   { key: 'braindump', label: 'Brain Dump', icon: '📖' },
   { key: 'spillthetea', label: 'Spill the Tea', icon: '🫖' },
