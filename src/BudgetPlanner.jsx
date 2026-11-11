@@ -13,7 +13,7 @@ const SORTS = [
   { key: 'pct', label: '% used' },
   { key: 'remaining', label: 'Least left' },
 ]
-const DEFAULT_SETTINGS = { period_type: 'monthly', month_start_day: 1, anchor_date: null, warn_pct: 80 }
+const DEFAULT_SETTINGS = { period_type: 'monthly', month_start_day: 25, anchor_date: null, warn_pct: 80 }
 const PERIOD_TYPES = [
   { key: 'monthly', label: 'Monthly' },
   { key: 'weekly', label: 'Weekly' },
@@ -64,8 +64,12 @@ function describePeriod(key, settings, customs) {
   }
   const [y, m] = key.split('-').map(Number)
   const sd = Math.min(28, Math.max(1, Number(settings.month_start_day) || 1))
-  const start = new Date(y, m - 1, sd), end = new Date(y, m, sd - 1)
-  return { key, start, end, type: 'monthly', label: new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), sub: `${fmtShort(start)} – ${fmtShort(end)}` }
+  // Payday-style months are named after the month they end in: key 2026-11 with start day 25 = 25 Oct – 24 Nov.
+  let start = sd === 1 ? new Date(y, m - 1, 1) : new Date(y, m - 2, sd)
+  let end = sd === 1 ? new Date(y, m, 0) : new Date(y, m - 1, sd - 1)
+  const ov = settings.overrides && settings.overrides[key]
+  if (ov) { start = parseD(ov.start_date); end = parseD(ov.end_date) }
+  return { key, start, end, type: 'monthly', custom: !!ov, label: new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), sub: `${fmtShort(start)} – ${fmtLong(end)}` }
 }
 
 function currentKey(settings, customs) {
@@ -85,7 +89,14 @@ function currentKey(settings, customs) {
     return hit ? 'C:' + hit.id : null
   }
   const sd = Math.min(28, Math.max(1, Number(settings.month_start_day) || 1))
-  const base = today.getDate() < sd ? new Date(today.getFullYear(), today.getMonth() - 1, 1) : new Date(today.getFullYear(), today.getMonth(), 1)
+  // Look for the month whose dates (including any custom dates) contain today
+  for (const n of [0, -1, 1, -2, 2]) {
+    const d = new Date(today.getFullYear(), today.getMonth() + n, 1)
+    const k = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
+    const p = describePeriod(k, settings, [])
+    if (p && p.start <= today && today <= p.end) return k
+  }
+  const base = sd > 1 && today.getDate() >= sd ? new Date(today.getFullYear(), today.getMonth() + 1, 1) : new Date(today.getFullYear(), today.getMonth(), 1)
   return `${base.getFullYear()}-${pad(base.getMonth() + 1)}`
 }
 
@@ -131,6 +142,7 @@ export default function BudgetPlanner({ currency }) {
   const [expanded, setExpanded] = useState(null)
   const [modal, setModal] = useState(null) // line form or null
   const [periodModal, setPeriodModal] = useState(null) // custom period form or null
+  const [rangeModal, setRangeModal] = useState(null) // date override for one monthly period
   const [saving, setSaving] = useState(false)
   const [showTools, setShowTools] = useState(false)
   const [catInput, setCatInput] = useState('')
@@ -151,11 +163,14 @@ export default function BudgetPlanner({ currency }) {
 
   // settings + custom periods first, then pick the current period
   const loadMeta = useCallback(async (keepKey) => {
-    const [sRes, cRes] = await Promise.all([
+    const [sRes, cRes, oRes] = await Promise.all([
       supabase.from('budget_settings').select('*').limit(1).maybeSingle(),
       supabase.from('budget_periods').select('*').order('start_date', { ascending: true }),
+      supabase.from('budget_period_overrides').select('*'),
     ])
-    const st = { ...DEFAULT_SETTINGS, ...(sRes.error || !sRes.data ? {} : sRes.data) }
+    const overrides = {}
+    ;(oRes.error ? [] : (oRes.data || [])).forEach(o => { overrides[o.period_key] = o })
+    const st = { ...DEFAULT_SETTINGS, ...(sRes.error || !sRes.data ? {} : sRes.data), overrides }
     const cs = cRes.error ? [] : (cRes.data || [])
     setSettingsRow(sRes.error ? null : sRes.data)
     setSettings(st)
@@ -408,6 +423,30 @@ export default function BudgetPlanner({ currency }) {
     if (resetPeriod) setPeriodKey(currentKey(next, customs))
   }
 
+  // ----- custom dates for one monthly period -----
+  function openRange(p) { setRangeModal({ key: p.key, start_date: ymd(p.start), end_date: ymd(p.end), hasOverride: !!p.custom }) }
+
+  async function saveRange(e) {
+    e.preventDefault()
+    if (!rangeModal.start_date || !rangeModal.end_date || rangeModal.end_date < rangeModal.start_date) { setError('The end date must be on or after the start date.'); return }
+    setSaving(true)
+    setError(null)
+    await supabase.from('budget_period_overrides').delete().eq('period_key', rangeModal.key)
+    const user_id = await getUserId()
+    const { error: err } = await supabase.from('budget_period_overrides').insert({ user_id, period_key: rangeModal.key, start_date: rangeModal.start_date, end_date: rangeModal.end_date })
+    setSaving(false)
+    if (err) { setError(err.message + ' — have you run the budget SQL in Supabase?'); return }
+    setRangeModal(null)
+    await loadMeta(true)
+  }
+
+  async function resetRange() {
+    const { error: err } = await supabase.from('budget_period_overrides').delete().eq('period_key', rangeModal.key)
+    if (err) { setError(err.message); return }
+    setRangeModal(null)
+    await loadMeta(true)
+  }
+
   // ----- custom periods -----
   function openPeriod(p) {
     if (p) { setPeriodModal({ id: p.id, name: p.name, start_date: p.start_date, end_date: p.end_date }); return }
@@ -559,6 +598,7 @@ export default function BudgetPlanner({ currency }) {
             <span className="bd-nav-links">
               {periodKey !== currentKey(settings, customs) && <button type="button" className="bd-link" onClick={() => setPeriodKey(currentKey(settings, customs))}>Jump to current</button>}
               {period?.type === 'custom' && <button type="button" className="bd-link" onClick={() => openPeriod(period.custom)}>Edit period</button>}
+              {period?.type === 'monthly' && <button type="button" className="bd-link" onClick={() => openRange(period)}>Edit dates</button>}
             </span>
           </div>
           {nextKey || settings.period_type !== 'custom' && period?.type !== 'custom'
@@ -715,7 +755,7 @@ export default function BudgetPlanner({ currency }) {
                     <div className="field">
                       <label>Month starts on day</label>
                       <input type="number" min="1" max="28" value={settings.month_start_day} onChange={e => setSettings({ ...settings, month_start_day: e.target.value })} onBlur={e => saveSettings({ month_start_day: Math.min(28, Math.max(1, parseInt(e.target.value, 10) || 1)) }, { resetPeriod: true })} />
-                      <small className="bd-dim">Set to your payday (e.g. 25) so a month runs payday to payday.</small>
+                      <small className="bd-dim">Default is 25, so a month runs from the 25th to the 24th. Use "Edit dates" on a period to change just that one.</small>
                     </div>
                   )}
                   {(settings.period_type === 'weekly' || settings.period_type === 'fortnightly') && (
@@ -815,6 +855,28 @@ export default function BudgetPlanner({ currency }) {
             )
           })()}
         </>
+      )}
+
+      {rangeModal && (
+        <div className="modal-backdrop" onClick={() => setRangeModal(null)}>
+          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Period dates">
+            <h2>Dates for this period</h2>
+            <p className="bd-dim">Change just this period, for example when payday moves. Other periods keep your usual dates.</p>
+            <form onSubmit={saveRange}>
+              <div className="field-row">
+                <div className="field"><label>Starts</label><input type="date" value={rangeModal.start_date} onChange={e => setRangeModal({ ...rangeModal, start_date: e.target.value })} /></div>
+                <div className="field"><label>Ends</label><input type="date" value={rangeModal.end_date} min={rangeModal.start_date} onChange={e => setRangeModal({ ...rangeModal, end_date: e.target.value })} /></div>
+              </div>
+              <div className="modal-actions">
+                {rangeModal.hasOverride ? <button type="button" className="btn-delete" onClick={resetRange}>Reset to usual dates</button> : <span />}
+                <div className="modal-actions-right">
+                  <button type="button" className="btn-cancel" onClick={() => setRangeModal(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {periodModal && (

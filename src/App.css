@@ -4848,3 +4848,5 @@
 
 .balance-edit-btn { margin-top: 16px; }
 .totals-row { flex-wrap: wrap; }
+
+.icon-custom-wide { flex: 1; width: auto; min-width: 0; text-align: left; font-size: 0.95rem; }

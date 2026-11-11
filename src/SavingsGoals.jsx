@@ -4,7 +4,18 @@ import { formatMoney } from './lib/currency'
 
 const emptyForm = { name: '', icon: '💰', target_amount: '', current_amount: '0' }
 const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
-const ICON_OPTIONS = ['💰', '✈️', '🏠', '🚗', '🎓', '💍', '🛍️', '🏝️', '💻', '🐶', '🎉', '🩺']
+const ICON_OPTIONS = ['💰', '✈️', '🏠', '🚗', '🎓', '💍', '🛍️', '🏝️', '💻', '🐶', '🎉', '🩺', '👶', '🎁', '📱', '👗', '💅', '🏖️', '🐷', '💖', '✨', '🛡️', '🏡', '🎀']
+
+// first emoji (grapheme) of whatever was typed or pasted
+const firstEmoji = (str) => {
+  const t = (str || '').trim()
+  if (!t) return ''
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const it = new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(t)[Symbol.iterator]().next()
+    return it.value ? it.value.segment : ''
+  }
+  return Array.from(t).slice(0, 2).join('')
+}
 
 export default function SavingsGoals({ currency }) {
   const [goals, setGoals] = useState([])
@@ -266,13 +277,18 @@ export default function SavingsGoals({ currency }) {
                 <div className="icon-picker">
                   <span className="icon-preview">{form.icon}</span>
                   <input
-                    className="icon-custom-input"
-                    value={form.icon}
-                    maxLength={4}
-                    onChange={(e) => setForm({ ...form, icon: e.target.value })}
+                    className="icon-custom-input icon-custom-wide"
+                    value=""
+                    placeholder="Type or paste any emoji 😀"
+                    aria-label="Custom emoji"
+                    autoComplete="off"
+                    onChange={(e) => { const em = firstEmoji(e.target.value); if (em) setForm({ ...form, icon: em }) }}
                   />
                 </div>
                 <div className="icon-grid">
+                  {form.icon && !ICON_OPTIONS.includes(form.icon) && (
+                    <button type="button" className="icon-cell icon-cell-active" aria-label={`Icon ${form.icon}`}>{form.icon}</button>
+                  )}
                   {ICON_OPTIONS.map((emoji) => (
                     <button
                       type="button"
