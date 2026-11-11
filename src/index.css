@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Playfair+Display:wght@500;600;700&family=Quicksand:wght@400;500;600;700&family=Dancing+Script:wght@500;600;700&family=Loved+by+the+King&family=Yeseva+One&family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Pacifico&family=Playfair+Display:wght@500;600;700&family=Quicksand:wght@400;500;600;700&family=Loved+by+the+King&family=Yeseva+One&family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   --bg: #FFF4F7;
@@ -40,8 +40,8 @@
 
   --r10: 14px; --r12: 16px; --r14: 18px; --r16: 22px; --r18: 24px; --r20: 26px;
 
-  --font-brand: 'Dancing Script', 'Homemade Apple', cursive;
-  --font-script: 'Dancing Script', 'Homemade Apple', cursive;
+  --font-brand: 'Pacifico', 'Homemade Apple', cursive;
+  --font-script: 'Pacifico', 'Homemade Apple', cursive;
   --font-quote: 'Loved by the King', cursive;
   --font-display: 'Playfair Display', 'Yeseva One', serif;
   --font-body: 'Quicksand', 'Montserrat', sans-serif;
