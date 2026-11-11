@@ -203,10 +203,10 @@ function GroceryListTab() {
 
     ctx.fillStyle = '#C2567D'
     let titleFontSize = 24
-    ctx.font = `bold ${titleFontSize}px Georgia, serif`
+    ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`
     while (ctx.measureText(headerText).width > width - padding * 2 && titleFontSize > 16) {
       titleFontSize -= 1
-      ctx.font = `bold ${titleFontSize}px Georgia, serif`
+      ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`
     }
     ctx.fillText(headerText, padding, 44)
 
@@ -443,7 +443,7 @@ function MealPlannerTab() {
     ctx.fillRect(0, 0, width, height)
 
     ctx.fillStyle = '#C2567D'
-    ctx.font = 'bold 22px Georgia, serif'
+    ctx.font = 'bold 22px "Playfair Display", Georgia, serif'
     ctx.fillText('🗓️ This Week\'s Meal Plan', padding, 42)
     ctx.fillStyle = '#8a8378'
     ctx.font = '13px sans-serif'
