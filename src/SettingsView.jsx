@@ -237,9 +237,9 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
             onClick={() => handleThemeChange('classic')}
           >
             <span className="theme-picker-swatches">
-              <span style={{ background: '#1E5C57' }} />
+              <span style={{ background: '#C2567D' }} />
               <span style={{ background: '#B896C9' }} />
-              <span style={{ background: '#FAF6F0' }} />
+              <span style={{ background: '#FFF4F7' }} />
             </span>
             <span className="theme-picker-label">✨ Classic</span>
           </button>

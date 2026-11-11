@@ -3,8 +3,8 @@ import { supabase, getUserId } from './lib/supabase'
 import { getHiddenTodoTabs } from './lib/localPrefs'
 
 const PRIORITIES = [
-  { key: 'right_now', label: '🔥 Right Now', color: '#1E5C57' },
-  { key: 'next_up', label: '🌱 Next Up', color: '#E4CBA0' },
+  { key: 'right_now', label: '🔥 Right Now', color: 'var(--accent-deep)' },
+  { key: 'next_up', label: '🌱 Next Up', color: '#F3C9A8' },
   { key: 'later', label: '🌙 Later', color: '#F0E8F5' },
 ]
 const PRIORITY_ORDER = { right_now: 0, next_up: 1, later: 2 }
@@ -15,10 +15,10 @@ const CATEGORIES = [
 ]
 
 const ENERGY_TYPES = [
-  { key: 'big_girl_job', label: '💪 Big Girl Jobs', color: '#1E5C57' },
+  { key: 'big_girl_job', label: '💪 Big Girl Jobs', color: 'var(--accent-deep)' },
   { key: 'deep_focus', label: '🧠 Deep Focus', color: '#B896C9' },
-  { key: 'quick_win', label: '⚡ Quick Wins', color: '#E4CBA0' },
-  { key: 'soft_task', label: '☕ Soft Tasks', color: '#8FC2BE' },
+  { key: 'quick_win', label: '⚡ Quick Wins', color: '#F3C9A8' },
+  { key: 'soft_task', label: '☕ Soft Tasks', color: 'var(--accent-mid)' },
   { key: 'self_care', label: '🌸 Self Care', color: '#D9A8B8' },
 ]
 const ENERGY_ORDER = { big_girl_job: 0, deep_focus: 1, quick_win: 2, soft_task: 3, self_care: 4 }

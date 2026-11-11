@@ -55,15 +55,15 @@ const MODULES = [
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Dream Board', desc: 'Delulu? No. Visionary. ✨', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
-      { key: 'habits', title: 'Daily Habits', desc: '✨ Romanticizing basic human maintenance.', enabled: true, accent: '#1E5C57', tint: '#EAF5F3' },
-      { key: 'todos', title: 'To-Do List', desc: '🫡 Unfortunately, I assigned this to myself.', enabled: true, accent: '#8FC2BE', tint: '#EAF5F3' },
+      { key: 'goals', title: 'Dream Board', desc: 'Delulu? No. Visionary. ✨', enabled: true, accent: 'var(--accent-deep)', tint: 'var(--accent-tint)' },
+      { key: 'habits', title: 'Daily Habits', desc: '✨ Romanticizing basic human maintenance.', enabled: true, accent: 'var(--accent-deep)', tint: 'var(--accent-tint)' },
+      { key: 'todos', title: 'To-Do List', desc: '🫡 Unfortunately, I assigned this to myself.', enabled: true, accent: 'var(--accent-mid)', tint: 'var(--accent-tint)' },
     ],
   },
   {
     group: 'READING',
     items: [
-      { key: 'booknook', title: 'Book Nook', desc: '💌 In a committed relationship with fictional characters.', enabled: true, accent: '#1E5C57', tint: '#E3F0EE' },
+      { key: 'booknook', title: 'Book Nook', desc: '💌 In a committed relationship with fictional characters.', enabled: true, accent: 'var(--accent-deep)', tint: 'var(--accent-tint)' },
     ],
   },
   {
@@ -75,7 +75,7 @@ const MODULES = [
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Rich Girl Era', desc: '💸 We listen and we don\'t judge.', enabled: true, accent: '#1E5C57', tint: '#F7EFDF' },
+      { key: 'finances', title: 'Rich Girl Era', desc: '💸 We listen and we don\'t judge.', enabled: true, accent: 'var(--accent-deep)', tint: '#F7EFDF' },
       { key: 'shopping', title: 'Kitchen Club', desc: '🍓 Girl dinner is not a food group.', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
       { key: 'wishlist', title: 'Wishlist', desc: '🎀 Manifesting these into my cart.', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
     ],
@@ -255,7 +255,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       bigNumber: stats.habitsDoneToday, unit: stats.habitsDoneToday === 1 ? 'habit checked off' : 'habits checked off',
       subtitle: 'Look at you go, bestie ✨',
       progressPct: stats.habitsTotal > 0 ? Math.round((stats.habitsDoneToday / stats.habitsTotal) * 100) : null,
-      color: '#1E5C57', insight: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} checked off, bestie`,
+      color: 'var(--accent-deep)', insight: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} checked off, bestie`,
     })
   }
   if (!hiddenModules.includes('finances') && stats.hasTransactions) {
@@ -263,7 +263,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       key: 'net', nav: 'finances', icon: '🎀', title: 'Spending Power',
       bigNumber: formatMoney(stats.netBalance, currency), unit: '',
       subtitle: "You're keeping it cute with your money 💅",
-      progressPct: null, color: '#164641', insight: `Spending power: ${formatMoney(stats.netBalance, currency)}`,
+      progressPct: null, color: 'var(--ink)', insight: `Spending power: ${formatMoney(stats.netBalance, currency)}`,
     })
   }
   if (!hiddenModules.includes('finances') && stats.hasSavings) {
@@ -279,7 +279,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       key: 'goals', nav: 'goals', icon: '🎯', title: 'Your Goals',
       bigNumber: stats.goalsInProgress, unit: stats.goalsInProgress === 1 ? 'win waiting' : 'wins waiting',
       subtitle: 'Your dreams are so close, keep going ✨',
-      progressPct: null, color: '#1E5C57', insight: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`,
+      progressPct: null, color: 'var(--accent-deep)', insight: `${stats.goalsInProgress} win${stats.goalsInProgress > 1 ? 's' : ''} waiting for you`,
     })
   }
   if (!hiddenModules.includes('glowup') && stats.wellness?.steps > 0) {
@@ -288,7 +288,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       bigNumber: Number(stats.wellness.steps).toLocaleString(), unit: 'steps',
       subtitle: 'Every step is a step toward glowing ✨',
       progressPct: Math.min(100, Math.round((stats.wellness.steps / (stats.wellness.steps_goal || 10000)) * 100)),
-      color: '#1E5C57', insight: `Walking Queen: ${Number(stats.wellness.steps).toLocaleString()} steps`,
+      color: 'var(--accent-deep)', insight: `Walking Queen: ${Number(stats.wellness.steps).toLocaleString()} steps`,
     })
   }
   if (!hiddenModules.includes('booknook') && stats.currentlyReadingBook) {
@@ -296,7 +296,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       key: 'reading', nav: 'booknook', icon: '📚', title: stats.currentlyReadingBook.title,
       bigNumber: stats.currentlyReadingBook.pct, unit: '% through',
       subtitle: 'A little escape is always worth it 📖',
-      progressPct: stats.currentlyReadingBook.pct, color: '#8FC2BE',
+      progressPct: stats.currentlyReadingBook.pct, color: 'var(--accent-mid)',
       insight: `${stats.currentlyReadingBook.pct}% into "${stats.currentlyReadingBook.title}"`,
     })
   }

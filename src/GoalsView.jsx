@@ -22,8 +22,8 @@ const STATUS_LABELS = {
 }
 
 const STATUS_COLORS = {
-  not_started: '#1E5C57',
-  in_progress: '#1E5C57',
+  not_started: 'var(--accent-deep)',
+  in_progress: 'var(--accent-deep)',
   done: '#B896C9',
 }
 

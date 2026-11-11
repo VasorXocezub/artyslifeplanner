@@ -4,7 +4,7 @@ import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
 const emptyForm = { name: '', amount: '', category: '', frequency: 'monthly', next_due: '', start_date: '', end_date: '' }
-const CARD_COLORS = ['#B896C9', '#1E5C57', '#1E5C57', '#1E5C57', '#1E5C57', '#8FC2BE']
+const CARD_COLORS = ['#B896C9', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-mid)']
 const FREQUENCY_LABELS = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' }
 
 function toMonthly(amount, frequency) {

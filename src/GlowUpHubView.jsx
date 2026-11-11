@@ -77,7 +77,7 @@ const CYCLE_ERAS = {
     vibes: ['🚨 The Lore Thickens', '🌧️ In My Feels', '🍟 Little Treat Required', '🤡 Learning Lessons Against My Will', '💌 Processing...'],
     bestFor: ['Wrapping up projects', 'Self-care', 'Reflection', 'Cozy nights in', 'Protecting your peace', 'Avoiding unnecessary nonsense'],
     reminder: '🌙 Not everyone deserves access to your energy.',
-    energy: 'Fluctuating', color: '#8FC2BE',
+    energy: 'Fluctuating', color: 'var(--accent-mid)',
     summaryTagline: 'Everyone is testing my patience.',
   },
 }
@@ -669,7 +669,7 @@ export default function GlowUpHubView() {
               <p className="progress-label">👟 {(log.steps || 0).toLocaleString()} steps — {stepsPct}% complete</p>
               <div className="progress-row">
                 <div className="progress-track">
-                  <div className="progress-fill" style={{ width: `${stepsPct}%`, background: '#1E5C57' }} />
+                  <div className="progress-fill" style={{ width: `${stepsPct}%`, background: 'var(--accent-deep)' }} />
                 </div>
               </div>
               {milestone && <p className="momentum-caption">{milestone.label}</p>}
@@ -833,7 +833,7 @@ export default function GlowUpHubView() {
                     <span><span className="cycle-legend-dot" style={{ background: '#D9A8B8' }} /> Menstrual</span>
                     <span><span className="cycle-legend-dot" style={{ background: '#AFC5A5' }} /> Follicular</span>
                     <span><span className="cycle-legend-dot" style={{ background: '#E9C86A' }} /> Ovulation</span>
-                    <span><span className="cycle-legend-dot" style={{ background: '#8FC2BE' }} /> Luteal</span>
+                    <span><span className="cycle-legend-dot" style={{ background: 'var(--accent-mid)' }} /> Luteal</span>
                   </div>
                 </div>
                 <div className="goals-summary-row">

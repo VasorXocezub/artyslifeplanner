@@ -372,7 +372,7 @@ export default function BookNookView() {
                       {seriesLabel(b) && <p className="habit-schedule">📖 {seriesLabel(b)}</p>}
                       <div className="progress-row">
                         <div className="progress-track">
-                          <div className="progress-fill" style={{ width: `${pct}%`, background: '#1E5C57' }} />
+                          <div className="progress-fill" style={{ width: `${pct}%`, background: 'var(--accent-deep)' }} />
                         </div>
                         <span className="progress-label">
                           {b.pages ? `${b.current_page || 0} / ${b.pages} pages (${pct}%)` : `${b.current_page || 0} pages read`}

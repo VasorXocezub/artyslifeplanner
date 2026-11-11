@@ -13,7 +13,7 @@ const emptyForm = {
   savings_goal_id: '',
 }
 
-const CARD_COLORS = ['#B896C9', '#1E5C57', '#1E5C57', '#1E5C57', '#1E5C57', '#8FC2BE']
+const CARD_COLORS = ['#B896C9', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-mid)']
 
 function formatDate(d) {
   if (!d) return null

@@ -4,7 +4,7 @@ import { formatMoney } from './lib/currency'
 import { useFinanceCategories } from './lib/financeCategories'
 
 const ICONS = ['🛒', '🏠', '🚗', '⛽', '💡', '📱', '🍽️', '☕', '🎬', '👗', '💅', '💊', '🐾', '✈️', '🎁', '🎓', '💻', '🏋️', '🧾', '🐷', '💖', '✨']
-const COLORS = ['#1E5C57', '#8FC2BE', '#B896C9', '#D9A8B8', '#E4CBA0', '#E0A458', '#7BA37A', '#6E8FB5']
+const COLORS = ['#C2567D', '#E8A5BC', '#B896C9', '#F3C9A8', '#E0A458', '#7BC4A8', '#6E8FB5', '#8A6B78']
 const GROUP_SUGGESTIONS = ['Needs', 'Wants', 'Savings & goals', 'Fun money']
 const SORTS = [
   { key: 'custom', label: 'My order' },
@@ -20,6 +20,8 @@ const PERIOD_TYPES = [
   { key: 'fortnightly', label: 'Fortnightly (every 2 weeks)' },
   { key: 'custom', label: 'Custom periods (I set the dates)' },
 ]
+const LEGACY_COLORS = { '#1E5C57': '#C2567D', '#8FC2BE': '#E8A5BC', '#D9A8B8': '#E8A5BC', '#E4CBA0': '#F3C9A8', '#7BA37A': '#7BC4A8' }
+const fixColor = (c) => (c && LEGACY_COLORS[c.toUpperCase()]) || c
 const WARN_COLOR = '#E0A458'
 
 const pad = (n) => String(n).padStart(2, '0')
@@ -225,7 +227,7 @@ export default function BudgetPlanner({ currency }) {
     const budget = planned + carry
     const actual = sumTx(tx, i.kind, i.category)
     const pct = budget > 0 ? (actual / budget) * 100 : (actual > 0 ? 999 : 0)
-    return { ...i, parts, planned, carry, budget, actual, pct, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
+    return { ...i, color: fixColor(i.color), parts, planned, carry, budget, actual, pct, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
   }), [items, prevItems, tx, prevTx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const expenseRows = rows.filter(r => r.kind === 'expense')
@@ -252,7 +254,7 @@ export default function BudgetPlanner({ currency }) {
   const projected = elapsedDays > 0 && inPeriod ? (totalActual / elapsedDays) * totalDays : totalActual
   const dailyLeft = daysLeft > 0 ? remaining / daysLeft : null
 
-  const statusColor = (pct, over) => (over || pct > 100 ? 'var(--danger)' : pct >= warnPct ? WARN_COLOR : 'var(--olive-dark)')
+  const statusColor = (pct, over) => (over || pct > 100 ? 'var(--danger)' : pct >= warnPct ? WARN_COLOR : 'var(--good)')
 
   const groupNames = [...new Set(rows.map(r => r.grpName))]
   const existingGroups = [...new Set([...groupNames.filter(g => g !== 'Expenses' && g !== 'Income'), ...GROUP_SUGGESTIONS])]
@@ -465,7 +467,7 @@ export default function BudgetPlanner({ currency }) {
   function renderRow(r) {
     const isIncome = r.kind === 'income'
     const over = !isIncome && r.actual > r.budget
-    const color = isIncome ? 'var(--olive-dark)' : statusColor(r.pct, over)
+    const color = isIncome ? 'var(--good)' : statusColor(r.pct, over)
     const accent = r.color || COLORS[0]
     const barPct = Math.min(100, r.pct === 999 ? 100 : r.pct)
     const open = expanded === r.id
@@ -587,7 +589,7 @@ export default function BudgetPlanner({ currency }) {
               <span className="bd-eq-op">=</span>
               <div>
                 <span className="bd-eq-label">{remaining >= 0 ? 'Remaining' : 'Over by'}</span>
-                <span className="bd-eq-num" style={{ color: remaining >= 0 ? 'var(--olive-dark)' : 'var(--danger)' }}>{money(Math.abs(remaining))}</span>
+                <span className="bd-eq-num" style={{ color: remaining >= 0 ? 'var(--good)' : 'var(--danger)' }}>{money(Math.abs(remaining))}</span>
               </div>
             </div>
             <div className="bd-bar bd-bar-big" aria-hidden="true">

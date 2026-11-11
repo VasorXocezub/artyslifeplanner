@@ -1,36 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Loved+by+the+King&family=Yeseva+One&family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #FAF6F0;
+  --bg: #FFF4F7;
   --surface: #FFFFFF;
-  --sidebar-bg: #1E5C57;
-  --sidebar-text: #F4EFE7;
+  --sidebar-bg: linear-gradient(180deg, #CF6B92 0%, #B24671 100%);
+  --sidebar-text: #FFF4F7;
 
-  --ink: #1E5C57;
-  --text-primary: #3A342E;
-  --ink-dim: #756E64;
-  --ink-faint: #A39C90;
+  --ink: #A9416B;
+  --text-primary: #4A2F3B;
+  --ink-dim: #8A6B78;
+  --ink-faint: #BBA0AC;
 
-  --pink: #B896C9;
-  --pink-soft: #F0E8F5;
-  --coral: #1E5C57;
-  --coral-soft: #E3F0EE;
-  --olive: #8FC2BE;
-  --olive-dark: #1E5C57;
-  --maroon: #3A342E;
-  --maroon-soft: #EFEAE3;
-  --baby: #E4CBA0;
+  --pink: #E8A5BC;
+  --pink-soft: #FDE8EF;
+  --coral: #C2567D;
+  --coral-soft: #FCE4EC;
+  --olive: #BFE3D6;
+  --olive-dark: #4E9A7E;
+  --maroon: #4A2F3B;
+  --maroon-soft: #F6E9EE;
+  --baby: #F3C9A8;
   --butter: #B896C9;
   --butter-soft: #F0E8F5;
   --lavender: #B896C9;
   --lavender-soft: #F0E8F5;
-  --peach: #E4CBA0;
-  --peach-soft: #F7EFDF;
+  --peach: #F3C9A8;
+  --peach-soft: #FDEBDD;
 
-  --border: #E9E0D2;
-  --border-strong: #E2D6C0;
-  --border-soft: #F1EAE0;
-  --danger: #B85C4E;
+  --border: #F5D5E0;
+  --border-strong: #EDBFD0;
+  --border-soft: #FBE8EF;
+  --danger: #D9534F;
+
+  --accent-deep: #C2567D;
+  --accent-mid: #E8A5BC;
+  --accent-tint: #FCE4EC;
+  --good: #4E9A7E;
+  --gingham: rgba(224, 120, 160, 0.10);
+
+  --r10: 14px; --r12: 16px; --r14: 18px; --r16: 22px; --r18: 24px; --r20: 26px;
 
   --font-brand: 'Homemade Apple', cursive;
   --font-script: 'Homemade Apple', cursive;
@@ -72,6 +80,14 @@
   --border-soft: #E2D9C0;
   --danger: #B4472E;
 
+  --accent-deep: #153026;
+  --accent-mid: #6E8B6A;
+  --accent-tint: #E2D9C0;
+  --good: #1F4A3A;
+  --gingham: rgba(30, 92, 87, 0.09);
+
+  --r10: 10px; --r12: 12px; --r14: 14px; --r16: 16px; --r18: 18px; --r20: 20px;
+
   --font-brand: 'Bebas Neue', sans-serif;
   --font-script: 'Bebas Neue', sans-serif;
   --font-quote: 'Bebas Neue', sans-serif;
@@ -96,8 +112,8 @@ body {
   overflow-x: hidden;
   background-color: var(--bg);
   background-image:
-    linear-gradient(90deg, rgba(30, 92, 87, 0.09) 50%, transparent 50%),
-    linear-gradient(180deg, rgba(30, 92, 87, 0.09) 50%, transparent 50%);
+    linear-gradient(90deg, var(--gingham) 50%, transparent 50%),
+    linear-gradient(180deg, var(--gingham) 50%, transparent 50%);
   background-size: 26px 26px;
   background-blend-mode: multiply;
   color: var(--text-primary);
