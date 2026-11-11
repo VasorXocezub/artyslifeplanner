@@ -10,11 +10,12 @@ export const CURRENCIES = [
   { code: 'PKR', locale: 'ur-PK', label: 'PKR — Pakistani Rupee (₨)' },
 ]
 
-export function formatMoney(n, currencyCode = 'ZAR') {
+export function formatMoney(n, currencyCode = 'ZAR', digits = 2) {
   const cfg = CURRENCIES.find((c) => c.code === currencyCode) || CURRENCIES[0]
   return new Intl.NumberFormat(cfg.locale, {
     style: 'currency',
     currency: cfg.code,
-    minimumFractionDigits: 2,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
   }).format(n || 0)
 }

@@ -106,6 +106,8 @@ function shiftKey(key, n, settings, customs) {
 const emptyLine = { id: null, kind: 'expense', category: '', customCategory: false, icon: '🧾', color: COLORS[0], grp: '', planned_amount: '', rollover: false, notes: '', forward: 0 }
 
 export default function BudgetPlanner({ currency }) {
+  // whole amounts show without cents; anything with cents keeps them
+  const money = (n) => { const v = Math.round((Number(n) || 0) * 100) / 100; return formatMoney(v, currency, Number.isInteger(v) ? 0 : 2) }
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [settingsRow, setSettingsRow] = useState(null)
   const [customs, setCustoms] = useState([])
@@ -222,7 +224,7 @@ export default function BudgetPlanner({ currency }) {
     const budget = planned + carry
     const actual = sumTx(tx, i.kind, i.category)
     const pct = budget > 0 ? (actual / budget) * 100 : (actual > 0 ? 999 : 0)
-    return { ...i, planned, carry, budget, actual, pct, remaining: budget - actual, grpName: (i.grp || '').trim() || 'Other', order: i.sort_order ?? idx }
+    return { ...i, planned, carry, budget, actual, pct, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
   }), [items, prevItems, tx, prevTx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const expenseRows = rows.filter(r => r.kind === 'expense')
@@ -252,7 +254,7 @@ export default function BudgetPlanner({ currency }) {
   const statusColor = (pct, over) => (over || pct > 100 ? 'var(--danger)' : pct >= warnPct ? WARN_COLOR : 'var(--olive-dark)')
 
   const groupNames = [...new Set(rows.map(r => r.grpName))]
-  const existingGroups = [...new Set([...groupNames.filter(g => g !== 'Other'), ...GROUP_SUGGESTIONS])]
+  const existingGroups = [...new Set([...groupNames.filter(g => g !== 'Expenses' && g !== 'Income'), ...GROUP_SUGGESTIONS])]
 
   function sortRows(list) {
     const copy = [...list]
@@ -464,51 +466,45 @@ export default function BudgetPlanner({ currency }) {
     const barPct = Math.min(100, r.pct === 999 ? 100 : r.pct)
     const open = expanded === r.id
     const catTx = tx.filter(t => t.type === r.kind && (t.category || 'Uncategorized').toLowerCase() === r.category.toLowerCase())
+    const leftText = isIncome
+      ? (r.actual === r.budget ? '✓ received' : r.actual > r.budget ? `${money(r.actual - r.budget)} above` : `${money(r.budget - r.actual)} to go`)
+      : over ? `${money(r.actual - r.budget)} over` : `${money(r.remaining)} left`
     return (
-      <div key={r.id} className={`bd-row ${open ? 'bd-row-open' : ''}`} style={{ borderLeftColor: accent }}>
+      <div key={r.id} className={`bd-row ${open ? 'bd-row-open' : ''}`}>
         <button type="button" className="bd-row-main" onClick={() => setExpanded(open ? null : r.id)} aria-expanded={open}>
-          <span className="bd-icon" style={{ background: accent + '33' }}>{r.icon || '🧾'}</span>
+          <span className="bd-icon" style={{ background: accent + '2E' }}>{r.icon || '🧾'}</span>
           <span className="bd-row-body">
             <span className="bd-row-top">
-              <span className="bd-name">{r.category}</span>
-              <span className="bd-amounts">
-                {formatMoney(r.actual, currency)} <span className="bd-dim">/ {formatMoney(r.budget, currency)}</span>
-              </span>
+              <span className="bd-name">{r.category}{r.carry > 0 ? <span className="bd-dim" title={`+${money(r.carry)} rolled over`}> ↻</span> : null}</span>
+              <span className="bd-amounts">{money(r.actual)}<span className="bd-dim"> / {money(r.budget)}</span></span>
             </span>
-            <span className="bd-bar" aria-hidden="true">
-              <span className="bd-bar-fill" style={{ width: `${barPct}%`, background: color }} />
-              {inPeriod && !isIncome && <span className="bd-bar-pace" style={{ left: `${paceFrac * 100}%` }} />}
-            </span>
-            <span className="bd-row-bottom">
-              <span className="bd-dim">
-                {r.carry > 0 && `+${formatMoney(r.carry, currency)} rolled over · `}
-                {r.grp && r.grpName}
+            <span className="bd-row-bar">
+              <span className="bd-bar" aria-hidden="true">
+                <span className="bd-bar-fill" style={{ width: `${barPct}%`, background: color }} />
+                {inPeriod && !isIncome && <span className="bd-bar-pace" style={{ left: `${paceFrac * 100}%` }} />}
               </span>
-              <span className="bd-chip" style={{ color, borderColor: color }}>
-                {isIncome
-                  ? (r.actual >= r.budget ? `${formatMoney(r.actual - r.budget, currency)} above` : `${formatMoney(r.budget - r.actual, currency)} to go`)
-                  : over ? `${formatMoney(r.actual - r.budget, currency)} over` : `${formatMoney(r.remaining, currency)} left`}
-              </span>
+              <span className="bd-left" style={{ color }}>{leftText}</span>
             </span>
           </span>
         </button>
         {open && (
           <div className="bd-detail">
             {r.notes && <p className="bd-note">📝 {r.notes}</p>}
-            {catTx.length === 0 ? <p className="bd-dim">No transactions in this category this period.</p> : (
+            {r.carry > 0 && <p className="bd-dim bd-note">↻ Includes {money(r.carry)} rolled over</p>}
+            {catTx.length === 0 ? <p className="bd-dim bd-note">No transactions in this category this period.</p> : (
               <ul className="bd-tx">
-                {catTx.slice(0, 8).map(t => (
-                  <li key={t.id}><span>{fmtShort(new Date(t.date + 'T00:00:00'))}{t.notes ? ` · ${t.notes}` : ''}</span><strong>{formatMoney(Number(t.amount), currency)}</strong></li>
+                {catTx.slice(0, 6).map(t => (
+                  <li key={t.id}><span>{fmtShort(new Date(t.date + 'T00:00:00'))}{t.notes ? ` · ${t.notes}` : ''}</span><strong>{money(Number(t.amount))}</strong></li>
                 ))}
-                {catTx.length > 8 && <li className="bd-dim">+ {catTx.length - 8} more</li>}
+                {catTx.length > 6 && <li className="bd-dim">+ {catTx.length - 6} more</li>}
               </ul>
             )}
             <div className="bd-detail-actions">
               {sortKey === 'custom' && <>
-                <button type="button" className="btn-cancel" onClick={() => move(r, -1)} aria-label="Move up">↑</button>
-                <button type="button" className="btn-cancel" onClick={() => move(r, 1)} aria-label="Move down">↓</button>
+                <button type="button" className="bd-mini" onClick={() => move(r, -1)} aria-label="Move up">↑</button>
+                <button type="button" className="bd-mini" onClick={() => move(r, 1)} aria-label="Move down">↓</button>
               </>}
-              <button type="button" className="btn-primary" onClick={() => openEdit(r)}>Edit</button>
+              <button type="button" className="bd-mini bd-mini-primary" onClick={() => openEdit(r)}>Edit</button>
             </div>
           </div>
         )}
@@ -558,13 +554,13 @@ export default function BudgetPlanner({ currency }) {
         <>
           <div className="calendar-card bd-hero">
             <div className="bd-eq">
-              <div><span className="bd-eq-label">Budget</span><span className="bd-eq-num">{formatMoney(totalBudget, currency)}</span></div>
+              <div><span className="bd-eq-label">Budget</span><span className="bd-eq-num">{money(totalBudget)}</span></div>
               <span className="bd-eq-op">−</span>
-              <div><span className="bd-eq-label">Actual</span><span className="bd-eq-num">{formatMoney(totalActual, currency)}</span></div>
+              <div><span className="bd-eq-label">Actual</span><span className="bd-eq-num">{money(totalActual)}</span></div>
               <span className="bd-eq-op">=</span>
               <div>
                 <span className="bd-eq-label">{remaining >= 0 ? 'Remaining' : 'Over by'}</span>
-                <span className="bd-eq-num" style={{ color: remaining >= 0 ? 'var(--olive-dark)' : 'var(--danger)' }}>{formatMoney(Math.abs(remaining), currency)}</span>
+                <span className="bd-eq-num" style={{ color: remaining >= 0 ? 'var(--olive-dark)' : 'var(--danger)' }}>{money(Math.abs(remaining))}</span>
               </div>
             </div>
             <div className="bd-bar bd-bar-big" aria-hidden="true">
@@ -573,18 +569,18 @@ export default function BudgetPlanner({ currency }) {
             </div>
             <p className="bd-dim bd-hero-caption">
               {totalBudget > 0 ? `${Math.round(usedPct)}% of budget used` : 'Add budget lines below to get started'}
-              {inPeriod && totalBudget > 0 ? ` · ${Math.round(paceFrac * 100)}% of the {unit} gone` : ''}
+              {inPeriod && totalBudget > 0 ? ` · ${Math.round(paceFrac * 100)}% of the ${unit} gone` : ''}
             </p>
             <div className="bd-stats">
               {dailyLeft !== null && totalBudget > 0 && (
-                <div><span className="bd-eq-label">Daily allowance</span><strong>{dailyLeft >= 0 ? formatMoney(dailyLeft, currency) : '—'}</strong></div>
+                <div><span className="bd-eq-label">Daily allowance</span><strong>{dailyLeft >= 0 ? money(dailyLeft) : '—'}</strong></div>
               )}
               {inPeriod && totalActual > 0 && (
-                <div><span className="bd-eq-label">On pace to spend</span><strong style={{ color: projected > totalBudget && totalBudget > 0 ? 'var(--danger)' : undefined }}>{formatMoney(projected, currency)}</strong></div>
+                <div><span className="bd-eq-label">On pace to spend</span><strong style={{ color: projected > totalBudget && totalBudget > 0 ? 'var(--danger)' : undefined }}>{money(projected)}</strong></div>
               )}
-              <div><span className="bd-eq-label">Income {plannedIncome > 0 ? 'planned' : 'received'}</span><strong>{formatMoney(plannedIncome > 0 ? plannedIncome : receivedIncome, currency)}</strong></div>
+              <div><span className="bd-eq-label">Income {plannedIncome > 0 ? 'planned' : 'received'}</span><strong>{money(plannedIncome > 0 ? plannedIncome : receivedIncome)}</strong></div>
               {plannedIncome > 0 && (
-                <div><span className="bd-eq-label">{unallocated >= 0 ? 'Unallocated' : 'Over-allocated'}</span><strong style={{ color: unallocated < 0 ? 'var(--danger)' : undefined }}>{formatMoney(Math.abs(unallocated), currency)}</strong></div>
+                <div><span className="bd-eq-label">{unallocated >= 0 ? 'Unallocated' : 'Over-allocated'}</span><strong style={{ color: unallocated < 0 ? 'var(--danger)' : undefined }}>{money(Math.abs(unallocated))}</strong></div>
               )}
             </div>
           </div>
@@ -627,36 +623,38 @@ export default function BudgetPlanner({ currency }) {
               <section key={g} className="bd-group">
                 <div className="bd-group-head">
                   <h3>{g}</h3>
-                  <span className="bd-dim">{formatMoney(st.a, currency)} of {formatMoney(st.b, currency)}</span>
+                  <span className="bd-dim">{money(st.a)} of {money(st.b)}</span>
                 </div>
-                {list.map(renderRow)}
+                <div className="bd-card">{list.map(renderRow)}</div>
               </section>
             )
           })}
 
           {incomeVisible.length > 0 && (
             <section className="bd-group">
-              <div className="bd-group-head"><h3>Income</h3><span className="bd-dim">{formatMoney(receivedIncome, currency)} of {formatMoney(plannedIncome, currency)}</span></div>
-              {incomeVisible.map(renderRow)}
+              <div className="bd-group-head"><h3>Income</h3><span className="bd-dim">{money(receivedIncome)} of {money(plannedIncome)}</span></div>
+              <div className="bd-card">{incomeVisible.map(renderRow)}</div>
             </section>
           )}
 
           {kindFilter !== 'income' && unbudgeted.length > 0 && (
             <section className="bd-group">
-              <div className="bd-group-head"><h3>Unbudgeted spending</h3><span className="bd-dim">{formatMoney(sum(unbudgeted, 'actual'), currency)}</span></div>
-              {unbudgeted.map(u => (
-                <div key={u.category} className="bd-row bd-row-un">
-                  <div className="bd-row-main bd-row-static">
-                    <span className="bd-icon">❔</span>
-                    <span className="bd-row-body">
-                      <span className="bd-row-top"><span className="bd-name">{u.category}</span><span className="bd-amounts">{formatMoney(u.actual, currency)}</span></span>
-                      <span className="bd-row-bottom"><span className="bd-dim">Spent with no budget set</span>
-                        <button type="button" className="bd-link" onClick={() => openNew({ category: u.category, planned_amount: String(Math.ceil(u.actual / 10) * 10) })}>Set a budget</button>
+              <div className="bd-group-head"><h3>Unbudgeted spending</h3><span className="bd-dim">{money(sum(unbudgeted, 'actual'))}</span></div>
+              <div className="bd-card">
+                {unbudgeted.map(u => (
+                  <div key={u.category} className="bd-row">
+                    <div className="bd-row-main bd-row-static">
+                      <span className="bd-icon">❔</span>
+                      <span className="bd-row-body">
+                        <span className="bd-row-top"><span className="bd-name">{u.category}</span><span className="bd-amounts">{money(u.actual)}</span></span>
+                        <span className="bd-row-bar"><span className="bd-dim">No budget set</span>
+                          <button type="button" className="bd-link" onClick={() => openNew({ category: u.category, planned_amount: String(Math.ceil(u.actual / 10) * 10) })}>Set a budget</button>
+                        </span>
                       </span>
-                    </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </section>
           )}
 
@@ -754,7 +752,7 @@ export default function BudgetPlanner({ currency }) {
                   <div className="bd-stats bd-stats-top">
                     <div><span className="bd-eq-label">Periods tracked</span><strong>{history.length}</strong></div>
                     <div><span className="bd-eq-label">Finished under budget</span><strong>{finished ? `${under} of ${finished}` : '—'}</strong></div>
-                    <div><span className="bd-eq-label">Average spend</span><strong>{formatMoney(avg, currency)}</strong></div>
+                    <div><span className="bd-eq-label">Average spend</span><strong>{money(avg)}</strong></div>
                   </div>
                 </div>
                 <section className="bd-group">
@@ -768,7 +766,7 @@ export default function BudgetPlanner({ currency }) {
                         <span className="bd-row-top">
                           <span className="bd-name">{h.label}{h.start <= today && today <= h.end ? ' · now' : ''}</span>
                           <span className="bd-chip" style={{ color, borderColor: color }}>
-                            {h.budget === 0 ? 'No budget' : isOver ? `${formatMoney(-left, currency)} over` : `${formatMoney(left, currency)} left`}
+                            {h.budget === 0 ? 'No budget' : isOver ? `${money(-left)} over` : `${money(left)} left`}
                           </span>
                         </span>
                         <span className="bd-dim">{h.sub}</span>
@@ -777,8 +775,8 @@ export default function BudgetPlanner({ currency }) {
                           <span className="bd-hist-bar" style={{ width: `${(h.spent / maxVal) * 100}%`, background: color }} />
                         </span>
                         <span className="bd-row-bottom">
-                          <span className="bd-dim">Budget {formatMoney(h.budget, currency)}</span>
-                          <span className="bd-dim">Spent {formatMoney(h.spent, currency)}{h.incomeActual > 0 ? ` · Income ${formatMoney(h.incomeActual, currency)}` : ''}</span>
+                          <span className="bd-dim">Budget {money(h.budget)}</span>
+                          <span className="bd-dim">Spent {money(h.spent)}{h.incomeActual > 0 ? ` · Income ${money(h.incomeActual)}` : ''}</span>
                         </span>
                       </button>
                     )
@@ -837,7 +835,7 @@ export default function BudgetPlanner({ currency }) {
                 )}
               </div>
               <div className="field">
-                <label>{modal.kind === 'income' ? 'Expected per {unit}' : 'Budget per {unit}'} ({currency})</label>
+                <label>{modal.kind === 'income' ? 'Expected' : 'Budget'} per {unit} ({currency})</label>
                 <input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0" value={modal.planned_amount} onChange={e => setModal({ ...modal, planned_amount: e.target.value })} />
               </div>
               <div className="field">
@@ -876,7 +874,7 @@ export default function BudgetPlanner({ currency }) {
               {modal.kind === 'expense' && (
                 <label className="bd-check">
                   <input type="checkbox" checked={modal.rollover} onChange={e => setModal({ ...modal, rollover: e.target.checked })} />
-                  <span>Roll over unspent money from last month</span>
+                  <span>Roll over unspent money from the previous {unit}</span>
                 </label>
               )}
               <div className="field">
