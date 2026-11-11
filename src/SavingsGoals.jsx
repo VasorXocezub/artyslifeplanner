@@ -153,6 +153,7 @@ export default function SavingsGoals({ currency }) {
 
   const totalSaved = goals.reduce((acc, g) => acc + Number(g.current_amount), 0)
   const totalTarget = goals.reduce((acc, g) => acc + Number(g.target_amount), 0)
+  const totalRemaining = goals.reduce((acc, g) => acc + Math.max(0, Number(g.target_amount) - Number(g.current_amount)), 0)
 
   return (
     <div>
@@ -176,6 +177,10 @@ export default function SavingsGoals({ currency }) {
           <div className="total-card">
             <span className="total-label">Total target</span>
             <span className="total-value">{formatMoney(totalTarget, currency)}</span>
+          </div>
+          <div className="total-card">
+            <span className="total-label">Still to save</span>
+            <span className="total-value">{formatMoney(totalRemaining, currency)}</span>
           </div>
         </div>
       )}
@@ -215,6 +220,8 @@ export default function SavingsGoals({ currency }) {
                   </div>
                   <span className="progress-label">
                     {formatMoney(g.current_amount, currency)} / {formatMoney(g.target_amount, currency)} ({pct}%)
+                    {' · '}
+                    {reached ? 'Goal reached 🎉' : `${formatMoney(Number(g.target_amount) - Number(g.current_amount), currency)} to go`}
                   </span>
                 </div>
 

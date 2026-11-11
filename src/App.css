@@ -4839,9 +4839,12 @@
 .calendar-card.bd-hero,
 .hero-card { background: linear-gradient(135deg, var(--surface) 0%, var(--pink-soft) 100%); }
 
-/* Pacifico runs wide and heavy — scale script text down in the main theme */
-:root:not([data-theme="bold"]) .brand { font-size: 23px; }
-:root:not([data-theme="bold"]) .sidebar-footer { font-size: 17px; line-height: 1.5; }
-:root:not([data-theme="bold"]) .quote-stationery { font-size: 13px; }
-:root:not([data-theme="bold"]) .cake-club-subtitle { font-size: 18px; }
-:root:not([data-theme="bold"]) .hero-title { font-size: 36px; line-height: 1.25; }
+/* Loved by the King is small on the line — scale script text up in the main theme */
+:root:not([data-theme="bold"]) .brand { font-size: 34px; }
+:root:not([data-theme="bold"]) .sidebar-footer { font-size: 26px; line-height: 1.3; }
+:root:not([data-theme="bold"]) .quote-stationery { font-size: 20px; }
+:root:not([data-theme="bold"]) .cake-club-subtitle { font-size: 28px; }
+:root:not([data-theme="bold"]) .hero-title { font-size: 54px; line-height: 1.15; }
+
+.balance-edit-btn { margin-top: 16px; }
+.totals-row { flex-wrap: wrap; }

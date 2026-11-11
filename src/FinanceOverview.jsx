@@ -78,14 +78,14 @@ export default function FinanceOverview({ currency }) {
   }
 
   function openBalEditor() {
-    setBalInput(acct ? String(acct.starting_balance) : '')
+    setBalInput(acct ? String(acct.starting_balance) : '0')
     setDateInput(acct ? acct.start_date : new Date().toISOString().split('T')[0])
     setBalError(null)
     setEditingBal(true)
   }
 
   async function saveBalance() {
-    const amount = parseFloat(balInput)
+    const amount = balInput.trim() === '' ? 0 : parseFloat(balInput)
     if (Number.isNaN(amount)) { setBalError('Enter a number (negative is fine if you start overdrawn).'); return }
     if (!dateInput) { setBalError('Pick a start date.'); return }
     const payload = { starting_balance: amount, start_date: dateInput }
@@ -124,7 +124,7 @@ export default function FinanceOverview({ currency }) {
                     {formatMoney(Number(acct.starting_balance), currency)} · {new Date(acct.start_date + 'T00:00:00').toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
-                <button className="btn-cancel" onClick={openBalEditor}>Edit starting balance</button>
+                <button className="btn-cancel balance-edit-btn" onClick={openBalEditor}>Edit starting balance</button>
               </>
             )}
             {!editingBal && !acct && (
