@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getActiveFocusSession, setActiveFocusSession, clearActiveFocusSession, remainingSecondsFor } from './lib/focusSession'
 import CoveIcon from './CoveIcons'
+import { toIso } from './lib/social'
 
 /* ---------------- Constants ---------------- */
 
@@ -127,7 +128,7 @@ const STREAK_MILESTONES = [
 ]
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  return toIso(new Date())
 }
 
 function formatTime(seconds) {
@@ -478,7 +479,7 @@ export default function FocusTimerView() {
     const today = todayStr()
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    const yesterdayStr = toIso(yesterday)
     let newStreak = prof.streak
     if (prof.last_session_date === today) {
       // already counted today

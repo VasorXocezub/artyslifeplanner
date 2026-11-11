@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import ConfirmSheet from './ConfirmSheet'
+import ImportBirthdaysModal from './ImportBirthdaysModal'
 import {
   MONTH_NAMES, DAY_NAMES, CHIP_COLORS, parseLocalDate, formatMonthDay, todayIso, startOfToday,
   nextBirthday, giftNeeded, inDays, missingColumnHint,
@@ -105,7 +106,7 @@ function CountdownRing({ daysAway, color, size = 56 }) {
   )
 }
 
-export default function ContactsView({ embedded = false, focus = null, onFocusDone }) {
+export default function ContactsView({ focus = null, onFocusDone }) {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -123,6 +124,8 @@ export default function ContactsView({ embedded = false, focus = null, onFocusDo
   const [archived, setArchived] = useState([])
   const [showArchived, setShowArchived] = useState(false)
   const [ask, setAsk] = useState(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [notice, setNotice] = useState(null)
 
   useEffect(() => {
     fetchContacts()
@@ -349,14 +352,13 @@ export default function ContactsView({ embedded = false, focus = null, onFocusDo
 
   return (
     <div>
-      <div className={embedded ? 'sb-toolbar' : 'view-header'}>
-        {!embedded && (
-          <div>
-            <h1 className="view-title">Birthdays</h1>
-          </div>
+      <div className="sc-actionbar">
+        {contacts.length > 0 && (
+          <input className="search-box cake-search-input" placeholder="🔍 Search by name…" value={search} onChange={(e) => setSearch(e.target.value)} />
         )}
         <div className="toolbar">
-          <button className="btn-primary" onClick={() => openAdd()}>+ Add birthday</button>
+          <button className="btn-check" onClick={() => setImportOpen(true)}>⬆ Import</button>
+          <button className="btn-primary" onClick={() => openAdd()}>+ Birthday</button>
         </div>
       </div>
 
@@ -379,39 +381,11 @@ export default function ContactsView({ embedded = false, focus = null, onFocusDo
           )}
 
           {contacts.length > 0 && (
-            <div className="cake-stats-row">
-              <div className="cake-stat-card">
-                <span className="cake-stat-icon">🎂</span>
-                <span className="cake-stat-value">{stats.total}</span>
-                <span className="cake-stat-label">Birthdays</span>
-              </div>
-              <div className="cake-stat-card">
-                <span className="cake-stat-icon">🎁</span>
-                <span className="cake-stat-value">{stats.giftsPlanned}</span>
-                <span className="cake-stat-label">Gifts planned</span>
-              </div>
-              <div className="cake-stat-card">
-                <span className="cake-stat-icon">🎉</span>
-                <span className="cake-stat-value">{stats.nextDays != null ? `${stats.nextDays}d` : '—'}</span>
-                <span className="cake-stat-label">Next birthday</span>
-              </div>
-              <div className="cake-stat-card">
-                <span className="cake-stat-icon">💌</span>
-                <span className="cake-stat-value">{stats.giftsRemaining}</span>
-                <span className="cake-stat-label">Gifts remaining</span>
-              </div>
-            </div>
-          )}
-
-          {contacts.length > 0 && (
-            <div className="cake-search-row">
-              <input
-                className="search-box cake-search-input"
-                placeholder="🔍 Search by name…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+            <p className="sc-summary">
+              <b>{stats.total}</b> birthday{stats.total === 1 ? '' : 's'}
+              <span> · </span><b>{stats.giftsRemaining}</b> gift{stats.giftsRemaining === 1 ? '' : 's'} to sort
+              {stats.nextDays != null && <><span> · </span>next {inDays(stats.nextDays)}</>}
+            </p>
           )}
 
           {contacts.length > 0 && (
@@ -537,27 +511,6 @@ export default function ContactsView({ embedded = false, focus = null, onFocusDo
             </div>
           </div>
 
-          {upcoming.length > 0 && !dateFilter && !search && !activeFilter && (
-            <div className="upcoming-section">
-              <p className="module-group-label">Upcoming</p>
-              <div className="upcoming-list">
-                {upcoming.slice(0, 8).map((c, i) => (
-                  <div
-                    className="upcoming-row"
-                    key={c.id}
-                    onClick={() => openProfile(c)}
-                    style={{ borderLeftColor: CHIP_COLORS[i % CHIP_COLORS.length] }}
-                  >
-                    <span className="upcoming-name">{c.icon || '🎂'} {c.name}</span>
-                    <span className="upcoming-date">
-                      {formatMonthDay(c.month, c.day)} · {inDays(c.daysAway)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {archived.length > 0 && (
             <div className="upcoming-section">
               <button className="weather-location-link" onClick={() => setShowArchived((v) => !v)}>
@@ -583,6 +536,15 @@ export default function ContactsView({ embedded = false, focus = null, onFocusDo
             </div>
           )}
         </>
+      )}
+
+      {notice && <p className="sc-banner sc-banner-today">{notice}</p>}
+      {importOpen && (
+        <ImportBirthdaysModal
+          existing={[...contacts, ...archived]}
+          onClose={() => setImportOpen(false)}
+          onDone={(n) => { setImportOpen(false); setNotice(`Imported ${n} birthday${n > 1 ? 's' : ''} 🎉`); setTimeout(() => setNotice(null), 4000); fetchContacts() }}
+        />
       )}
 
       {ask && (

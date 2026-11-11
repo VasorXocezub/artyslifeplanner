@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import BillReminders from './BillReminders'
+import { toIso } from './lib/social'
 
 function toMonthly(amount, frequency) {
   if (frequency === 'weekly') return amount * 4.33
@@ -80,7 +81,7 @@ export default function FinanceOverview({ currency }) {
 
   function openBalEditor() {
     setBalInput(acct ? String(acct.starting_balance) : '0')
-    setDateInput(acct ? acct.start_date : new Date().toISOString().split('T')[0])
+    setDateInput(acct ? acct.start_date : toIso(new Date()))
     setBalError(null)
     setEditingBal(true)
   }

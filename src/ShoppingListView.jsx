@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import { getCurrency, getHiddenShoppingTabs } from './lib/localPrefs'
+import { toIso } from './lib/social'
 
 const TABS = [
   { key: 'groceries', label: '🛒 Grocery List' },
@@ -331,7 +332,7 @@ function getMonday(offsetWeeks) {
 }
 
 function isoDate(d) {
-  return d.toISOString().split('T')[0]
+  return toIso(d)
 }
 
 function MealPlannerTab() {

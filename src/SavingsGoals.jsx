@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { keyForDate, loadBudgetMeta, ymd, addDays } from './lib/budgetPeriods'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
+import { toIso } from './lib/social'
 
 const emptyForm = { name: '', icon: '💰', target_amount: '', current_amount: '0' }
 const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
@@ -168,7 +169,7 @@ export default function SavingsGoals({ currency }) {
 
     const user_id = await getUserId()
     const { error: txError } = await supabase.from('transactions').insert({
-      date: new Date().toISOString().split('T')[0],
+      date: toIso(new Date()),
       amount: Math.abs(amount),
       type: 'income',
       category: 'Savings Withdrawal',

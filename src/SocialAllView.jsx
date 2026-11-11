@@ -79,7 +79,8 @@ export default function SocialAllView({ onOpen, onAdd }) {
 
   return (
     <div>
-      <div className="sb-toolbar">
+      <div className="sc-actionbar">
+        <input className="search-box cake-search-input" placeholder="🔍 Search birthdays, plans, places or people…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="toolbar">
           <button className="btn-check" onClick={() => onAdd('contacts')}>+ Birthday</button>
           <button className="btn-primary" onClick={() => onAdd('social')}>+ Plan</button>
@@ -99,10 +100,6 @@ export default function SocialAllView({ onOpen, onAdd }) {
           <button className="sc-chip-btn" onClick={() => onOpen('contacts', null)}>Open</button>
         </div>
       )}
-
-      <div className="cake-search-row">
-        <input className="search-box cake-search-input" placeholder="🔍 Search birthdays, plans, places or people…" value={search} onChange={(e) => setSearch(e.target.value)} />
-      </div>
 
       {feed.length > 0 && (
         <div className="upcoming-section">

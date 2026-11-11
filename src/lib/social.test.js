@@ -42,3 +42,27 @@ describe('social helpers', () => {
     expect(ics).toContain('RRULE:FREQ=WEEKLY')
   })
 })
+
+import { parseDateLoose, parseLines, parseVcf } from './birthdayImport'
+describe('birthday import', () => {
+  it('parses loose dates (day first)', () => {
+    expect(parseDateLoose('14/11/1990')).toEqual({ month: 11, day: 14, year: 1990 })
+    expect(parseDateLoose('14 Nov')).toEqual({ month: 11, day: 14, year: null })
+    expect(parseDateLoose('November 14 1990')).toEqual({ month: 11, day: 14, year: 1990 })
+    expect(parseDateLoose('1990-11-14')).toEqual({ month: 11, day: 14, year: 1990 })
+    expect(parseDateLoose('--1114')).toEqual({ month: 11, day: 14, year: null })
+    expect(parseDateLoose('banana')).toBeNull()
+  })
+  it('parses lines and flags bad ones', () => {
+    const { rows, bad } = parseLines('Name, Birthday\nMom, 14 Nov 1965, family\nLindi, 20/11, friends, +27 82 000 0000\nnonsense')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toMatchObject({ name: 'Mom', birth_year: 1965, relationship: 'family' })
+    expect(rows[1]).toMatchObject({ name: 'Lindi', phone: '+27 82 000 0000' })
+    expect(bad).toEqual(['nonsense'])
+  })
+  it('parses vcf', () => {
+    const rows = parseVcf('BEGIN:VCARD\nFN:Jason Smith\nBDAY:1990-12-21\nTEL;TYPE=CELL:+27 82 111 2222\nEND:VCARD\nBEGIN:VCARD\nFN:No Bday\nEND:VCARD')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ name: 'Jason Smith', phone: '+27 82 111 2222', birth_year: 1990 })
+  })
+})

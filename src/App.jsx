@@ -131,7 +131,10 @@ function App() {
   }, [view])
 
   useEffect(() => {
-    if (hiddenModules.includes(view)) setView('home')
+    const isSocial = view === 'contacts' || view === 'social'
+    // Social Calendar is one section: only bounce home when both of its toggles are hidden
+    const hidden = isSocial ? hiddenModules.includes('contacts') && hiddenModules.includes('social') : hiddenModules.includes(view)
+    if (hidden) setView('home')
   }, [hiddenModules, view])
 
   async function handleLogout() {

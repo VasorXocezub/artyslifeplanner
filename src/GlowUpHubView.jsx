@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getHiddenGlowupTabs, getWellnessGoals, setWellnessGoals, getHiddenWellnessMetrics, setHiddenWellnessMetrics } from './lib/localPrefs'
+import { toIso } from './lib/social'
 
 const GlpTracker = lazy(() => import('./GlpTracker'))
 
@@ -153,7 +154,7 @@ const WEIGHT_ACHIEVEMENTS_KG = [
 ]
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  return toIso(new Date())
 }
 
 function formatDateShort(d) {
@@ -352,8 +353,8 @@ export default function GlowUpHubView() {
   async function fetchSummary() {
     setSummaryLoading(true)
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]
+    const monthStart = toIso(new Date(now.getFullYear(), now.getMonth(), 1))
+    const yearStart = toIso(new Date(now.getFullYear(), 0, 1))
 
     const { data: monthData } = await supabase
       .from('wellness_logs').select('*').gte('log_date', monthStart).order('log_date', { ascending: true })

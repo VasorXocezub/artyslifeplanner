@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getHiddenTodoTabs } from './lib/localPrefs'
+import { toIso } from './lib/social'
 
 const PRIORITIES = [
   { key: 'right_now', label: '🔥 Right Now', color: 'var(--accent-deep)' },
@@ -247,7 +248,7 @@ function taskUrgency(t) {
 }
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  return toIso(new Date())
 }
 
 function formatTimestamp(iso) {
@@ -268,7 +269,7 @@ function calcStreak(completedDates) {
     cursor.setDate(cursor.getDate() - 1)
   }
   while (true) {
-    const iso = cursor.toISOString().split('T')[0]
+    const iso = toIso(cursor)
     if (dateSet.has(iso)) {
       streak++
       cursor.setDate(cursor.getDate() - 1)
@@ -555,7 +556,7 @@ export default function TodoView() {
     if (toShift.length > 0) {
       const tomorrow = new Date()
       tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowStr = tomorrow.toISOString().split('T')[0]
+      const tomorrowStr = toIso(tomorrow)
       await Promise.all(toShift.map((t) => supabase.from('todos').update({ due_date: tomorrowStr }).eq('id', t.id)))
       const { data: refreshed2 } = await supabase
         .from('todos')

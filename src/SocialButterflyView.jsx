@@ -48,29 +48,27 @@ export default function SocialCalendarHub({ initialTab = 'contacts', onTabChange
 
   return (
     <div>
-      <div className="view-header sb-header">
+      <div className="view-header">
         <div>
-          <h1 className="view-title">Social Calendar 🎀</h1>
-          <p className="view-subtitle sb-tagline">“It’s in my head” was never a system, babe. 🎀</p>
+          <h1 className="view-title">Social Calendar</h1>
+          <p className="view-subtitle cake-club-subtitle sc-tagline">“It’s in my head” was never a system, babe. 🎀</p>
         </div>
-        <div className="toolbar">
-          <button className="btn-check" onClick={exportCalendar} disabled={exporting}>
-            {exporting ? 'Exporting…' : '📅 Add to my calendar'}
-          </button>
-        </div>
+        <button className="btn-check sc-export" onClick={exportCalendar} disabled={exporting} title="Download an .ics file for Google or Apple Calendar">
+          {exporting ? 'Exporting…' : <>📅<span className="sc-export-label"> Add to my calendar</span></>}
+        </button>
       </div>
       {exportError && <p className="error-msg">{exportError}</p>}
-      <div className="sb-tabs" role="tablist">
+      <div className="filter-row" role="tablist">
         {TABS.map((t) => (
-          <button key={t.key} role="tab" aria-selected={tab === t.key} className={`sb-tab ${tab === t.key ? 'active' : ''}`} onClick={() => pick(t.key)}>
+          <button key={t.key} role="tab" aria-selected={tab === t.key} className={`filter-pill ${tab === t.key ? 'filter-pill-active' : ''}`} onClick={() => pick(t.key)}>
             {t.label}
           </button>
         ))}
       </div>
       <Suspense fallback={<p className="loading">Loading… ✨</p>}>
         {tab === 'all' && <SocialAllView onOpen={open} onAdd={add} />}
-        {tab === 'contacts' && <ContactsView embedded focus={focus} onFocusDone={done} />}
-        {tab === 'social' && <SocialCalendarView embedded focus={focus} onFocusDone={done} />}
+        {tab === 'contacts' && <ContactsView focus={focus} onFocusDone={done} />}
+        {tab === 'social' && <SocialCalendarView focus={focus} onFocusDone={done} />}
       </Suspense>
     </div>
   )

@@ -4,9 +4,10 @@ import { formatMoney } from './lib/currency'
 import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
 import BudgetHint from './BudgetHint'
 import { loadRules, matchRule } from './lib/budgetRules'
+import { toIso } from './lib/social'
 
 const emptyForm = {
-  date: new Date().toISOString().split('T')[0],
+  date: toIso(new Date()),
   amount: '',
   category: '',
   type: 'expense',
@@ -66,7 +67,7 @@ export default function PersonalFinances({ currency }) {
 
   function openAdd() {
     setEditingId(null)
-    setForm({ ...emptyForm, date: new Date().toISOString().split('T')[0] })
+    setForm({ ...emptyForm, date: toIso(new Date()) })
     setModalOpen(true)
   }
 

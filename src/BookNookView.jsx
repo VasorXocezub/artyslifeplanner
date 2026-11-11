@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getReadingGoal, setReadingGoal } from './lib/localPrefs'
+import { toIso } from './lib/social'
 
 const emptyForm = {
   title: '', author: '', genre: '', pages: '', status: 'want_to_read',
@@ -132,7 +133,7 @@ export default function BookNookView() {
     const pages = parseInt(raw, 10)
     if (!raw || isNaN(pages) || pages <= 0) return
     const user_id = await getUserId()
-    const todayStr = new Date().toISOString().split('T')[0]
+    const todayStr = toIso(new Date())
     const newCurrent = Math.min((book.pages || Infinity), Number(book.current_page || 0) + pages)
 
     await supabase.from('reading_logs').insert({ book_id: book.id, logged_date: todayStr, pages, user_id })
@@ -152,7 +153,7 @@ export default function BookNookView() {
   async function startReading(book) {
     await supabase.from('books').update({
       status: 'reading',
-      start_date: book.start_date || new Date().toISOString().split('T')[0],
+      start_date: book.start_date || toIso(new Date()),
     }).eq('id', book.id)
     fetchAll()
   }
@@ -162,7 +163,7 @@ export default function BookNookView() {
     const rating = ratingInput ? parseFloat(ratingInput) : null
     await supabase.from('books').update({
       status: 'finished',
-      finish_date: new Date().toISOString().split('T')[0],
+      finish_date: toIso(new Date()),
       current_page: book.pages || book.current_page,
       rating: rating && !isNaN(rating) ? rating : book.rating,
     }).eq('id', book.id)
@@ -187,7 +188,7 @@ export default function BookNookView() {
   const finishedThisYear = finishedBooks.filter((b) => new Date(b.finish_date + 'T00:00:00').getFullYear() === thisYear)
   const currentlyReading = books.filter((b) => b.status === 'reading')
   const toBeRead = books.filter((b) => b.status === 'want_to_read')
-  const todayStr = now.toISOString().split('T')[0]
+  const todayStr = toIso(now)
   const readToday = logs.some((l) => l.logged_date === todayStr)
 
   useEffect(() => {
@@ -211,9 +212,9 @@ export default function BookNookView() {
     let streak = 0
     const cursor = new Date()
     cursor.setHours(0, 0, 0, 0)
-    const todayStr = cursor.toISOString().split('T')[0]
+    const todayStr = toIso(cursor)
     if (!dateSet.has(todayStr)) cursor.setDate(cursor.getDate() - 1)
-    while (dateSet.has(cursor.toISOString().split('T')[0])) {
+    while (dateSet.has(toIso(cursor))) {
       streak++
       cursor.setDate(cursor.getDate() - 1)
     }

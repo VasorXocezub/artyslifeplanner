@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
+import { toIso } from './lib/social'
 
 const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
 
@@ -30,7 +31,7 @@ const emptyForm = {
 }
 
 function toISO(date) {
-  return date.toISOString().split('T')[0]
+  return toIso(date)
 }
 
 function parseLocalDate(dateStr) {

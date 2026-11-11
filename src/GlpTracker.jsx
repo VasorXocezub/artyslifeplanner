@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
+import { toIso } from './lib/social'
 
 const SITES = ['Left abdomen', 'Right abdomen', 'Left thigh', 'Right thigh', 'Left upper arm', 'Right upper arm']
 const MEDS = ['Ozempic (semaglutide)', 'Wegovy (semaglutide)', 'Mounjaro (tirzepatide)', 'Zepbound (tirzepatide)', 'Saxenda (liraglutide)', 'Victoza (liraglutide)', 'Trulicity (dulaglutide)', 'Other']
 
-const todayStr = () => new Date().toISOString().split('T')[0]
+const todayStr = () => toIso(new Date())
 const parse = (d) => new Date(d + 'T00:00:00')
 const fmt = (d) => parse(d).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-const addDays = (d, n) => { const x = parse(d); x.setDate(x.getDate() + n); return x.toISOString().split('T')[0] }
+const addDays = (d, n) => { const x = parse(d); x.setDate(x.getDate() + n); return toIso(x) }
 const daysBetween = (a, b) => Math.round((parse(b) - parse(a)) / 86400000)
 
 export default function GlpTracker() {

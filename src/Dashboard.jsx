@@ -137,7 +137,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     booksReadThisYear: 0,
     wellness: null,
     nextSocialEvent: null,
-    plansThisWeek: 0,
+    nextPlans: [],
   })
   const [loading, setLoading] = useState(true)
 
@@ -219,9 +219,9 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       .filter((p) => !p.past)
       .sort((x, y) => x.nextDate - y.nextDate)
     const nextSocialEvent = upcomingPlans[0] ? { title: upcomingPlans[0].title, daysAway: upcomingPlans[0].daysAway } : null
-    const plansThisWeek = upcomingPlans.filter((p) => p.daysAway <= 7).length
+    const nextPlans = upcomingPlans.slice(0, 4).map((p) => ({ title: p.title, daysAway: p.daysAway }))
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, plansThisWeek })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans })
     setLoading(false)
   }
 
@@ -349,8 +349,13 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       insightItems.push({ icon: '🌿', text: `Glow Score: ${glowPct}%`, nav: 'glowup' })
     }
   }
-  if (!hiddenModules.includes('social') && stats.plansThisWeek > 0) {
-    insightItems.push({ icon: '💌', text: `${stats.plansThisWeek} plan${stats.plansThisWeek > 1 ? 's' : ''} in the next 7 days`, nav: 'social' })
+  if (!hiddenModules.includes('social')) {
+    // the hero card already shows the very next plan; list the few after it
+    const skip = heroFocus?.key === 'social' ? 1 : 0
+    for (const p of stats.nextPlans.slice(skip, skip + 3)) {
+      const when = p.daysAway === 0 ? 'today' : p.daysAway === 1 ? 'tomorrow' : `in ${p.daysAway} days`
+      insightItems.push({ icon: '💌', text: `${p.title} · ${when}`, nav: 'social' })
+    }
   }
   if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
     insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month`, nav: 'contacts' })

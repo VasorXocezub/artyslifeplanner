@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
+import { toIso } from './lib/social'
 
 const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
 
@@ -17,7 +18,7 @@ export default function BusinessTracker({ currency }) {
   const [error, setError] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], amount: '', description: '' })
+  const [form, setForm] = useState({ date: toIso(new Date()), amount: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [allowanceInput, setAllowanceInput] = useState('')
   const [editingAllowance, setEditingAllowance] = useState(false)
@@ -78,7 +79,7 @@ export default function BusinessTracker({ currency }) {
 
   function openAdd() {
     setEditingId(null)
-    setForm({ date: new Date().toISOString().split('T')[0], amount: '', description: '' })
+    setForm({ date: toIso(new Date()), amount: '', description: '' })
     setModalOpen(true)
   }
 

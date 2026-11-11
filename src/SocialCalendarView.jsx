@@ -54,7 +54,7 @@ const emptyForm = {
   notes: '', holiday_subcategory: '', custom_holiday: '', recurrence: '', status: 'planned', contact_ids: [],
 }
 
-export default function SocialCalendarView({ embedded = false, focus = null, onFocusDone }) {
+export default function SocialCalendarView({ focus = null, onFocusDone }) {
   const [events, setEvents] = useState([])
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -273,10 +273,12 @@ export default function SocialCalendarView({ embedded = false, focus = null, onF
 
   return (
     <div>
-      <div className={embedded ? 'sb-toolbar' : 'view-header'}>
-        {!embedded && <div><h1 className="view-title">Plans</h1></div>}
+      <div className="sc-actionbar">
+        {events.length > 0 && (
+          <input className="search-box cake-search-input" placeholder="🔍 Search plans, places or people…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        )}
         <div className="toolbar">
-          <button className="btn-primary" onClick={() => openAdd()}>+ Add plan</button>
+          <button className="btn-primary" onClick={() => openAdd()}>+ Plan</button>
         </div>
       </div>
 
@@ -287,9 +289,6 @@ export default function SocialCalendarView({ embedded = false, focus = null, onF
         <>
           {events.length > 0 && (
             <>
-              <div className="cake-search-row">
-                <input className="search-box cake-search-input" placeholder="🔍 Search plans, places or people…" value={search} onChange={(e) => setSearch(e.target.value)} />
-              </div>
               <div className="filter-row">
                 <button className={`filter-pill ${when === 'upcoming' ? 'filter-pill-active' : ''}`} onClick={() => setWhen('upcoming')}>Upcoming ({upcoming.length})</button>
                 <button className={`filter-pill ${when === 'past' ? 'filter-pill-active' : ''}`} onClick={() => setWhen('past')}>Past ({past.length})</button>
@@ -357,11 +356,11 @@ export default function SocialCalendarView({ embedded = false, focus = null, onF
             )}
           </div>
 
-          {listed.length > 0 && (
+          {listed.length > upNext.length && (
             <div className="upcoming-section">
               <p className="module-group-label">{when === 'upcoming' ? 'Everything coming up' : 'Past plans'}</p>
               <div className="upcoming-list">
-                {listed.slice(0, when === 'upcoming' ? 12 : 30).map((e, i) => (
+                {listed.slice(when === 'upcoming' ? upNext.length : 0, when === 'upcoming' ? 12 : 30).map((e, i) => (
                   <div className="upcoming-row" key={e.id} onClick={() => openEdit(e)} style={{ borderLeftColor: CHIP_COLORS[i % CHIP_COLORS.length], opacity: e.status === 'cancelled' ? 0.55 : 1 }}>
                     <span className="upcoming-name">{eventTypeInfo(e.event_type).label.split(' ')[0]} {e.title}{e.status === 'done' ? ' ✓' : e.status === 'cancelled' ? ' (cancelled)' : ''}</span>
                     <span className="upcoming-date">
