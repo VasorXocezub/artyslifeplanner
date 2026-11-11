@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
+import BudgetHint from './BudgetHint'
 
 const emptyForm = {
   date: new Date().toISOString().split('T')[0],
@@ -11,6 +12,7 @@ const emptyForm = {
   notes: '',
   is_savings: false,
   savings_goal_id: '',
+  budget_item: '',
 }
 
 const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
@@ -74,6 +76,7 @@ export default function PersonalFinances({ currency }) {
       notes: tx.notes || '',
       is_savings: !!tx.savings_goal_id,
       savings_goal_id: tx.savings_goal_id || '',
+      budget_item: tx.budget_item || '',
     })
     setModalOpen(true)
   }
@@ -100,6 +103,11 @@ export default function PersonalFinances({ currency }) {
       notes: form.notes.trim() || null,
       savings_goal_id: isSavingsContribution ? form.savings_goal_id : null,
     }
+    // only touch budget_item when needed, so the app still works before the budget-v3 SQL is run
+    const hadItem = editingId && transactions.find((t) => t.id === editingId)?.budget_item
+    const wantItem = !isSavingsContribution && form.type === 'expense' && form.budget_item
+    if (wantItem) payload.budget_item = form.budget_item
+    else if (hadItem) payload.budget_item = null
 
     let error
     if (editingId) {
@@ -372,6 +380,10 @@ export default function PersonalFinances({ currency }) {
                     <option key={c} value={c} />
                   ))}
                 </datalist>
+                {!form.is_savings && (
+                  <BudgetHint category={form.category} date={form.date} type={form.type} currency={currency} amount={form.amount}
+                    excludeId={editingId} item={form.budget_item} onItem={(v) => setForm((f) => ({ ...f, budget_item: v }))} />
+                )}
               </div>
 
               {savingsGoals.length > 0 && !editingId && (

@@ -4850,3 +4850,62 @@
 .totals-row { flex-wrap: wrap; }
 
 .icon-custom-wide { flex: 1; width: auto; min-width: 0; text-align: left; font-size: 0.95rem; }
+
+/* ---- Budget v3 ---- */
+.bd-row-line { display: flex; align-items: center; }
+.bd-row-line .bd-row-main { flex: 1; min-width: 0; width: auto; }
+.bd-handle { flex: none; background: none; border: none; color: var(--ink-faint, var(--ink-dim)); cursor: grab; padding: 10px 2px 10px 8px; font-size: 0.8rem; letter-spacing: -2px; touch-action: none; user-select: none; line-height: 1; }
+.bd-handle:active { cursor: grabbing; }
+.bd-quick { flex: none; width: 30px; height: 30px; margin-right: 10px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--accent-deep); font-size: 1.05rem; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.bd-quick:hover { background: var(--accent-tint); }
+.bd-dragging { opacity: 0.45; }
+.bd-drop { box-shadow: inset 0 3px 0 var(--accent-deep); }
+.bd-group-toggle { width: 100%; background: none; border: none; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.bd-chev { display: inline-block; width: 1em; color: var(--ink-dim); }
+.bd-job { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 8px 12px; border-radius: var(--r12, 12px); background: var(--accent-tint); font-size: 0.86rem; }
+.bd-alert { border: 1.5px solid #E0A458; background: color-mix(in srgb, #E0A458 14%, var(--surface)); border-radius: var(--r14); padding: 8px 14px; font-size: 0.86rem; }
+.bd-alert ul { margin: 4px 0 0; padding-left: 18px; }
+.bd-alert-over { color: var(--danger); font-weight: 600; }
+.bd-bills { padding: 10px 16px; }
+.bd-bills ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bd-bills li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; font-size: 0.88rem; }
+.bd-bill-check { display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; }
+.bd-bill-check input { width: 18px; height: 18px; accent-color: var(--accent-deep); flex: none; }
+.bd-bill-paid .bd-bill-check span { text-decoration: line-through; opacity: 0.6; }
+.bd-charts { padding: 0; }
+.bd-charts > .module-group-label { padding: 10px 16px 0; margin: 0; }
+.bd-chart-body { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 0 16px 14px; }
+.bd-donut { flex: none; max-width: 100%; }
+.bd-donut-top { font-size: 15px; font-weight: 700; fill: var(--ink); }
+.bd-donut-bottom { font-size: 10px; fill: var(--ink-dim); }
+.bd-legend-list { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; }
+.bd-legend-list li { display: grid; grid-template-columns: 12px 1fr auto; gap: 8px; align-items: center; }
+.bd-legend-list i, .bd-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.bd-trend { padding: 6px 16px 14px; }
+.bd-trend-svg { width: 100%; height: 130px; display: block; }
+.bd-trend-labels { display: flex; font-size: 0.66rem; color: var(--ink-dim); }
+.bd-trend-labels span { flex: 1; text-align: center; overflow: hidden; text-overflow: clip; white-space: nowrap; }
+.bd-legend { display: flex; gap: 14px; font-size: 0.75rem; color: var(--ink-dim); margin-top: 6px; }
+.bd-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.bd-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; display: flex; align-items: center; gap: 12px; background: var(--ink); color: #fff; padding: 9px 14px; border-radius: 999px; font-size: 0.86rem; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); max-width: calc(100vw - 32px); }
+.bd-toast button { background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0 2px; }
+.bd-toast button:first-of-type { font-weight: 700; text-decoration: underline; }
+.bd-tpl-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.bd-tpl { display: flex; flex-direction: column; gap: 2px; text-align: left; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r12, 12px); padding: 8px 12px; cursor: pointer; font: inherit; color: inherit; }
+.bd-tpl:hover:not(:disabled) { background: var(--accent-tint); }
+.bd-tpl:disabled { opacity: 0.5; cursor: default; }
+.bd-recap { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; }
+.budget-cat-chip button[title="Rename or merge"] { font-size: 0.8rem; }
+.bd-hint { margin-top: 4px; }
+@media (max-width: 520px) {
+  .bd-pref-grid { grid-template-columns: 1fr; }
+  .bd-bills li { grid-template-columns: 1fr auto; }
+  .bd-bills li > .bd-dim { grid-column: 1; grid-row: 2; }
+  .bd-detail { padding-left: 16px; }
+}
+@media print {
+  body * { visibility: hidden !important; }
+  .bd, .bd * { visibility: visible !important; }
+  .bd { position: absolute; left: 0; top: 0; width: 100%; }
+  .bd-noprint, .bd-tools, .bd-toolbar, .bd-viewtabs, .bd-quick, .bd-handle, .bd-nav-links, .bd-nav .btn-cancel, .modal-backdrop { display: none !important; }
+}

@@ -75,7 +75,7 @@ const MODULES = [
   {
     group: 'MONEY',
     items: [
-      { key: 'finances', title: 'Rich Girl Era', desc: '💸 We listen and we don\'t judge.', enabled: true, accent: 'var(--accent-deep)', tint: '#F7EFDF' },
+      { key: 'finances', title: 'Rich Girl Era', desc: '💸 Financially responsible-ish.', enabled: true, accent: 'var(--accent-deep)', tint: '#F7EFDF' },
       { key: 'shopping', title: 'Kitchen Club', desc: '🍓 Girl dinner is not a food group.', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
       { key: 'wishlist', title: 'Wishlist', desc: '🎀 Manifesting these into my cart.', enabled: true, accent: '#EC9A8C', tint: '#FBF3F6' },
     ],

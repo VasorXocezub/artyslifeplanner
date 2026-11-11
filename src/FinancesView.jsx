@@ -46,7 +46,7 @@ export default function FinancesView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Rich Girl Era</h1>
-          <p className="view-subtitle cake-club-subtitle">💸 We listen and we don't judge.</p>
+          <p className="view-subtitle cake-club-subtitle">💸 Financially responsible-ish.</p>
         </div>
         <div className="currency-picker">
           <label>Preferred Currency</label>
