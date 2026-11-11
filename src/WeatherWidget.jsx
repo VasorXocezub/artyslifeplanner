@@ -11,21 +11,6 @@ const WEATHER_ICONS = {
   95: '⛈️', 96: '⛈️', 99: '⛈️',
 }
 
-function getSeason(date, lat) {
-  const month = date.getMonth()
-  const isSouthern = lat < 0
-  let season
-  if ([11, 0, 1].includes(month)) season = 'Winter'
-  else if ([2, 3, 4].includes(month)) season = 'Spring'
-  else if ([5, 6, 7].includes(month)) season = 'Summer'
-  else season = 'Autumn'
-  if (isSouthern) {
-    const swap = { Winter: 'Summer', Summer: 'Winter', Spring: 'Autumn', Autumn: 'Spring' }
-    season = swap[season]
-  }
-  return season
-}
-
 export default function WeatherWidget({ user }) {
   const [location, setLocationState] = useState(user?.user_metadata?.location || null)
   const [weather, setWeather] = useState(null)
@@ -75,7 +60,6 @@ export default function WeatherWidget({ user }) {
     await supabase.auth.updateUser({ data: { location: loc } })
   }
 
-  const now = new Date()
   const temp = weather?.current?.temperature_2m
   const code = weather?.current?.weather_code
   const icon = code != null ? WEATHER_ICONS[code] || '🌡️' : null

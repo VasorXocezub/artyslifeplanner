@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import ConfirmSheet from './ConfirmSheet'
+import { parseQuickPlan } from './lib/quickAdd'
 import {
   MONTH_NAMES, DAY_NAMES, CHIP_COLORS, RECURRENCE, parseLocalDate, formatMonthDay, formatTime,
-  todayIso, toIso, startOfToday, planItem, planOccursOn, inDays, missingColumnHint,
+  todayIso, toIso, startOfToday, makeCustomType, parseCustomType, planItem, planOccursOn, inDays, missingColumnHint, isIsoDate,
 } from './lib/social'
 
 const EVENT_TYPES = [
@@ -39,7 +40,12 @@ const RSVP_OPTIONS = [
 ]
 
 
+const EMOJI_SUGGEST = ['🍕', '💅', '🎬', '🏃‍♀️', '🎮', '🧘', '🛒', '🎤', '📚', '🐶', '🍷', '🎨']
+const NEW_TYPE = '__new'
+
 function eventTypeInfo(key) {
+  const c = parseCustomType(key)
+  if (c) return { key, label: `${c.emoji} ${c.label}` }
   return EVENT_TYPES.find((t) => t.key === key) || EVENT_TYPES[EVENT_TYPES.length - 1]
 }
 function rsvpInfo(key) {
@@ -51,7 +57,7 @@ const RSVP_FILTERS = [{ key: 'going', label: '✅ Going' }, { key: 'maybe', labe
 
 const emptyForm = {
   title: '', event_date: '', event_time: '', location: '', event_type: 'cozy_gathering', rsvp: 'going',
-  notes: '', holiday_subcategory: '', custom_holiday: '', recurrence: '', status: 'planned', contact_ids: [],
+  notes: '', holiday_subcategory: '', custom_holiday: '', recurrence: '', status: 'planned', contact_ids: [], checklist: [],
 }
 
 export default function SocialCalendarView({ focus = null, onFocusDone }) {
@@ -71,6 +77,13 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   const [search, setSearch] = useState('')
   const [ask, setAsk] = useState(null)
   const [dayPick, setDayPick] = useState(null)
+  const [showFilters, setShowFilters] = useState(false)
+  const [quick, setQuick] = useState('')
+  const [quickNote, setQuickNote] = useState(null)
+  const [typesOpen, setTypesOpen] = useState(false)
+  const [typeEdits, setTypeEdits] = useState({})
+  const [customEmoji, setCustomEmoji] = useState('✨')
+  const [customName, setCustomName] = useState('')
 
   useEffect(() => { fetchAll() }, [])
 
@@ -82,7 +95,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
       supabase.from('contacts').select('id, name, icon, archived'),
     ])
     if (ev.error) setError(ev.error.message)
-    else setEvents(ev.data || [])
+    else setEvents((ev.data || []).filter((e) => e.title && isIsoDate(e.event_date)))
     setContacts((ct.data || []).filter((c) => !c.archived))
     setLoading(false)
   }
@@ -90,11 +103,17 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   function openAdd(prefillDate) {
     setEditingId(null)
     setForm({ ...emptyForm, event_date: prefillDate || todayIso() })
+    setQuick('')
+    setQuickNote(null)
+    setCustomEmoji('✨')
+    setCustomName('')
     setModalOpen(true)
   }
 
   function openEdit(event) {
     setEditingId(event.id)
+    setCustomEmoji('✨')
+    setCustomName('')
     const custom = event.holiday_subcategory && !HOLIDAY_SUBCATEGORIES.some((h) => h.key === event.holiday_subcategory)
     setForm({
       title: event.title || '',
@@ -109,6 +128,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
       recurrence: event.recurrence || '',
       status: event.status || 'planned',
       contact_ids: event.contact_ids || [],
+      checklist: Array.isArray(event.checklist) ? event.checklist : [],
     })
     setModalOpen(true)
   }
@@ -121,6 +141,41 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
     onFocusDone?.()
   }, [focus, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function renameType(oldKey) {
+    const ed = typeEdits[oldKey]
+    const info = parseCustomType(oldKey)
+    const emoji = (ed?.emoji ?? info.emoji).trim() || '✨'
+    const label = (ed?.label ?? info.label).trim()
+    if (!label) { setError('A custom type needs a name.'); return }
+    const key = makeCustomType(emoji, label)
+    if (key === oldKey) return
+    const { error } = await supabase.from('social_events').update({ event_type: key }).eq('event_type', oldKey)
+    if (error) { setError(error.message); return }
+    setTypeEdits((t) => { const n = { ...t }; delete n[oldKey]; return n })
+    fetchAll()
+  }
+
+  async function deleteType(oldKey) {
+    const { error } = await supabase.from('social_events').update({ event_type: 'reminder' }).eq('event_type', oldKey)
+    if (error) { setError(error.message); return }
+    fetchAll()
+  }
+
+  function applyQuick() {
+    const r = parseQuickPlan(quick)
+    if (!r) return
+    setForm((f) => ({
+      ...f,
+      title: r.title,
+      event_date: r.event_date || f.event_date,
+      event_time: r.event_time || f.event_time,
+      location: r.location || f.location,
+      event_type: r.event_type || f.event_type,
+    }))
+    setQuickNote(`Filled in${r.event_date ? ` ${formatMonthDay(parseLocalDate(r.event_date).month, parseLocalDate(r.event_date).day)}` : ''}${r.event_time ? ` at ${formatTime(r.event_time)}` : ''} — check the details below.`)
+    setQuick('')
+  }
+
   function closeModal() {
     setModalOpen(false)
     setEditingId(null)
@@ -130,6 +185,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   async function handleSave(e) {
     e.preventDefault()
     if (!form.title.trim() || !form.event_date) return
+    if (form.event_type === NEW_TYPE && !customName.trim()) { setError('Give your custom plan type a name.'); return }
     setSaving(true)
 
     const payload = {
@@ -137,7 +193,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
       event_date: form.event_date,
       event_time: form.event_time || null,
       location: form.location.trim() || null,
-      event_type: form.event_type,
+      event_type: form.event_type === NEW_TYPE ? makeCustomType(customEmoji, customName) : form.event_type,
       rsvp: NO_RSVP_TYPES.includes(form.event_type) ? null : form.rsvp,
       notes: form.notes.trim() || null,
       holiday_subcategory: form.event_type === 'holiday_magic'
@@ -149,6 +205,8 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
     if (form.recurrence || prev?.recurrence) payload.recurrence = form.recurrence || null
     if (form.status !== 'planned' || (prev && prev.status && prev.status !== 'planned')) payload.status = form.status
     if (form.contact_ids.length || prev?.contact_ids?.length) payload.contact_ids = form.contact_ids
+    const cl = form.checklist.filter((i) => i.t.trim())
+    if (cl.length || (Array.isArray(prev?.checklist) && prev.checklist.length)) payload.checklist = cl
 
     let error
     if (editingId) {
@@ -183,6 +241,11 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   const today = startOfToday()
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
+  const customTypes = useMemo(() => {
+    const seen = new Map()
+    for (const e of events) if (parseCustomType(e.event_type) && !seen.has(e.event_type)) seen.set(e.event_type, eventTypeInfo(e.event_type))
+    return [...seen.values()]
+  }, [events])
   const nameOf = useMemo(() => Object.fromEntries(contacts.map((c) => [c.id, c])), [contacts])
 
   const items = useMemo(() => events.filter((e) => e.event_date).map((e) => planItem(e, today)), [events]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -242,29 +305,27 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   function PlanCard({ e, i }) {
     const { t, people } = planMeta(e)
     const color = CHIP_COLORS[i % CHIP_COLORS.length]
+    const bits = [
+      `${formatMonthDay(e.nextDate.getMonth(), e.nextDate.getDate())}${e.event_time ? ` · ${formatTime(e.event_time)}` : ''}`,
+      e.location && `📍 ${e.location}`,
+      people.length > 0 && people.map((p) => p.name).join(', '),
+      e.rsvp && rsvpInfo(e.rsvp).label,
+      e.recurrence && `🔁 ${RECURRENCE.find((r) => r.key === e.recurrence)?.label.toLowerCase()}`,
+      Array.isArray(e.checklist) && e.checklist.length > 0 && `☑ ${e.checklist.filter((i) => i.d).length}/${e.checklist.length}`,
+    ].filter(Boolean)
     return (
-      <div className="contact-card upnext-card sc-card" onClick={() => openEdit(e)} style={{ borderTopColor: color }}>
-        <div className="cake-card-top">
-          <div>
-            <h3 className="contact-name">{t.label.split(' ')[0]} {e.title}</h3>
-            <p className="habit-schedule">
-              {formatMonthDay(e.nextDate.getMonth(), e.nextDate.getDate())}{e.event_time ? ` · ${formatTime(e.event_time)}` : ''} · {inDays(e.daysAway)}
-              {e.recurrence ? ` · 🔁 ${RECURRENCE.find((r) => r.key === e.recurrence)?.label.toLowerCase()}` : ''}
-            </p>
-            <span className="cake-relationship-tag">{t.label.slice(t.label.indexOf(' ') + 1)}{e.holiday_subcategory && ` · ${HOLIDAY_SUBCATEGORIES.find((h) => h.key === e.holiday_subcategory)?.label || e.holiday_subcategory}`}</span>
-          </div>
+      <div className="sc-row-card" onClick={() => openEdit(e)} style={{ borderLeftColor: color }}>
+        <span className="sc-row-emoji">{t.label.split(' ')[0]}</span>
+        <div className="sc-row-main">
+          <span className="sc-row-title">{e.title} <em>{inDays(e.daysAway)}</em></span>
+          <span className="sc-row-sub">{bits.join(' · ')}</span>
         </div>
-        {e.location && <p className="contact-relationship">📍 {e.location}</p>}
-        {people.length > 0 && <p className="contact-relationship">{people.map((p) => `${p.icon || '🎂'} ${p.name}`).join(', ')}</p>}
-        <div className="sc-card-foot">
-          {e.rsvp ? <span className="cake-gift-status cake-gift-status-purchased">{rsvpInfo(e.rsvp).label}</span> : <span />}
-          <span className="sc-card-actions">
-            {!e.recurrence && e.status !== 'done' && e.status !== 'cancelled' && (
-              <button className="sc-icon-btn" onClick={(ev) => setStatus(e, 'done', ev)} title="Mark done" aria-label="Mark done">✅</button>
-            )}
-            <button className="sc-icon-btn" onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }} title="View in calendar" aria-label="View in calendar">📅</button>
-          </span>
-        </div>
+        <span className="sc-card-actions">
+          {!e.recurrence && e.status !== 'done' && e.status !== 'cancelled' && (
+            <button className="sc-icon-btn" onClick={(ev) => setStatus(e, 'done', ev)} title="Mark done" aria-label="Mark done">✅</button>
+          )}
+          <button className="sc-icon-btn" onClick={(ev) => { ev.stopPropagation(); jumpToDate(e.event_date) }} title="View in calendar" aria-label="View in calendar">📅</button>
+        </span>
       </div>
     )
   }
@@ -277,9 +338,14 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
         {events.length > 0 && (
           <input className="search-box cake-search-input" placeholder="🔍 Search plans, places or people…" value={search} onChange={(e) => setSearch(e.target.value)} />
         )}
-        <div className="toolbar">
-          <button className="btn-primary" onClick={() => openAdd()}>+ Plan</button>
-        </div>
+        {customTypes.length > 0 && (
+          <button className="sc-filter-btn" onClick={() => setTypesOpen(true)} title="Manage your custom plan types">🎨 Types</button>
+        )}
+        {events.length > 0 && (
+          <button className={`sc-filter-btn ${showFilters || rsvpFilter ? 'on' : ''}`} onClick={() => setShowFilters((v) => !v)}>
+            ⚙ Filter{rsvpFilter ? ' · 1' : ''}
+          </button>
+        )}
       </div>
 
       {loading && <p className="loading">Checking the group chat… 💬✨</p>}
@@ -289,7 +355,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
         <>
           {events.length > 0 && (
             <>
-              <div className="filter-row">
+              <div className="filter-row" style={{ display: showFilters || rsvpFilter || when === 'past' ? undefined : 'none' }}>
                 <button className={`filter-pill ${when === 'upcoming' ? 'filter-pill-active' : ''}`} onClick={() => setWhen('upcoming')}>Upcoming ({upcoming.length})</button>
                 <button className={`filter-pill ${when === 'past' ? 'filter-pill-active' : ''}`} onClick={() => setWhen('past')}>Past ({past.length})</button>
                 {RSVP_FILTERS.map((f) => (
@@ -302,7 +368,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
           {upNext.length > 0 && (
             <div className="upnext-section">
               <p className="module-group-label">Up next</p>
-              <div className="card-grid">{upNext.map((e, i) => <PlanCard key={e.id} e={e} i={i} />)}</div>
+              <div className="sc-stack">{upNext.map((e, i) => <PlanCard key={e.id} e={e} i={i} />)}</div>
             </div>
           )}
 
@@ -383,10 +449,33 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
           {events.length === 0 && (
             <div className="empty-state">
               <h3>No plans yet — let's fix that ✨</h3>
-              <p>Tap a date above, or hit "+ Add plan" to get your calendar looking cute.</p>
+              <p>Tap a date above, or tap the + button to get your calendar looking cute.</p>
             </div>
           )}
         </>
+      )}
+
+      {typesOpen && (
+        <div className="modal-backdrop" onClick={() => setTypesOpen(false)}>
+          <div className="modal sc-confirm" onClick={(e) => e.stopPropagation()}>
+            <h2>Your plan types</h2>
+            {customTypes.length === 0 && <p className="field-hint">No custom types yet.</p>}
+            {customTypes.map((t) => {
+              const info = parseCustomType(t.key)
+              const ed = typeEdits[t.key] || {}
+              const count = events.filter((e) => e.event_type === t.key).length
+              return (
+                <div key={t.key} className="sc-check-row">
+                  <input style={{ maxWidth: 56 }} maxLength={8} value={ed.emoji ?? info.emoji} onChange={(e) => setTypeEdits({ ...typeEdits, [t.key]: { ...ed, emoji: e.target.value } })} aria-label="Emoji" />
+                  <input value={ed.label ?? info.label} maxLength={30} onChange={(e) => setTypeEdits({ ...typeEdits, [t.key]: { ...ed, label: e.target.value } })} aria-label="Name" />
+                  <button className="sc-chip-btn" onClick={() => renameType(t.key)}>Save</button>
+                  <button className="sc-icon-btn" aria-label="Delete type" onClick={() => setAsk({ title: `Delete “${info.label}”?`, body: `${count} plan${count === 1 ? '' : 's'} will become “📝 Reminder”. Nothing is deleted.`, label: 'Delete type', run: () => deleteType(t.key) })}>🗑</button>
+                </div>
+              )
+            })}
+            <div className="modal-actions"><div /><div className="modal-actions-right"><button className="btn-cancel" onClick={() => setTypesOpen(false)}>Close</button></div></div>
+          </div>
+        </div>
       )}
 
       {ask && (
@@ -398,6 +487,19 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Edit plan' : 'New plan'}</h2>
             <form onSubmit={handleSave}>
+              {!editingId && (
+                <div className="field">
+                  <label>✨ Quick add</label>
+                  <input
+                    value={quick}
+                    onChange={(e) => { setQuick(e.target.value); setQuickNote(null) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyQuick() } }}
+                    onBlur={applyQuick}
+                    placeholder="Dinner Fri 7pm at Rosebank"
+                  />
+                  {quickNote && <p className="field-hint">{quickNote}</p>}
+                </div>
+              )}
               <div className="field">
                 <label>What's the plan?</label>
                 <input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Sarah's birthday dinner, girls' trip…" required />
@@ -406,7 +508,23 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
                 <label>Type</label>
                 <select value={form.event_type} onChange={(e) => setForm({ ...form, event_type: e.target.value })}>
                   {EVENT_TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                  {customTypes.length > 0 && <optgroup label="Your types">{customTypes.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}</optgroup>}
+                  <option value={NEW_TYPE}>➕ New custom type…</option>
                 </select>
+                {form.event_type === NEW_TYPE && (
+                  <div className="sc-custom-type">
+                    <div className="icon-picker">
+                      <span className="icon-preview">{customEmoji || '✨'}</span>
+                      <input className="icon-custom-input" value={customEmoji} maxLength={8} onChange={(e) => setCustomEmoji(e.target.value)} placeholder="Paste any emoji" aria-label="Custom emoji" />
+                      <input style={{ flex: 1 }} value={customName} maxLength={30} onChange={(e) => setCustomName(e.target.value)} placeholder="Name, e.g. Pizza night" aria-label="Custom type name" required autoFocus />
+                    </div>
+                    <div className="icon-grid">
+                      {EMOJI_SUGGEST.map((em) => (
+                        <button type="button" key={em} className={`icon-cell ${customEmoji === em ? 'icon-cell-active' : ''}`} onClick={() => setCustomEmoji(em)}>{em}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               {form.event_type === 'holiday_magic' && (
                 <div className="field">
@@ -474,6 +592,17 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
                   </div>
                 </div>
               )}
+              <div className="field">
+                <label>Checklist (optional)</label>
+                {form.checklist.map((item, i) => (
+                  <div className="sc-check-row" key={i}>
+                    <input type="checkbox" checked={!!item.d} aria-label="Done" onChange={() => setForm({ ...form, checklist: form.checklist.map((x, j) => (j === i ? { ...x, d: !x.d } : x)) })} />
+                    <input value={item.t} onChange={(e) => setForm({ ...form, checklist: form.checklist.map((x, j) => (j === i ? { ...x, t: e.target.value } : x)) })} placeholder="e.g. Buy a gift" />
+                    <button type="button" className="sc-icon-btn" aria-label="Remove item" onClick={() => setForm({ ...form, checklist: form.checklist.filter((_, j) => j !== i) })}>×</button>
+                  </div>
+                ))}
+                <button type="button" className="sc-chip-btn" onClick={() => setForm({ ...form, checklist: [...form.checklist, { t: '', d: false }] })}>+ Add item</button>
+              </div>
               <div className="field">
                 <label>Notes</label>
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="What to wear, what to bring, who's going…" />

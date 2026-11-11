@@ -145,3 +145,15 @@ export function downloadIcs(text, name = 'social-calendar.ics') {
 export function missingColumnHint(msg) {
   return /column|schema cache/i.test(msg || '') ? `${msg} — run social-calendar-v2.sql in Supabase, then refresh.` : msg
 }
+
+export const isIsoDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)
+
+// Custom plan types are stored in event_type as "custom:<emoji>|<name>" (no extra table needed)
+export const CUSTOM_PREFIX = 'custom:'
+export function makeCustomType(emoji, label) { return `${CUSTOM_PREFIX}${(emoji || '✨').trim()}|${label.trim()}` }
+export function parseCustomType(key) {
+  if (typeof key !== 'string' || !key.startsWith(CUSTOM_PREFIX)) return null
+  const [emoji, ...rest] = key.slice(CUSTOM_PREFIX.length).split('|')
+  const label = rest.join('|').trim()
+  return label ? { emoji: emoji.trim() || '✨', label } : null
+}

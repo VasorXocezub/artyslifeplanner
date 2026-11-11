@@ -437,20 +437,6 @@ export default function HabitsView() {
     return true
   }
 
-  async function toggleDoneToday(habit) {
-    const logs = logsByHabit[habit.id] || []
-    const existing = logs.find((l) => l.logged_date === todayStr)
-    if (existing) {
-      const { error } = await supabase.from('habit_logs').delete().eq('id', existing.id)
-      if (error) { setError(error.message); return }
-    } else {
-      const user_id = await getUserId()
-      const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null, user_id })
-      if (error) { setError(error.message); return }
-    }
-    fetchAll()
-  }
-
   async function incrementToday(habit) {
     const user_id = await getUserId()
     const { error } = await supabase.from('habit_logs').insert({ habit_id: habit.id, logged_date: todayStr, value: null, user_id })

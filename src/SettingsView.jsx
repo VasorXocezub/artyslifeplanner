@@ -63,7 +63,7 @@ const RESET_TABLES = [
   'meal_plans', 'recipes', 'pantry_items', 'grocery_budget', 'shopping_items',
   'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings', 'account_settings', 'budget_items', 'budget_settings', 'budget_periods', 'budget_period_overrides', 'finance_categories', 'budget_bill_payments', 'budget_period_notes', 'category_rules', 'glp1_injections', 'glp1_settings',
   'wellness_logs', 'cycle_logs', 'cycle_settings', 'weight_logs', 'weight_settings',
-  'social_events', 'brain_dump_entries', 'inbox_notes', 'goals', 'contacts',
+  'social_events', 'brain_dump_entries', 'inbox_notes', 'goals', 'gift_history', 'contacts',
 ]
 
 export default function SettingsView({ session, hiddenModules, onSaveModules, onLogout }) {
@@ -86,6 +86,38 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
   const [resetText, setResetText] = useState('')
   const [resetting, setResetting] = useState(false)
   const [resetError, setResetError] = useState(null)
+  const [backingUp, setBackingUp] = useState(false)
+  const [backupMsg, setBackupMsg] = useState(null)
+
+  async function handleBackup() {
+    setBackingUp(true)
+    setBackupMsg(null)
+    const out = { exported_at: new Date().toISOString(), tables: {} }
+    const skipped = []
+    for (const table of RESET_TABLES) {
+      // Supabase returns at most 1000 rows per request, so read in pages
+      let all = []
+      let failed = null
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from(table).select('*').range(from, from + 999)
+        if (error) { failed = error.message; break }
+        all = all.concat(data || [])
+        if (!data || data.length < 1000) break
+      }
+      if (failed) skipped.push(`${table} (${failed})`)
+      else out.tables[table] = all
+    }
+    setBackingUp(false)
+    const rows = Object.values(out.tables).reduce((n, t) => n + t.length, 0)
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `arty-backup-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}.json`
+    document.body.appendChild(a); a.click(); a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setBackupMsg(`Downloaded ${rows} rows from ${Object.keys(out.tables).length} tables.${skipped.length ? ` Skipped: ${skipped.join('; ')}` : ''}`)
+  }
 
   async function handleResetAll() {
     if (resetText.trim().toUpperCase() !== 'RESET') return
@@ -274,6 +306,15 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
               {nameSaved ? 'Saved ✓' : 'Save name'}
             </button>
           </form>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <p className="module-group-label">Backup</p>
+        <div className="calendar-card">
+          <p className="field-hint">Download everything you've saved (birthdays, plans, budget, habits and more) as one file you can keep safe.</p>
+          <button className="btn-check" onClick={handleBackup} disabled={backingUp}>{backingUp ? 'Collecting…' : '⬇ Download my data'}</button>
+          {backupMsg && <p className="field-hint">{backupMsg}</p>}
         </div>
       </div>
 

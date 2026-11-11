@@ -2,9 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import ConfirmSheet from './ConfirmSheet'
 import ImportBirthdaysModal from './ImportBirthdaysModal'
+import WishSheet from './WishSheet'
+import { formatMoney } from './lib/currency'
+import { getCurrency } from './lib/localPrefs'
 import {
   MONTH_NAMES, DAY_NAMES, CHIP_COLORS, parseLocalDate, formatMonthDay, todayIso, startOfToday,
-  nextBirthday, giftNeeded, inDays, missingColumnHint,
+  nextBirthday, giftNeeded, inDays, missingColumnHint, isIsoDate,
 } from './lib/social'
 
 const ICON_OPTIONS = ['🎂', '🎈', '🎁', '✨', '👑', '💐', '🦋', '🌸', '☕', '🍾', '💌', '🧁']
@@ -41,7 +44,7 @@ function giftStatus(c) {
 
 const emptyForm = {
   name: '', icon: '🎂', birthday: '', birth_year: '', relationship: '', phone: '',
-  fave_flowers: '', fave_store: '', coffee_order: '', gift_ideas: '', gift_notes: '',
+  fave_flowers: '', fave_store: '', coffee_order: '', gift_ideas: '', gift_notes: '', gift_price: '', gift_link: '',
   gift_purchased: false, no_gift: false,
 }
 
@@ -125,6 +128,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
   const [showArchived, setShowArchived] = useState(false)
   const [ask, setAsk] = useState(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const [notice, setNotice] = useState(null)
 
   useEffect(() => {
@@ -143,7 +147,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
 
     if (error) setError(missingColumnHint(error.message))
     else {
-      setContacts((data || []).filter((c) => !c.archived))
+      setContacts((data || []).filter((c) => !c.archived && c.name && isIsoDate(c.birthday)))
       setArchived((data || []).filter((c) => c.archived))
     }
     setLoading(false)
@@ -158,6 +162,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
 
   function openProfile(contact) {
     populateForm(contact)
+    loadHistory(contact.id)
     setProfileMode(true)
     setModalOpen(true)
   }
@@ -176,6 +181,8 @@ export default function ContactsView({ focus = null, onFocusDone }) {
       coffee_order: contact.coffee_order || '',
       gift_ideas: contact.gift_ideas || '',
       gift_notes: contact.gift_notes || '',
+      gift_price: contact.gift_price != null ? String(contact.gift_price) : '',
+      gift_link: contact.gift_link || '',
       gift_purchased: !!contact.gift_purchased,
       no_gift: !!contact.no_gift,
     })
@@ -184,7 +191,8 @@ export default function ContactsView({ focus = null, onFocusDone }) {
   // Jump straight into add/profile from the All tab
   useEffect(() => {
     if (!focus || loading) return
-    if (focus.add) openAdd(focus.date)
+    if (focus.import) setImportOpen(true)
+    else if (focus.add) openAdd(focus.date)
     else if (focus.id) { const c = contacts.find((x) => x.id === focus.id); if (c) openProfile(c) }
     onFocusDone?.()
   }, [focus, loading]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -217,6 +225,9 @@ export default function ContactsView({ focus = null, onFocusDone }) {
 
     // birth_year is only sent when used, so saving still works before the v2 SQL has been run
     const prevC = editingId ? contacts.find((x) => x.id === editingId) : null
+    // v3 gift fields are only sent when used, so saving still works before the v3 SQL has been run
+    if (form.gift_price || prevC?.gift_price != null) payload.gift_price = form.gift_price ? Number(form.gift_price) : null
+    if (form.gift_link.trim() || prevC?.gift_link) payload.gift_link = form.gift_link.trim() || null
     if (form.birth_year || prevC?.birth_year) payload.birth_year = form.birth_year ? Number(form.birth_year) : null
 
     let error
@@ -251,9 +262,53 @@ export default function ContactsView({ focus = null, onFocusDone }) {
 
   async function toggleGiftPurchased(contact, e) {
     e?.stopPropagation()
-    const { error } = await supabase.from('contacts').update({ gift_purchased: !contact.gift_purchased }).eq('id', contact.id)
+    const next = !contact.gift_purchased
+    const patch = { gift_purchased: next }
+    if ('gift_purchased_at' in contact) patch.gift_purchased_at = next ? todayIso() : null
+    const { error } = await supabase.from('contacts').update(patch).eq('id', contact.id)
     if (error) { setError(error.message); return }
     fetchContacts()
+  }
+
+  // ---- gift history + shopping list + wishes
+  const [history, setHistory] = useState([])
+  const [histForm, setHistForm] = useState({ year: String(new Date().getFullYear()), gift: '', price: '' })
+  const [wishFor, setWishFor] = useState(null)
+  const [shopMsg, setShopMsg] = useState(null)
+
+  async function loadHistory(id) {
+    const { data, error } = await supabase.from('gift_history').select('*').eq('contact_id', String(id)).order('year', { ascending: false })
+    if (error) { setHistory([]); if (!/gift_history|relation|schema cache/i.test(error.message)) setError(error.message); return }
+    setHistory(data || [])
+  }
+
+  async function addHistory() {
+    if (!histForm.gift.trim() || !editingId) return
+    const user_id = await getUserId()
+    const { error } = await supabase.from('gift_history').insert({
+      contact_id: String(editingId), year: Number(histForm.year) || new Date().getFullYear(),
+      gift: histForm.gift.trim(), price: histForm.price ? Number(histForm.price) : null, user_id,
+    })
+    if (error) { setError(missingColumnHint(error.message) + (/relation|gift_history/i.test(error.message) ? ' — run social-calendar-v3.sql in Supabase.' : '')); return }
+    setHistForm((f) => ({ ...f, gift: '', price: '' }))
+    loadHistory(editingId)
+  }
+
+  async function removeHistory(id) {
+    const { error } = await supabase.from('gift_history').delete().eq('id', id)
+    if (error) { setError(error.message); return }
+    loadHistory(editingId)
+  }
+
+  async function addToShopping(c) {
+    const user_id = await getUserId()
+    const idea = (c.gift_ideas || '').split('\n')[0].trim()
+    const { error } = await supabase.from('shopping_items').insert({
+      text: `🎁 ${idea || 'Gift'} for ${c.name.split(' ')[0]}`, category: 'planned', price: c.gift_price != null ? Number(c.gift_price) : null, user_id,
+    })
+    if (error) { setError(error.message); return }
+    setShopMsg(`Added to your shopping list ✅`)
+    setTimeout(() => setShopMsg(null), 3000)
   }
 
   async function archiveContact(contact, e) {
@@ -307,6 +362,17 @@ export default function ContactsView({ focus = null, onFocusDone }) {
     return contacts.map((c) => nextBirthday(c, today)).sort((a, b) => a.nextDate - b.nextDate)
   }, [contacts]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const giftSpend = useMemo(() => {
+    const y = new Date().getFullYear()
+    let spent = 0, planned = 0
+    for (const c of contacts) {
+      const price = Number(c.gift_price) || 0
+      if (!price || c.no_gift) continue
+      if (c.gift_purchased) { if (!c.gift_purchased_at || Number(String(c.gift_purchased_at).slice(0, 4)) === y) spent += price } else planned += price
+    }
+    return { spent, planned }
+  }, [contacts])
+
   const todays = upcoming.filter((c) => c.daysAway === 0)
   const giftNudge = upcoming.filter((c) => c.daysAway > 0 && c.daysAway <= 14 && giftNeeded(c))
 
@@ -356,10 +422,11 @@ export default function ContactsView({ focus = null, onFocusDone }) {
         {contacts.length > 0 && (
           <input className="search-box cake-search-input" placeholder="🔍 Search by name…" value={search} onChange={(e) => setSearch(e.target.value)} />
         )}
-        <div className="toolbar">
-          <button className="btn-check" onClick={() => setImportOpen(true)}>⬆ Import</button>
-          <button className="btn-primary" onClick={() => openAdd()}>+ Birthday</button>
-        </div>
+        {contacts.length > 0 && (
+          <button className={`sc-filter-btn ${showFilters || activeFilter ? 'on' : ''}`} onClick={() => setShowFilters((v) => !v)}>
+            ⚙ Filter{activeFilter ? ' · 1' : ''}
+          </button>
+        )}
       </div>
 
       {loading && <p className="loading">Fetching birthdays… 🎂✨</p>}
@@ -370,7 +437,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
           {todays.map((c) => (
             <div className="sc-banner sc-banner-today" key={c.id}>
               <span>🎉 It's {c.name}'s birthday today{c.turning ? ` — turning ${c.turning}` : ''}!</span>
-              {c.phone && <a className="sc-chip-btn" href={`sms:${c.phone}`}>💬 Text</a>}
+              <button className="sc-chip-btn" onClick={() => setWishFor(c)}>💬 Send a wish</button>
             </div>
           ))}
           {giftNudge.length > 0 && (
@@ -385,10 +452,13 @@ export default function ContactsView({ focus = null, onFocusDone }) {
               <b>{stats.total}</b> birthday{stats.total === 1 ? '' : 's'}
               <span> · </span><b>{stats.giftsRemaining}</b> gift{stats.giftsRemaining === 1 ? '' : 's'} to sort
               {stats.nextDays != null && <><span> · </span>next {inDays(stats.nextDays)}</>}
+              {(giftSpend.spent > 0 || giftSpend.planned > 0) && (
+                <><span> · </span>🎁 <b>{formatMoney(giftSpend.spent, getCurrency(), 0)}</b> spent{giftSpend.planned > 0 && <> · {formatMoney(giftSpend.planned, getCurrency(), 0)} planned</>}</>
+              )}
             </p>
           )}
 
-          {contacts.length > 0 && (
+          {contacts.length > 0 && (showFilters || activeFilter) && (
             <div className="filter-row">
               {FILTERS.map((f) => (
                 <button
@@ -411,35 +481,43 @@ export default function ContactsView({ focus = null, onFocusDone }) {
           {upNext.length > 0 && (
             <div className="upnext-section">
               <p className="module-group-label">{dateFilter || search || activeFilter ? 'Results' : 'Up next'}</p>
-              <div className="card-grid">
+              <div className="sc-stack">
                 {upNext.map((c, i) => {
                   const color = CHIP_COLORS[i % CHIP_COLORS.length]
                   const status = giftStatus(c)
+                  const actions = (
+                    <span className="sc-card-actions">
+                      <button className="sc-icon-btn" onClick={(e) => { e.stopPropagation(); setWishFor(c) }} aria-label={`Birthday wish for ${c.name}`} title="Birthday wish">💬</button>
+                      {c.phone && <a className="sc-icon-btn" href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} aria-label={`Call ${c.name}`}>📞</a>}
+                      {giftNeeded(c) && <button className="sc-icon-btn" onClick={(e) => toggleGiftPurchased(c, e)} aria-label="Mark gift purchased" title="Mark gift purchased">✅</button>}
+                    </span>
+                  )
+                  if (c.daysAway > 0) {
+                    return (
+                      <div className="sc-row-card" key={c.id} onClick={() => openProfile(c)} style={{ borderLeftColor: color }}>
+                        <CountdownRing daysAway={c.daysAway} color={color} size={38} />
+                        <div className="sc-row-main">
+                          <span className="sc-row-title">{c.icon || '🎂'} {c.name}</span>
+                          <span className="sc-row-sub">{formatMonthDay(c.month, c.day)}{c.turning ? ` · turns ${c.turning}` : ''} · <span className={`sc-dot-${status.tone}`}>{status.text}</span></span>
+                        </div>
+                        {actions}
+                      </div>
+                    )
+                  }
                   return (
-                    <div
-                      className="contact-card upnext-card cake-card sc-card"
-                      key={c.id}
-                      onClick={() => openProfile(c)}
-                      style={{ borderTopColor: color }}
-                    >
-                      {c.daysAway === 0 && <ConfettiBurst />}
+                    <div className="contact-card upnext-card cake-card sc-card" key={c.id} onClick={() => openProfile(c)} style={{ borderTopColor: color }}>
+                      <ConfettiBurst />
                       <div className="cake-card-top">
                         <div>
                           <h3 className="contact-name">{c.icon || '🎂'} {c.name}</h3>
-                          <p className="habit-schedule">
-                            {formatMonthDay(c.month, c.day)}{c.turning ? ` · turns ${c.turning}` : ''}
-                          </p>
+                          <p className="habit-schedule">{formatMonthDay(c.month, c.day)}{c.turning ? ` · turns ${c.turning}` : ''}</p>
                           {c.relationship && <span className="cake-relationship-tag">{relationshipLabel(c.relationship)}</span>}
                         </div>
                         <CountdownRing daysAway={c.daysAway} color={color} size={48} />
                       </div>
                       <div className="sc-card-foot">
                         <span className={`cake-gift-status cake-gift-status-${status.tone}`}>{status.icon} {status.text}</span>
-                        <span className="sc-card-actions">
-                          {c.phone && <a className="sc-icon-btn" href={`sms:${c.phone}`} onClick={(e) => e.stopPropagation()} aria-label={`Text ${c.name}`}>💬</a>}
-                          {c.phone && <a className="sc-icon-btn" href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} aria-label={`Call ${c.name}`}>📞</a>}
-                          {giftNeeded(c) && <button className="sc-icon-btn" onClick={(e) => toggleGiftPurchased(c, e)} aria-label="Mark gift purchased" title="Mark gift purchased">✅</button>}
-                        </span>
+                        {actions}
                       </div>
                     </div>
                   )
@@ -532,7 +610,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
           {contacts.length === 0 && (
             <div className="empty-state">
               <h3>No cake emergencies this month. 🎂</h3>
-              <p>Tap a date above, or hit "+ Add birthday" to get started, queen ✨</p>
+              <p>Tap a date above, or tap the + button to get started, queen ✨</p>
             </div>
           )}
         </>
@@ -546,6 +624,8 @@ export default function ContactsView({ focus = null, onFocusDone }) {
           onDone={(n) => { setImportOpen(false); setNotice(`Imported ${n} birthday${n > 1 ? 's' : ''} 🎉`); setTimeout(() => setNotice(null), 4000); fetchContacts() }}
         />
       )}
+
+      {wishFor && <WishSheet contact={wishFor} onClose={() => setWishFor(null)} />}
 
       {ask && (
         <ConfirmSheet
@@ -601,6 +681,13 @@ export default function ContactsView({ focus = null, onFocusDone }) {
 
             <div className="cake-profile-section">
               <p className="cake-section-heading">🛍️ Purchases</p>
+              {(form.gift_price || form.gift_link) && (
+                <p className="field-hint">
+                  {form.gift_price && <>Budget {formatMoney(Number(form.gift_price), getCurrency(), 0)}</>}
+                  {form.gift_price && form.gift_link && ' · '}
+                  {form.gift_link && <a href={form.gift_link} target="_blank" rel="noreferrer">🔗 Gift link</a>}
+                </p>
+              )}
               {form.no_gift ? (
                 <p className="cake-gift-status cake-gift-status-ready">✅ No gift needed</p>
               ) : (
@@ -619,8 +706,32 @@ export default function ContactsView({ focus = null, onFocusDone }) {
                   >
                     {form.gift_purchased ? '↩️ Mark as not purchased' : '✅ Mark as purchased'}
                   </button>
+                  <button className="btn-check" style={{ marginTop: 8, marginLeft: 8 }} onClick={() => { const c = contacts.find((x) => x.id === editingId); if (c) addToShopping(c) }}>
+                    🛒 Add to shopping list
+                  </button>
+                  {shopMsg && <p className="field-hint">{shopMsg}</p>}
                 </>
               )}
+            </div>
+
+            <div className="cake-profile-section">
+              <p className="cake-section-heading">📜 Gift history</p>
+              {history.length === 0 && <p className="field-hint">What you gave each year, so you never repeat yourself.</p>}
+              {history.map((h) => (
+                <div className="goals-summary-row" key={h.id}>
+                  <span className="goals-summary-label">{h.year}</span>
+                  <span className="goals-summary-value">
+                    {h.gift}{h.price != null ? ` · ${formatMoney(Number(h.price), getCurrency(), 0)}` : ''}
+                    {' '}<button className="sc-icon-btn" style={{ width: 24, height: 24, fontSize: 11 }} onClick={() => removeHistory(h.id)} aria-label="Remove">×</button>
+                  </span>
+                </div>
+              ))}
+              <div className="sc-check-row" style={{ marginTop: 8 }}>
+                <input type="number" value={histForm.year} onChange={(e) => setHistForm({ ...histForm, year: e.target.value })} style={{ maxWidth: 80 }} aria-label="Year" />
+                <input value={histForm.gift} onChange={(e) => setHistForm({ ...histForm, gift: e.target.value })} placeholder="What you gave" aria-label="Gift" />
+                <input type="number" inputMode="decimal" value={histForm.price} onChange={(e) => setHistForm({ ...histForm, price: e.target.value })} placeholder="Price" style={{ maxWidth: 90 }} aria-label="Price" />
+                <button className="sc-chip-btn" onClick={addHistory}>Add</button>
+              </div>
             </div>
 
             <div className="cake-profile-section">
@@ -811,6 +922,17 @@ export default function ContactsView({ focus = null, onFocusDone }) {
                   onChange={(e) => setForm({ ...form, coffee_order: e.target.value })}
                   placeholder="Oat milk cappuccino, extra hot…"
                 />
+              </div>
+
+              <div className="field-row">
+                <div className="field">
+                  <label>Gift budget / price</label>
+                  <input type="number" inputMode="decimal" min="0" step="any" value={form.gift_price} onChange={(e) => setForm({ ...form, gift_price: e.target.value })} placeholder="e.g. 500" />
+                </div>
+                <div className="field">
+                  <label>Gift link (optional)</label>
+                  <input type="url" value={form.gift_link} onChange={(e) => setForm({ ...form, gift_link: e.target.value })} placeholder="https://…" />
+                </div>
               </div>
 
               <div className="field">

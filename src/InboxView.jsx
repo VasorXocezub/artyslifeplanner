@@ -99,7 +99,7 @@ function TagInput({ tags, onChange }) {
 }
 
 /* ---------------- Note Editor (rich text) ---------------- */
-function NoteEditor({ note, onChange, onClose, titleInputRef }) {
+function NoteEditor({ note, onChange, titleInputRef }) {
   const editorRef = useRef(null)
   const [initialized, setInitialized] = useState(false)
 

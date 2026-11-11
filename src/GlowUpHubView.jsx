@@ -19,13 +19,11 @@ const STEP_MILESTONES = [
   { at: 2000, label: '🌱 Warming up' },
 ]
 
-const CYCLE_PHASES = ['🌱 Follicular Phase', '✨ Ovulation', '🌙 Luteal Phase', '🌹 Period']
 const SYMPTOMS = [
   '😣 Cramps', '🤕 Headache', '😴 Fatigue', '🍫 Cravings', '💢 Bloating', '😬 Mood Swings',
   '🤢 Nausea', '🩹 Back Pain', '💔 Tender Breasts', '🌪️ Brain Fog', '😰 Anxiety',
   '😡 Irritable', '🥺 Emotional', '🤍 No Symptoms',
 ]
-const ENERGY_LEVELS = ['🚀 Unstoppable', '✨ High Energy', '😊 Good Energy', '🌸 Steady', '☁️ Low Energy', '😴 Tired', '🛌 Couch Potato Mode', '🫠 Barely Functioning']
 const FLOW_LEVELS = ['🤍 Spotting', '🌸 Light', '🌹 Medium', '❤️ Heavy', '🌊 Very Heavy']
 const ACTIVITIES = ['🚶 Walk', '🧘 Stretch / Yoga', '💃 Dance', '🏋️ Strength Training', '🏃 Cardio', '🛏️ Rest Day', '🌿 Gentle Movement']
 
@@ -448,7 +446,6 @@ export default function GlowUpHubView() {
   const goalProgressPct = totalToLose && totalToLose > 0 ? Math.min(100, Math.round((totalLost / totalToLose) * 100)) : 0
   const remainingToGoal = goalWeight != null && currentWeight != null ? Math.max(0, currentWeight - goalWeight) : null
   const achievementThresholds = weightUnit === 'lbs' ? WEIGHT_ACHIEVEMENTS_KG.map((a) => ({ ...a, at: Math.round(a.at * 2.20462 * 10) / 10 })) : WEIGHT_ACHIEVEMENTS_KG
-  const unlockedAchievements = achievementThresholds.filter((a) => totalLost >= a.at)
   const nextAchievement = achievementThresholds.find((a) => totalLost < a.at)
 
   function summaryStats(logs) {

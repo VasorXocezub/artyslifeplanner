@@ -138,6 +138,9 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     wellness: null,
     nextSocialEvent: null,
     nextPlans: [],
+    todayBirthdays: [],
+    todayPlans: [],
+    giftNudges: [],
   })
   const [loading, setLoading] = useState(true)
 
@@ -181,11 +184,13 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
         let next = new Date(today.getFullYear(), bd.getMonth(), bd.getDate())
         if (next < today) next = new Date(today.getFullYear() + 1, bd.getMonth(), bd.getDate())
         const daysAway = Math.round((next - today) / (1000 * 60 * 60 * 24))
-        return { name: c.name, daysAway }
+        return { name: c.name, daysAway, giftNeeded: !c.no_gift && !c.gift_purchased }
       })
       .sort((a, b) => a.daysAway - b.daysAway)
 
     const nextBirthday = withBirthdays[0] || null
+    const todayBirthdays = withBirthdays.filter((b) => b.daysAway === 0).map((b) => b.name)
+    const giftNudges = withBirthdays.filter((b) => b.daysAway > 0 && b.daysAway <= 7 && b.giftNeeded).slice(0, 3)
 
     const goalsInProgress = (goalsData || []).filter((g) => g.status === 'in_progress').length
 
@@ -219,9 +224,10 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       .filter((p) => !p.past)
       .sort((x, y) => x.nextDate - y.nextDate)
     const nextSocialEvent = upcomingPlans[0] ? { title: upcomingPlans[0].title, daysAway: upcomingPlans[0].daysAway } : null
+    const todayPlans = upcomingPlans.filter((p) => p.daysAway === 0).map((p) => p.title)
     const nextPlans = upcomingPlans.slice(0, 4).map((p) => ({ title: p.title, daysAway: p.daysAway }))
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges })
     setLoading(false)
   }
 
@@ -357,12 +363,33 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       insightItems.push({ icon: '💌', text: `${p.title} · ${when}`, nav: 'social' })
     }
   }
+  if (!hiddenModules.includes('contacts')) {
+    for (const g of stats.giftNudges) {
+      insightItems.push({ icon: '🎁', text: `Gift needed: ${g.name} (${g.daysAway === 1 ? 'tomorrow' : `in ${g.daysAway}d`})`, nav: 'contacts' })
+    }
+  }
   if (!hiddenModules.includes('contacts') && stats.birthdaysThisMonth.length > 0) {
     insightItems.push({ icon: '🎉', text: `${stats.birthdaysThisMonth.length} birthday${stats.birthdaysThisMonth.length > 1 ? 's' : ''} this month`, nav: 'contacts' })
   }
 
+  const todayItems = []
+  if (!hiddenModules.includes('contacts')) for (const n of stats.todayBirthdays) todayItems.push({ icon: '🎉', text: `${n}'s birthday`, nav: 'contacts' })
+  if (!hiddenModules.includes('social')) for (const t of stats.todayPlans) todayItems.push({ icon: '💌', text: t, nav: 'social' })
+  if (!hiddenModules.includes('habits') && stats.habitsTotal > 0 && stats.habitsDoneToday < stats.habitsTotal) todayItems.push({ icon: '🌸', text: `${stats.habitsTotal - stats.habitsDoneToday} habit${stats.habitsTotal - stats.habitsDoneToday > 1 ? 's' : ''} left`, nav: 'habits' })
+  if (!hiddenModules.includes('todos') && stats.todosOpen > 0) todayItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} open`, nav: 'todos' })
+
   return (
     <div>
+      {todayItems.length > 0 && (
+        <div className="today-card" role="region" aria-label="Today">
+          <span className="today-card-label">Today</span>
+          <div className="today-card-items">
+            {todayItems.map((it, i) => (
+              <button key={i} className="sc-chip-btn" onClick={() => onNavigate(it.nav)}>{it.icon} {it.text}</button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="hero-panel">
         <div className="hero-panel-main">
           <h1 className="hero-title">{getGreeting()}, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'}.</h1>

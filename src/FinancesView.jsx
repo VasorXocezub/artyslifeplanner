@@ -20,7 +20,7 @@ const TABS = [
 ]
 
 export default function FinancesView() {
-  const [hiddenTabs, setHiddenTabs] = useState(getHiddenFinanceTabs())
+  const [hiddenTabs] = useState(getHiddenFinanceTabs())
   const visibleTabs = TABS.filter((t) => !hiddenTabs.includes(t.key))
   const [tab, setTab] = useState(() => {
     const hidden = getHiddenFinanceTabs()

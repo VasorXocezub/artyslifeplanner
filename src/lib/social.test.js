@@ -66,3 +66,54 @@ describe('birthday import', () => {
     expect(rows[0]).toMatchObject({ name: 'Jason Smith', phone: '+27 82 111 2222', birth_year: 1990 })
   })
 })
+
+import { parseQuickPlan } from './quickAdd'
+describe('quick add', () => {
+  const today = new Date(2026, 10, 11) // Wed 11 Nov 2026
+  it('parses day, time, place', () => {
+    expect(parseQuickPlan('Dinner Fri 7pm at Rosebank', today)).toMatchObject({ title: 'Dinner', event_date: '2026-11-13', event_time: '19:00', location: 'Rosebank', event_type: 'cozy_gathering' })
+  })
+  it('parses tomorrow and 24h time', () => {
+    expect(parseQuickPlan('Dentist tomorrow 09:30', today)).toMatchObject({ title: 'Dentist', event_date: '2026-11-12', event_time: '09:30', event_type: 'appointment' })
+  })
+  it('parses dates and rolls forward', () => {
+    expect(parseQuickPlan('Beach trip 20 dec', today)).toMatchObject({ title: 'Beach trip', event_date: '2026-12-20', event_type: 'adventure' })
+    expect(parseQuickPlan('Reunion 5 Mar', today).event_date).toBe('2027-03-05')
+  })
+  it('title only still works', () => {
+    expect(parseQuickPlan('Book club', today)).toMatchObject({ title: 'Book club' })
+    expect(parseQuickPlan('   ', today)).toBeNull()
+  })
+})
+
+import { makeCustomType, parseCustomType } from './social'
+describe('custom plan types', () => {
+  it('round-trips emoji and name', () => {
+    const k = makeCustomType('🍕', 'Pizza night')
+    expect(parseCustomType(k)).toEqual({ emoji: '🍕', label: 'Pizza night' })
+    expect(parseCustomType('girls_night')).toBeNull()
+    expect(parseCustomType('custom:🍕|')).toBeNull()
+  })
+})
+
+import { dueReminders } from './reminders'
+import { wishFor } from './wishes'
+describe('reminders and wishes', () => {
+  it('finds today/tomorrow/7-day items', () => {
+    const today = new Date(2026, 10, 11)
+    const contacts = [
+      { id: 'a', name: 'Mom', birthday: '1965-11-11' },
+      { id: 'b', name: 'Lindi', birthday: '1990-11-12' },
+      { id: 'c', name: 'Jo', birthday: '1990-11-18' },
+      { id: 'd', name: 'Done', birthday: '1990-11-18', gift_purchased: true },
+    ]
+    const events = [{ id: 'e', title: 'Dinner', event_date: '2026-11-11', event_time: '19:00:00' }]
+    const r = dueReminders(contacts, events, today)
+    expect(r.map((x) => x.title)).toEqual(expect.arrayContaining(['🎉 Mom\'s birthday today', '🎂 Lindi\'s birthday is tomorrow', '🎁 Jo\'s birthday in a week', '💌 Dinner today']))
+    expect(r.some((x) => x.title.includes('Done'))).toBe(false)
+  })
+  it('wish uses first name', () => {
+    expect(wishFor('sweet', 'Lindi Smith', 0)).toContain('Lindi')
+    expect(wishFor('sweet', 'Lindi Smith', 0)).not.toContain('Smith')
+  })
+})

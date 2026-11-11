@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
 import { getActiveFocusSession, remainingSecondsFor } from './lib/focusSession'
+import { runReminders } from './lib/reminders'
 import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates, getTheme } from './lib/localPrefs'
 import Auth from './Auth'
 import './App.css'
@@ -91,6 +92,10 @@ function App() {
     if (!session) return
     checkUnseenTea()
     checkUnseenUpdates()
+    // birthday and plan reminders (only while the app is open)
+    runReminders().catch(() => {})
+    const timer = setInterval(() => { runReminders().catch(() => {}) }, 30 * 60 * 1000)
+    return () => clearInterval(timer)
   }, [session])
 
   useEffect(() => {
