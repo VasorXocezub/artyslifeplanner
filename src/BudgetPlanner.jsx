@@ -4,13 +4,13 @@ import { formatMoney } from './lib/currency'
 import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
 import { partsOf, plannedOf, billDueDate, computeCarries, csvEscape, downloadBlob } from './lib/budgetEngine'
 import { Donut, TrendBars } from './BudgetCharts'
+import BudgetModals from './budget/BudgetModals'
+import { COLORS, round2 } from './budget/constants'
 import {
-  DEFAULT_SETTINGS, ymd, parseD, addDays, diffDays, fmtShort, toMonthly, firstEmoji, lastMonday,
+  DEFAULT_SETTINGS, ymd, parseD, addDays, diffDays, fmtShort, toMonthly, lastMonday,
   describePeriod, currentKey, shiftKey,
 } from './lib/budgetPeriods'
 
-const ICONS = ['🛒', '🏠', '🚗', '⛽', '💡', '📱', '🍽️', '☕', '🎬', '👗', '💅', '💊', '🐾', '✈️', '🎁', '🎓', '💻', '🏋️', '🧾', '🐷', '💖', '✨']
-const COLORS = ['#E4786A', '#EC9A8C', '#C5CDE6', '#EDD98A', '#6B7B3F', '#6B4A2E', '#F6D0C8', '#8A9BC9']
 const GROUP_SUGGESTIONS = ['Needs', 'Wants', 'Savings & goals', 'Fun money']
 const SORTS = [
   { key: 'custom', label: 'My order' },
@@ -31,8 +31,9 @@ const WARN_COLOR = '#E0A458'
 
 const emptyLine = { id: null, kind: 'expense', category: '', customCategory: false, icon: '🧾', color: COLORS[0], grp: '', planned_amount: '', rollover: false, notes: '', forward: 0, parts: [],
   amountMode: 'fixed', pct: '', fundTotal: '', fundPeriods: '', isBill: false, dueDay: '', goalId: '', rolloverMode: 'prev', carryDebt: false }
-const esc = (s) => s.replace(/[\\%_]/g, m => '\\' + m)
-const round2 = (n) => Math.round(n * 100) / 100
+// short-lived cache for rarely-changing lookups, so flipping between periods stays quick
+const memo = {}
+const cached = (k, fn) => { const m = memo[k]; if (m && Date.now() - m.t < 30000) return Promise.resolve(m.v); return fn().then(v => { if (!v.error) memo[k] = { t: Date.now(), v }; return v }) }
 const TEMPLATE_5030 = [
   { category: 'Needs', grp: 'Needs', icon: '🏠', color: '#E4786A', pct: 50 },
   { category: 'Wants', grp: 'Wants', icon: '🛍️', color: '#EC9A8C', pct: 30 },
@@ -73,6 +74,13 @@ export default function BudgetPlanner({ currency }) {
   const [balance, setBalance] = useState(null)
   const [undo, setUndo] = useState(null) // { msg, restore }
   const undoTimer = useRef(null)
+  const [billModal, setBillModal] = useState(null)
+  const [txModal, setTxModal] = useState(null)
+  const [note, setNote] = useState('')
+  const [noteModal, setNoteModal] = useState(null)
+  const [bizSpend, setBizSpend] = useState(0)
+  const [histTx, setHistTx] = useState([])
+  const [lookup, setLookup] = useState('')
   const [quick, setQuick] = useState(null) // quick-add expense
   const [jobModal, setJobModal] = useState(null) // give leftover a job
   const [recap, setRecap] = useState(false)
@@ -128,16 +136,20 @@ export default function BudgetPlanner({ currency }) {
     const prev = describePeriod(pk, settings, customs)
     const empty = Promise.resolve({ data: [], error: null })
     const soft = (q) => q.then(r => (r.error ? { data: null, error: r.error } : r), () => ({ data: null, error: true }))
-    const [b, pb, t, pt, ri, gl, bp, ac] = await Promise.all([
+    const [b, pb, t, pt, ri, gl, bp, ac, nt, bx] = await Promise.all([
       supabase.from('budget_items').select('*').eq('month', periodKey).order('created_at', { ascending: true }),
       pk ? supabase.from('budget_items').select('*').eq('month', pk) : empty,
       cur ? supabase.from('transactions').select('*').gte('date', ymd(cur.start)).lte('date', ymd(cur.end)).order('date', { ascending: false }) : empty,
       prev ? supabase.from('transactions').select('*').gte('date', ymd(prev.start)).lte('date', ymd(prev.end)) : empty,
       soft(supabase.from('budget_items').select('*').eq('rollover', true).neq('month', periodKey)),
-      soft(supabase.from('savings_goals').select('id, name, icon, target_amount, current_amount')),
+      cached('goals', () => soft(supabase.from('savings_goals').select('id, name, icon, target_amount, current_amount'))),
       soft(supabase.from('budget_bill_payments').select('*').eq('period_key', periodKey)),
-      soft(supabase.from('account_settings').select('*').limit(1).maybeSingle()),
+      cached('acct', () => soft(supabase.from('account_settings').select('*').limit(1).maybeSingle())),
+      soft(supabase.from('budget_period_notes').select('note').eq('period_key', periodKey).maybeSingle()),
+      cur ? soft(supabase.from('business_expenses').select('amount').gte('date', ymd(cur.start)).lte('date', ymd(cur.end))) : empty,
     ])
+    setNote(nt.data?.note || '')
+    setBizSpend((bx.data || []).reduce((a, x) => a + Number(x.amount), 0))
     if (b.error) setError(b.error.message + ' — have you run the budget SQL in Supabase?')
     setItems(b.data || [])
     setPrevItems(pb.data || [])
@@ -172,7 +184,7 @@ export default function BudgetPlanner({ currency }) {
     if (!descs.length) { setHistory([]); setHistLoading(false); return }
     const min = descs.reduce((m, d) => (d.start < m ? d.start : m), descs[0].start)
     const max = descs.reduce((m, d) => (d.end > m ? d.end : m), descs[0].end)
-    const t = await supabase.from('transactions').select('date, type, amount').gte('date', ymd(min)).lte('date', ymd(max))
+    const t = await supabase.from('transactions').select('date, type, amount, category').gte('date', ymd(min)).lte('date', ymd(max))
     if (t.error) { setError(t.error.message); setHistLoading(false); return }
     const out = descs.map(d => {
       const s = ymd(d.start), e = ymd(d.end)
@@ -181,6 +193,7 @@ export default function BudgetPlanner({ currency }) {
       const actual = (kind) => inRange.filter(x => x.type === kind).reduce((a, x) => a + Number(x.amount), 0)
       return { ...d, budget: planned('expense'), spent: actual('expense'), incomePlanned: planned('income'), incomeActual: actual('income') }
     }).sort((a, b) => b.start - a.start)
+    setHistTx(t.data || [])
     setHistory(out)
     setHistLoading(false)
   }, [periodKey, settings, customs])
@@ -199,8 +212,10 @@ export default function BudgetPlanner({ currency }) {
     return items.map((i, idx) => {
       const parts = partsOf(i)
       const pctOf = Number(i.pct_of_income) || 0
-      const planned = pctOf > 0 ? round2(incomeBase * pctOf / 100) : plannedOf(i)
+      const basePlanned = pctOf > 0 ? round2(incomeBase * pctOf / 100) : plannedOf(i)
       const carry = carries[i.id] || 0
+      const fundTotal = Number(i.fund_total) || 0
+      const planned = fundTotal > 0 ? Math.max(0, Math.min(basePlanned, fundTotal - carry)) : basePlanned
       const budget = planned + carry
       const cat = i.category.toLowerCase()
       const catTx = tx.filter(t => t.type === i.kind && (t.category || 'Uncategorized').toLowerCase() === cat)
@@ -213,9 +228,18 @@ export default function BudgetPlanner({ currency }) {
       const goal = i.savings_goal_id ? goals.find(g => g.id === i.savings_goal_id) : null
       const pay = payments.find(p => p.item_id === i.id)
       const due = i.is_bill && i.due_day ? billDueDate(i.due_day, period) : null
-      return { ...i, color: fixColor(i.color), parts, planned, carry, budget, actual, prevActual, lineTx, pct, goal, pay, due, pctOf, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
+      return { ...i, fundDone: fundTotal > 0 && carry >= fundTotal, color: fixColor(i.color), parts, planned, carry, budget, actual, prevActual, lineTx, pct, goal, pay, due, pctOf, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
     })
   }, [items, carries, tx, prevTx, goals, payments, linkedGoals, period]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // keep the stored amount of %-of-income lines in step with income, so History stays right
+  const synced = useRef({})
+  useEffect(() => {
+    rows.filter(r => r.pctOf > 0 && Math.abs(r.planned - (Number(r.planned_amount) || 0)) > 0.005 && synced.current[r.id] !== r.planned).forEach(r => {
+      synced.current[r.id] = r.planned
+      supabase.from('budget_items').update({ planned_amount: r.planned }).eq('id', r.id).then(() => {})
+    })
+  }, [rows])
 
   const expenseRows = rows.filter(r => r.kind === 'expense')
   const incomeRows = rows.filter(r => r.kind === 'income')
@@ -379,10 +403,14 @@ export default function BudgetPlanner({ currency }) {
   async function deleteLine() {
     if (!modal?.id) return
     const row = items.find(i => i.id === modal.id)
+    const pays = await supabase.from('budget_bill_payments').select('*').eq('item_id', modal.id)
     const { error: err } = await supabase.from('budget_items').delete().eq('id', modal.id)
     if (err) { setError(err.message); return }
     setModal(null)
-    if (row) showUndo(`Removed ${row.category}`, async () => { const { error: e2 } = await supabase.from('budget_items').insert(row); if (e2) throw e2 })
+    if (row) showUndo(`Removed ${row.category}`, async () => {
+      const { error: e2 } = await supabase.from('budget_items').insert(row); if (e2) throw e2
+      if (pays.data?.length) { const { error: e3 } = await supabase.from('budget_bill_payments').insert(pays.data); if (e3) throw e3 }
+    })
     load()
   }
 
@@ -442,10 +470,22 @@ export default function BudgetPlanner({ currency }) {
   async function importRecurring() {
     const { data, error: err } = await supabase.from('recurring_expenses').select('*').eq('active', true)
     if (err) { setError(err.message); return }
-    const map = {}
-    ;(data || []).forEach(r => { const c = r.category || 'Recurring'; map[c] = (map[c] || 0) + toMonthly(Number(r.amount), r.frequency) })
     const factor = period?.type === 'monthly' ? 1 : totalDays / 30.44
-    await bulkInsert(Object.entries(map).map(([category, amt]) => ({ category, kind: 'expense', planned_amount: Math.round(amt * factor * 100) / 100, grp: 'Needs' })), 'Imported recurring')
+    const map = {}
+    ;(data || []).forEach(r => {
+      const c = r.category || 'Recurring'
+      const amt = round2(toMonthly(Number(r.amount), r.frequency) * factor)
+      const g = (map[c] ||= { parts: [], days: [] })
+      g.parts.push({ name: r.name || c, amount: amt })
+      if (r.next_due && r.frequency === 'monthly') g.days.push(parseD(r.next_due).getDate())
+    })
+    await bulkInsert(Object.entries(map).map(([category, g]) => {
+      const total = round2(g.parts.reduce((a, p) => a + p.amount, 0))
+      const day = g.days.length ? Math.min(...g.days) : null
+      const line = { category, kind: 'expense', planned_amount: total, grp: 'Needs', items: g.parts.length > 1 ? g.parts : [] }
+      if (day) { line.is_bill = true; line.due_day = day }
+      return line
+    }), 'Imported recurring (monthly ones with a due date became bills)')
   }
 
   async function fillFromAverage() {
@@ -460,8 +500,58 @@ export default function BudgetPlanner({ currency }) {
     await bulkInsert(Object.entries(map).map(([category, total]) => ({ category, kind: 'expense', planned_amount: Math.ceil(total / descs.length / 10) * 10 })), `Filled from your ${descs.length}-${unit} average`)
   }
 
+  // ----- period note -----
+  async function saveNote(e) {
+    e.preventDefault()
+    const text = noteModal.text.trim()
+    setSaving(true); setError(null)
+    await supabase.from('budget_period_notes').delete().eq('period_key', periodKey)
+    let err = null
+    if (text) { const user_id = await getUserId(); ;({ error: err } = await supabase.from('budget_period_notes').insert({ user_id, period_key: periodKey, note: text })) }
+    setSaving(false)
+    if (err) { setError(err.message + ' — run budget-v4.sql in Supabase first.'); return }
+    setNoteModal(null); setNote(text)
+  }
+
+  // ----- edit a transaction from inside the budget -----
+  function openTx(t) { setTxModal({ id: t.id, amount: String(t.amount), date: t.date, category: t.category || '', notes: t.notes || '', item: t.budget_item || '', hadItem: !!t.budget_item, type: t.type }) }
+  async function saveTx(e) {
+    e.preventDefault()
+    const amt = parseFloat(txModal.amount)
+    if (Number.isNaN(amt) || amt <= 0 || !txModal.date) { setError('Enter an amount above 0 and a date.'); return }
+    setSaving(true); setError(null)
+    const patch = { amount: amt, date: txModal.date, category: txModal.category.trim() || null, notes: txModal.notes.trim() || null }
+    if (txModal.item) patch.budget_item = txModal.item
+    else if (txModal.hadItem) patch.budget_item = null
+    const { error: err } = await supabase.from('transactions').update(patch).eq('id', txModal.id)
+    if (!err && patch.category) await saveFinanceCategory(patch.category)
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    setTxModal(null); load()
+  }
+  async function deleteTx() {
+    const t = tx.find(x => x.id === txModal.id)
+    const { error: err } = await supabase.from('transactions').delete().eq('id', txModal.id)
+    if (err) { setError(err.message); return }
+    setTxModal(null)
+    if (t) showUndo('Transaction deleted', async () => { const { error: e2 } = await supabase.from('transactions').insert(t); if (e2) throw e2 })
+    load()
+  }
+
   // ----- bills -----
-  async function toggleBill(r) {
+  function askBill(r) {
+    if (r.pay) { toggleBill(r); return }
+    setBillModal({ r, amount: String(r.planned), date: ymd(inPeriod ? today : (r.due || start)) })
+  }
+  async function payBill(e) {
+    e.preventDefault()
+    const amt = parseFloat(billModal.amount)
+    if (Number.isNaN(amt) || amt <= 0) { setError('Enter the amount you paid.'); return }
+    const m = billModal
+    setBillModal(null)
+    await toggleBill(m.r, { amount: amt, date: m.date })
+  }
+  async function toggleBill(r, paid) {
     setError(null)
     if (r.pay) {
       if (r.pay.tx_id) { const { error: e1 } = await supabase.from('transactions').delete().eq('id', r.pay.tx_id); if (e1) { setError(e1.message); return } }
@@ -469,10 +559,11 @@ export default function BudgetPlanner({ currency }) {
       if (e2) { setError(e2.message); return }
     } else {
       const user_id = await getUserId()
-      const date = inPeriod ? ymd(today) : ymd(r.due || start)
-      const { data: t, error: e1 } = await supabase.from('transactions').insert({ user_id, date, amount: r.planned, type: 'expense', category: r.category, notes: `Paid: ${r.category}` }).select().single()
+      const date = paid?.date || (inPeriod ? ymd(today) : ymd(r.due || start))
+      const payAmt = paid?.amount ?? r.planned
+      const { data: t, error: e1 } = await supabase.from('transactions').insert({ user_id, date, amount: payAmt, type: 'expense', category: r.category, notes: `Paid: ${r.category}` }).select().single()
       if (e1) { setError(e1.message); return }
-      const { error: e2 } = await supabase.from('budget_bill_payments').insert({ user_id, item_id: r.id, period_key: periodKey, tx_id: t.id, amount: r.planned, paid_on: date })
+      const { error: e2 } = await supabase.from('budget_bill_payments').insert({ user_id, item_id: r.id, period_key: periodKey, tx_id: t.id, amount: payAmt, paid_on: date })
       if (e2) { await supabase.from('transactions').delete().eq('id', t.id); setError(e2.message + ' — run budget-v3.sql in Supabase first.'); return }
     }
     load()
@@ -493,6 +584,7 @@ export default function BudgetPlanner({ currency }) {
     if (!err && quick.r.savings_goal_id && quick.r.goal) {
       await supabase.from('savings_goals').update({ current_amount: Number(quick.r.goal.current_amount) + amt }).eq('id', quick.r.goal.id)
     }
+    delete memo.goals
     setSaving(false)
     if (err) { setError(err.message + (/budget_item/.test(err.message) ? ' — run budget-v3.sql in Supabase first.' : '')); return }
     setQuick(null)
@@ -527,34 +619,9 @@ export default function BudgetPlanner({ currency }) {
     const from = renameModal.from, to = renameModal.to.trim()
     if (!to || to === from) { setRenameModal(null); return }
     setSaving(true); setError(null)
-    const step = async (q) => { const { error: err } = await q; if (err) throw err }
-    try {
-      await step(supabase.from('transactions').update({ category: to }).ilike('category', esc(from)))
-      await step(supabase.from('recurring_expenses').update({ category: to }).ilike('category', esc(from)))
-      await step(supabase.from('budget_items').update({ category: to }).ilike('category', esc(from)))
-      // merge budget lines that now share a period + kind
-      const { data: dup } = await supabase.from('budget_items').select('*').ilike('category', esc(to))
-      const groups = {}
-      ;(dup || []).forEach(d => { (groups[`${d.month}|${d.kind}`] ||= []).push(d) })
-      for (const g of Object.values(groups)) {
-        if (g.length < 2) continue
-        const [keep, ...rest] = g
-        const all = [keep, ...rest]
-        const anyParts = all.some(x => partsOf(x).length)
-        const parts = anyParts ? all.flatMap(x => (partsOf(x).length ? partsOf(x) : (plannedOf(x) > 0 ? [{ name: x.id === keep.id ? to : from, amount: plannedOf(x) }] : []))) : []
-        const total = all.reduce((a, x) => a + plannedOf(x), 0)
-        await step(supabase.from('budget_items').update({ planned_amount: total, items: parts }).eq('id', keep.id))
-        for (const x of rest) await step(supabase.from('budget_items').delete().eq('id', x.id))
-      }
-      const saved = savedRows.find(r => r.name.toLowerCase() === from.toLowerCase())
-      const target = savedRows.find(r => r.name.toLowerCase() === to.toLowerCase())
-      if (saved && target && saved.id !== target.id) await step(supabase.from('finance_categories').delete().eq('id', saved.id))
-      else if (saved) await step(supabase.from('finance_categories').update({ name: to }).eq('id', saved.id))
-      else await saveFinanceCategory(to)
-    } catch (err2) {
-      setSaving(false); setError('Rename stopped part-way: ' + (err2.message || err2)); return
-    }
+    const { error: err } = await supabase.rpc('rename_finance_category', { p_from: from, p_to: to })
     setSaving(false)
+    if (err) { setError(err.message + (/function|schema cache/i.test(err.message) ? ' — run budget-v4.sql in Supabase first.' : '')); return }
     setRenameModal(null)
     await refreshCats()
     flash(`${from} → ${to} everywhere`)
@@ -617,6 +684,7 @@ export default function BudgetPlanner({ currency }) {
     const H = 420 + rowsShown.length * 78
     const c = document.createElement('canvas'); c.width = W; c.height = H
     const g = c.getContext('2d')
+    if (!g.roundRect) g.roundRect = function (x, y, w, h) { this.rect(x, y, w, h) }
     g.fillStyle = '#F4E8DF'; g.fillRect(0, 0, W, H)
     g.fillStyle = '#4E3420'; g.font = '700 54px system-ui, sans-serif'; g.fillText('My budget', 60, 100)
     g.fillStyle = '#8A6C55'; g.font = '500 30px system-ui, sans-serif'; g.fillText(`${period?.label || ''} · ${period?.sub || ''}`, 60, 148)
@@ -630,7 +698,7 @@ export default function BudgetPlanner({ currency }) {
       g.fillStyle = '#E8D6C8'; g.beginPath(); g.roundRect(60, y + 16, W - 120, 16, 8); g.fill()
       g.fillStyle = r.actual > r.budget ? '#C0392B' : (r.color || '#DC6A59'); g.beginPath(); g.roundRect(60, y + 16, Math.max(16, (W - 120) * Math.min(1, r.pct / 100)), 16, 8); g.fill()
     })
-    c.toBlob(b => b && downloadBlob('budget-summary.png', b), 'image/png')
+    c.toBlob(b => { if (b) downloadBlob('budget-summary.png', b); else setError('Your browser could not create the image — try Print / save as PDF instead.') }, 'image/png')
   }
 
   async function saveSettings(patch, { resetPeriod = false } = {}) {
@@ -802,14 +870,14 @@ export default function BudgetPlanner({ currency }) {
             })()}
             {r.notes && <p className="bd-note">📝 {r.notes}</p>}
             {r.carry !== 0 && <p className="bd-dim bd-note">↻ {r.carry > 0 ? `Includes ${money(r.carry)} rolled over` : `${money(-r.carry)} overspend carried into this ${unit}`}</p>}
-            {r.fund_total > 0 && <p className="bd-dim bd-note">🐖 Sinking fund: {money(r.budget)} saved up of {money(Number(r.fund_total))} · {money(r.planned)} per {unit}</p>}
+            {r.fund_total > 0 && <p className="bd-dim bd-note">🐖 Sinking fund: {money(Math.max(0, r.budget - r.actual))} saved of {money(Number(r.fund_total))}{r.fundDone ? ' · fully funded 🎉' : ` · ${money(r.planned)} per ${unit}`}</p>}
             {r.goal && <p className="bd-dim bd-note">{r.goal.icon || '💰'} {r.goal.name}: {money(Number(r.goal.current_amount))} of {money(Number(r.goal.target_amount))} saved</p>}
             {r.is_bill && r.due && <p className="bd-dim bd-note">🧾 Due {fmtShort(r.due)}{r.pay ? ' · paid ✓' : ''}</p>}
             {delta !== null && !isIncome && <p className="bd-dim bd-note">vs previous {unit}: {money(r.prevActual)} → <strong style={{ color: delta > 10 ? 'var(--danger)' : delta < -10 ? 'var(--good)' : undefined }}>{delta > 0 ? '+' : ''}{Math.round(delta)}%</strong></p>}
             {catTx.length === 0 ? <p className="bd-dim bd-note">Nothing logged here this period yet.</p> : (
               <ul className="bd-tx">
                 {catTx.slice(0, 6).map(t => (
-                  <li key={t.id}><span>{fmtShort(new Date(t.date + 'T00:00:00'))}{t.budget_item ? ` · ${t.budget_item}` : ''}{t.notes ? ` · ${t.notes}` : ''}</span><strong>{money(Number(t.amount))}</strong></li>
+                  <li key={t.id}><button type="button" className="bd-txbtn" onClick={() => openTx(t)} title="Edit this transaction"><span>{fmtShort(new Date(t.date + 'T00:00:00'))}{t.budget_item ? ` · ${t.budget_item}` : ''}{t.notes ? ` · ${t.notes}` : ''}</span><strong>{money(Number(t.amount))} ✎</strong></button></li>
                 ))}
                 {catTx.length > 6 && <li className="bd-dim">+ {catTx.length - 6} more</li>}
               </ul>
@@ -841,6 +909,8 @@ export default function BudgetPlanner({ currency }) {
     )
   }
 
+  const modalProps = { apply5030, billModal, copyFromKey, copyFromLast, deleteLine, deletePeriod, deleteTx, end, existingGroups, expenseRows, exportPng, goals, jobModal, knownCats, modal, money, noteModal, pastKeys, payBill, period, periodModal, plannedIncome, prevItems, quick, rangeModal, recap, receivedIncome, remaining, renameCategory, renameModal, resetRange, rows, runUndo, saveJob, saveLine, saveNote, savePeriod, saveQuick, saveRange, saveTx, saving, setBillModal, setJobModal, setModal, setNoteModal, setPeriodModal, setQuick, setRangeModal, setRecap, setRenameModal, setTplModal, setTxModal, setUndo, today, tplModal, totalActual, totalBudget, txModal, unallocated, undo, undoTimer, unit, currency }
+
   const groupSubtotal = (list) => ({ b: sum(list, 'budget'), a: sum(list, 'actual') })
 
   return (
@@ -861,6 +931,7 @@ export default function BudgetPlanner({ currency }) {
               {period?.type === 'custom' && <button type="button" className="bd-link" onClick={() => openPeriod(period.custom)}>Edit period</button>}
               {period?.type === 'monthly' && <button type="button" className="bd-link" onClick={() => openRange(period)}>Edit dates</button>}
               {rows.length > 0 && <button type="button" className="bd-link" onClick={() => setRecap(true)}>✨ Recap</button>}
+              <button type="button" className="bd-link" onClick={() => setNoteModal({ text: note })}>📝 {note ? 'Edit note' : 'Add note'}</button>
             </span>
           </div>
           {nextKey || settings.period_type !== 'custom' && period?.type !== 'custom'
@@ -869,6 +940,7 @@ export default function BudgetPlanner({ currency }) {
         </div>
       )}
 
+      {view === 'plan' && note && <p className="bd-periodnote" onClick={() => setNoteModal({ text: note })}>📝 {note}</p>}
       {error && <p className="error-msg" role="alert">{error}</p>}
       {notice && <p className="bd-notice" role="status">✓ {notice}</p>}
       {view === 'plan' && !periodKey && ready && (
@@ -917,6 +989,7 @@ export default function BudgetPlanner({ currency }) {
                 <div title="Account balance + income still to come − budget still to spend"><span className="bd-eq-label">Balance at {unit} end</span><strong style={{ color: projectedBalance < 0 ? 'var(--danger)' : undefined }}>{money(projectedBalance)}</strong></div>
               )}
             </div>
+            {bizSpend > 0 && <p className="bd-dim bd-hero-caption">Business spending this {unit}: {money(bizSpend)} (tracked separately, not in this budget)</p>}
             {plannedIncome > 0 && unallocated > 0.5 && (
               <div className="bd-job"><span>💅 {money(unallocated)} has no job yet.</span><button type="button" className="bd-mini bd-mini-primary" onClick={openJob}>Give it a job</button></div>
             )}
@@ -938,7 +1011,7 @@ export default function BudgetPlanner({ currency }) {
                   return (
                     <li key={b.id} className={b.pay ? 'bd-bill-paid' : ''}>
                       <label className="bd-bill-check">
-                        <input type="checkbox" checked={!!b.pay} onChange={() => toggleBill(b)} aria-label={`Mark ${b.category} as paid`} />
+                        <input type="checkbox" checked={!!b.pay} onChange={() => askBill(b)} aria-label={`Mark ${b.category} as paid`} />
                         <span>{b.icon || '🧾'} {b.category}</span>
                       </label>
                       <span className="bd-dim" style={late ? { color: 'var(--danger)' } : undefined}>{b.pay ? 'paid ✓' : late ? `overdue · ${fmtShort(b.due)}` : `due ${fmtShort(b.due)}`}</span>
@@ -1128,6 +1201,26 @@ export default function BudgetPlanner({ currency }) {
                     <div><span className="bd-eq-label">Average spend</span><strong>{money(avg)}</strong></div>
                   </div>
                 </div>
+                <div className="calendar-card bd-lookup">
+                  <p className="module-group-label">Look up a category</p>
+                  <select value={lookup} onChange={e => setLookup(e.target.value)} aria-label="Category to look up">
+                    <option value="">Choose a category…</option>
+                    {[...new Set(histTx.filter(t => t.type === 'expense').map(t => t.category || 'Uncategorized'))].sort().map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  {lookup && (() => {
+                    const mine = histTx.filter(t => t.type === 'expense' && (t.category || 'Uncategorized') === lookup)
+                    const yr = String(new Date().getFullYear())
+                    const total = mine.reduce((a, t) => a + Number(t.amount), 0)
+                    const thisYear = mine.filter(t => t.date.startsWith(yr)).reduce((a, t) => a + Number(t.amount), 0)
+                    const per = history.map(h => ({ h, v: mine.filter(t => t.date >= ymd(h.start) && t.date <= ymd(h.end)).reduce((a, t) => a + Number(t.amount), 0) })).filter(x => x.v > 0)
+                    return (
+                      <div className="bd-lookup-res">
+                        <p><strong>{money(thisYear)}</strong> <span className="bd-dim">this year · {money(total)} across all tracked periods · {mine.length} transactions</span></p>
+                        <ul className="bd-tx">{per.map(x => <li key={x.h.key}><span>{x.h.label}</span><strong>{money(x.v)}</strong></li>)}</ul>
+                      </div>
+                    )
+                  })()}
+                </div>
                 {history.length > 1 && (
                   <div className="calendar-card bd-charts">
                     <p className="module-group-label">Budget vs spent</p>
@@ -1167,347 +1260,7 @@ export default function BudgetPlanner({ currency }) {
         </>
       )}
 
-      {undo && (
-        <div className="bd-toast bd-noprint" role="status">
-          <span>{undo.msg}</span>
-          <button type="button" onClick={runUndo}>Undo</button>
-          <button type="button" aria-label="Dismiss" onClick={() => { clearTimeout(undoTimer.current); setUndo(null) }}>✕</button>
-        </div>
-      )}
-
-      {quick && (
-        <div className="modal-backdrop" onClick={() => setQuick(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Quick add">
-            <h2>{quick.r.icon || '🧾'} {quick.r.kind === 'income' ? 'Log income' : 'Log spending'} · {quick.r.category}</h2>
-            <p className="bd-dim">{quick.r.kind === 'income' ? `${money(Math.max(0, quick.r.budget - quick.r.actual))} still expected` : `${money(quick.r.remaining)} left`}{quick.amount && quick.r.kind === 'expense' ? ` → ${money(quick.r.remaining - (parseFloat(quick.amount) || 0))} after this` : ''}</p>
-            <form onSubmit={saveQuick}>
-              <div className="field-row">
-                <div className="field"><label>Amount ({currency})</label><input autoFocus type="number" inputMode="decimal" step="0.01" min="0" value={quick.amount} onChange={e => setQuick({ ...quick, amount: e.target.value })} placeholder="0.00" /></div>
-                <div className="field"><label>Date</label><input type="date" value={quick.date} onChange={e => setQuick({ ...quick, date: e.target.value })} required /></div>
-              </div>
-              {quick.r.parts.length > 0 && quick.r.kind === 'expense' && (
-                <div className="field"><label>Which item?</label>
-                  <select value={quick.item} onChange={e => setQuick({ ...quick, item: e.target.value })}>
-                    <option value="">Not sure / other</option>
-                    {quick.r.parts.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
-                  </select>
-                </div>
-              )}
-              <div className="field"><label>Notes (optional)</label><input value={quick.notes} onChange={e => setQuick({ ...quick, notes: e.target.value })} /></div>
-              <div className="modal-actions"><span />
-                <div className="modal-actions-right">
-                  <button type="button" className="btn-cancel" onClick={() => setQuick(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Log it'}</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {jobModal && (
-        <div className="modal-backdrop" onClick={() => setJobModal(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Give it a job">
-            <h2>Give every {currency === 'ZAR' ? 'rand' : 'coin'} a job 💅</h2>
-            <p className="bd-dim">{money(unallocated)} of your planned income isn't assigned to anything.</p>
-            <form onSubmit={saveJob}>
-              <div className="field"><label>Amount</label><input type="number" inputMode="decimal" step="0.01" min="0" value={jobModal.amount} onChange={e => setJobModal({ ...jobModal, amount: e.target.value })} /></div>
-              <div className="field"><label>Put it towards</label>
-                <select value={jobModal.target} onChange={e => setJobModal({ ...jobModal, target: e.target.value })}>
-                  {expenseRows.filter(r => !(r.pctOf > 0)).map(r => <option key={r.id} value={r.id}>{r.icon || '🧾'} {r.category}{r.goal ? ' (goal)' : ''}</option>)}
-                  <option value="__new">＋ A new budget line…</option>
-                </select>
-              </div>
-              <div className="modal-actions"><span />
-                <div className="modal-actions-right">
-                  <button type="button" className="btn-cancel" onClick={() => setJobModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary">Assign</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {tplModal && (
-        <div className="modal-backdrop" onClick={() => setTplModal(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Templates">
-            <h2>Start from a template</h2>
-            <p className="bd-dim">Only adds lines that aren't already in this {unit}.</p>
-            <div className="bd-tpl-list">
-              <button type="button" className="bd-tpl" onClick={apply5030}><strong>50 / 30 / 20</strong><span className="bd-dim">Needs, wants and savings as a % of your planned income{plannedIncome > 0 ? '' : ' (add an income line first)'}</span></button>
-              <button type="button" className="bd-tpl" onClick={copyFromLast} disabled={!prevItems.length}><strong>Previous {unit}</strong><span className="bd-dim">{prevItems.length ? `${prevItems.length} lines` : 'Nothing there yet'}</span></button>
-            </div>
-            <p className="module-group-label">Copy from any period</p>
-            {tplModal.loading ? <p className="loading">Loading…</p> : pastKeys.length === 0 ? <p className="bd-dim">No other periods have budget lines yet.</p> : (
-              <div className="bd-tpl-list">
-                {pastKeys.slice(0, 24).map(p => <button key={p.key} type="button" className="bd-tpl" onClick={() => copyFromKey(p.key)}><strong>{p.label}</strong><span className="bd-dim">{p.sub}</span></button>)}
-              </div>
-            )}
-            <div className="modal-actions"><span /><div className="modal-actions-right"><button type="button" className="btn-cancel" onClick={() => setTplModal(null)}>Close</button></div></div>
-          </div>
-        </div>
-      )}
-
-      {renameModal && (
-        <div className="modal-backdrop" onClick={() => setRenameModal(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Rename category">
-            <h2>Rename or merge “{renameModal.from}”</h2>
-            <p className="bd-dim">Updates every transaction, recurring expense and budget line. Type the name of an existing category to merge into it.</p>
-            <form onSubmit={renameCategory}>
-              <div className="field"><label>New name</label><input autoFocus list="bd-cat-names" value={renameModal.to} onChange={e => setRenameModal({ ...renameModal, to: e.target.value })} /></div>
-              <datalist id="bd-cat-names">{knownCats.filter(c => c !== renameModal.from).map(c => <option key={c} value={c} />)}</datalist>
-              {knownCats.some(c => c.toLowerCase() === renameModal.to.trim().toLowerCase() && c !== renameModal.from) && <p className="bd-dim">This will merge into the existing “{knownCats.find(c => c.toLowerCase() === renameModal.to.trim().toLowerCase())}”.</p>}
-              <div className="modal-actions"><span />
-                <div className="modal-actions-right">
-                  <button type="button" className="btn-cancel" onClick={() => setRenameModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Updating…' : 'Update everywhere'}</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {recap && (() => {
-        const withBudget = expenseRows.filter(r => r.budget > 0)
-        const wins = withBudget.filter(r => r.actual <= r.budget)
-        const overs = withBudget.filter(r => r.actual > r.budget).sort((a, b) => (b.actual - b.budget) - (a.actual - a.budget))
-        const bestWin = [...wins].sort((a, b) => b.remaining - a.remaining)[0]
-        const biggest = [...expenseRows].sort((a, b) => b.actual - a.actual)[0]
-        const done = today > end
-        const headline = withBudget.length === 0 ? 'Nothing planned yet, babe.' : remaining >= 0 ? (done ? 'You stayed in budget. Iconic. 👑' : 'You’re on track. Keep that energy. 💅') : 'We overspent a bit, and that’s data, not drama. 🌷'
-        return (
-          <div className="modal-backdrop" onClick={() => setRecap(false)}>
-            <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Recap">
-              <h2>{period?.label} recap ✨</h2>
-              <p><strong>{headline}</strong></p>
-              <ul className="bd-recap">
-                <li>Spent <strong>{money(totalActual)}</strong> of <strong>{money(totalBudget)}</strong> · {remaining >= 0 ? `${money(remaining)} ${done ? 'saved' : 'still free'}` : `${money(-remaining)} over`}</li>
-                {withBudget.length > 0 && <li><strong>{wins.length} of {withBudget.length}</strong> lines stayed in budget</li>}
-                {bestWin && bestWin.remaining > 0 && <li>Biggest win: <strong>{bestWin.category}</strong> with {money(bestWin.remaining)} to spare</li>}
-                {biggest && biggest.actual > 0 && <li>Most spent on: <strong>{biggest.category}</strong> ({money(biggest.actual)})</li>}
-                {overs[0] && <li>Watch next {unit}: <strong>{overs[0].category}</strong> ({money(overs[0].actual - overs[0].budget)} over)</li>}
-                {receivedIncome > 0 && <li>Income received: <strong>{money(receivedIncome)}</strong></li>}
-              </ul>
-              <div className="modal-actions"><span /><div className="modal-actions-right"><button type="button" className="btn-cancel" onClick={() => { setRecap(false); exportPng() }}>Save as image</button><button type="button" className="btn-primary" onClick={() => setRecap(false)}>Done</button></div></div>
-            </div>
-          </div>
-        )
-      })()}
-
-      {rangeModal && (
-        <div className="modal-backdrop" onClick={() => setRangeModal(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Period dates">
-            <h2>Dates for this period</h2>
-            <p className="bd-dim">Change just this period, for example when payday moves. Other periods keep your usual dates.</p>
-            <form onSubmit={saveRange}>
-              <div className="field-row">
-                <div className="field"><label>Starts</label><input type="date" value={rangeModal.start_date} onChange={e => setRangeModal({ ...rangeModal, start_date: e.target.value })} /></div>
-                <div className="field"><label>Ends</label><input type="date" value={rangeModal.end_date} min={rangeModal.start_date} onChange={e => setRangeModal({ ...rangeModal, end_date: e.target.value })} /></div>
-              </div>
-              <div className="modal-actions">
-                {rangeModal.hasOverride ? <button type="button" className="btn-delete" onClick={resetRange}>Reset to usual dates</button> : <span />}
-                <div className="modal-actions-right">
-                  <button type="button" className="btn-cancel" onClick={() => setRangeModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {periodModal && (
-        <div className="modal-backdrop" onClick={() => setPeriodModal(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Budget period">
-            <h2>{periodModal.id ? 'Edit period' : 'New budget period'}</h2>
-            <form onSubmit={savePeriod}>
-              <div className="field"><label>Name</label><input autoFocus value={periodModal.name} onChange={e => setPeriodModal({ ...periodModal, name: e.target.value })} placeholder="e.g. Pay cycle 3, Holiday trip" /></div>
-              <div className="field-row">
-                <div className="field"><label>Starts</label><input type="date" value={periodModal.start_date} onChange={e => setPeriodModal({ ...periodModal, start_date: e.target.value })} /></div>
-                <div className="field"><label>Ends</label><input type="date" value={periodModal.end_date} min={periodModal.start_date} onChange={e => setPeriodModal({ ...periodModal, end_date: e.target.value })} /></div>
-              </div>
-              <div className="modal-actions">
-                {periodModal.id ? <button type="button" className="btn-delete" onClick={deletePeriod}>Delete</button> : <span />}
-                <div className="modal-actions-right">
-                  <button type="button" className="btn-cancel" onClick={() => setPeriodModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {modal && (
-        <div className="modal-backdrop" onClick={() => setModal(null)}>
-          <div className="modal bd-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Budget line">
-            <h2>{modal.id ? 'Edit budget line' : 'New budget line'}</h2>
-            <form onSubmit={saveLine}>
-              <div className="toggle-group" style={{ marginBottom: 12 }}>
-                {[['expense', 'Spending'], ['income', 'Income']].map(([k, l]) => (
-                  <button key={k} type="button" className={`toggle-btn ${modal.kind === k ? 'toggle-btn-active' : ''}`} onClick={() => setModal({ ...modal, kind: k })}>{l}</button>
-                ))}
-              </div>
-              <div className="field">
-                <label>Category</label>
-                <select
-                  value={modal.customCategory ? '__new' : (knownCats.some(c => c.toLowerCase() === modal.category.toLowerCase()) ? knownCats.find(c => c.toLowerCase() === modal.category.toLowerCase()) : (modal.category ? '__new' : ''))}
-                  onChange={e => e.target.value === '__new' ? setModal({ ...modal, category: '', customCategory: true }) : setModal({ ...modal, category: e.target.value, customCategory: false })}
-                >
-                  <option value="">Choose category…</option>
-                  {knownCats.map(c => <option key={c} value={c}>{c}</option>)}
-                  <option value="__new">＋ New category…</option>
-                </select>
-                {(modal.customCategory || (modal.category && !knownCats.some(c => c.toLowerCase() === modal.category.toLowerCase()))) && (
-                  <input style={{ marginTop: 8 }} placeholder="New category name" value={modal.category} onChange={e => setModal({ ...modal, category: e.target.value, customCategory: true })} autoFocus />
-                )}
-              </div>
-              <div className="field">
-                <label>How is the amount set?</label>
-                <select value={modal.amountMode} onChange={e => setModal({ ...modal, amountMode: e.target.value })}>
-                  <option value="fixed">A fixed amount</option>
-                  <option value="pct">A % of my planned income</option>
-                  {modal.kind === 'expense' && <option value="fund">Sinking fund (yearly / quarterly cost, saved up over time)</option>}
-                </select>
-              </div>
-              {modal.amountMode === 'fixed' && (
-                <div className="field">
-                  <label>{modal.kind === 'income' ? 'Expected' : 'Budget'} per {unit} ({currency}){modal.parts.length > 0 ? ' — total of items' : ''}</label>
-                  <input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0"
-                    value={modal.parts.length > 0 ? String(Math.round(modal.parts.reduce((a, p) => a + (parseFloat(p.amount) || 0), 0) * 100) / 100) : modal.planned_amount}
-                    disabled={modal.parts.length > 0}
-                    onChange={e => setModal({ ...modal, planned_amount: e.target.value })} />
-                </div>
-              )}
-              {modal.amountMode === 'pct' && (
-                <div className="field">
-                  <label>Percent of planned income</label>
-                  <input type="number" inputMode="decimal" step="0.5" min="0" max="100" value={modal.pct} onChange={e => setModal({ ...modal, pct: e.target.value })} placeholder="e.g. 20" />
-                  <small className="bd-dim">{parseFloat(modal.pct) > 0 ? `= ${money(round2(rows.filter(r => r.kind === 'income' && !(r.pctOf > 0)).reduce((a, r) => a + r.planned, 0) * parseFloat(modal.pct) / 100))} this ${unit}` : 'Follows your income lines, so it adjusts when pay changes.'}</small>
-                </div>
-              )}
-              {modal.amountMode === 'fund' && (
-                <>
-                  <div className="field-row">
-                    <div className="field"><label>Total cost ({currency})</label><input type="number" inputMode="decimal" step="0.01" min="0" value={modal.fundTotal} onChange={e => setModal({ ...modal, fundTotal: e.target.value })} placeholder="e.g. 2400" /></div>
-                    <div className="field"><label>Spread over (# of {unit}s)</label><input type="number" inputMode="numeric" min="1" value={modal.fundPeriods} onChange={e => setModal({ ...modal, fundPeriods: e.target.value })} placeholder="e.g. 12" /></div>
-                  </div>
-                  <small className="bd-dim" style={{ display: 'block', margin: '-4px 0 12px' }}>{parseFloat(modal.fundTotal) > 0 && parseInt(modal.fundPeriods, 10) > 0 ? `Sets aside ${money(round2(parseFloat(modal.fundTotal) / parseInt(modal.fundPeriods, 10)))} each ${unit} and keeps it growing until you pay the bill.` : 'The money accumulates each period until the bill is paid.'}</small>
-                </>
-              )}
-              {modal.amountMode === 'fixed' && (
-              <div className="field">
-                <label>Break it down (optional)</label>
-                {modal.parts.map((p, idx) => (
-                  <div key={idx} className="bd-part-row">
-                    <input placeholder="Item (e.g. Spotify)" value={p.name} onChange={e => setModal({ ...modal, parts: modal.parts.map((x, j) => j === idx ? { ...x, name: e.target.value } : x) })} />
-                    <input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0" value={p.amount} onChange={e => setModal({ ...modal, parts: modal.parts.map((x, j) => j === idx ? { ...x, amount: e.target.value } : x) })} aria-label="Item amount" />
-                    <button type="button" className="budget-remove" aria-label="Remove item" onClick={() => setModal({ ...modal, parts: modal.parts.filter((_, j) => j !== idx) })}>✕</button>
-                  </div>
-                ))}
-                <button type="button" className="bd-mini" onClick={() => setModal({ ...modal, parts: [...modal.parts, { name: '', amount: '' }] })}>＋ Add item</button>
-                <small className="bd-dim" style={{ display: 'block', marginTop: 6 }}>Split this category into line items — the total becomes the budget.</small>
-              </div>
-              )}
-              <div className="field">
-                <label>Icon</label>
-                <div className="bd-picker">
-                  {modal.icon && !ICONS.includes(modal.icon) && (
-                    <button type="button" className="bd-pick bd-pick-on" aria-label={`Icon ${modal.icon}`}>{modal.icon}</button>
-                  )}
-                  {ICONS.map(i => (
-                    <button key={i} type="button" className={`bd-pick ${modal.icon === i ? 'bd-pick-on' : ''}`} onClick={() => setModal({ ...modal, icon: i })} aria-label={`Icon ${i}`}>{i}</button>
-                  ))}
-                </div>
-                <div className="bd-custom-emoji">
-                  <input
-                    value=""
-                    onChange={e => { const em = firstEmoji(e.target.value); if (em) setModal({ ...modal, icon: em }) }}
-                    placeholder="Or type / paste any emoji 😀"
-                    aria-label="Custom emoji"
-                    autoComplete="off"
-                  />
-                </div>
-              </div>
-              <div className="field">
-                <label>Colour</label>
-                <div className="bd-picker">
-                  {COLORS.map(c => (
-                    <button key={c} type="button" className={`bd-swatch ${modal.color === c ? 'bd-swatch-on' : ''}`} style={{ background: c }} onClick={() => setModal({ ...modal, color: c })} aria-label={`Colour ${c}`} />
-                  ))}
-                </div>
-              </div>
-              <div className="field">
-                <label>Group (optional)</label>
-                <input list="bd-groups" placeholder="Needs, Wants, Fun money…" value={modal.grp} onChange={e => setModal({ ...modal, grp: e.target.value })} />
-                <datalist id="bd-groups">{existingGroups.map(g => <option key={g} value={g} />)}</datalist>
-              </div>
-              {modal.kind === 'expense' && (
-                <>
-                  <label className="bd-check">
-                    <input type="checkbox" checked={modal.isBill} onChange={e => setModal({ ...modal, isBill: e.target.checked })} />
-                    <span>This is a bill with a due day</span>
-                  </label>
-                  {modal.isBill && (
-                    <div className="field"><label>Due on day of the month</label><input type="number" min="1" max="31" inputMode="numeric" value={modal.dueDay} onChange={e => setModal({ ...modal, dueDay: e.target.value })} placeholder="e.g. 1" /></div>
-                  )}
-                  {goals.length > 0 && (
-                    <div className="field"><label>Link to a savings goal (optional)</label>
-                      <select value={modal.goalId} onChange={e => setModal({ ...modal, goalId: e.target.value })}>
-                        <option value="">Not linked</option>
-                        {goals.map(g => <option key={g.id} value={g.id}>{g.icon || '💰'} {g.name}</option>)}
-                      </select>
-                      <small className="bd-dim">Contributions to the goal count as spending on this line.</small>
-                    </div>
-                  )}
-                  {modal.amountMode !== 'fund' && (
-                    <label className="bd-check">
-                      <input type="checkbox" checked={modal.rollover} onChange={e => setModal({ ...modal, rollover: e.target.checked })} />
-                      <span>Roll over unspent money to the next {unit}</span>
-                    </label>
-                  )}
-                  {modal.rollover && modal.amountMode !== 'fund' && (
-                    <div className="field">
-                      <select value={modal.rolloverMode} onChange={e => setModal({ ...modal, rolloverMode: e.target.value })} aria-label="Rollover style">
-                        <option value="prev">Only last {unit}'s leftover</option>
-                        <option value="all">Keep accumulating over many {unit}s</option>
-                      </select>
-                      <label className="bd-check" style={{ marginTop: 8 }}>
-                        <input type="checkbox" checked={modal.carryDebt} onChange={e => setModal({ ...modal, carryDebt: e.target.checked })} />
-                        <span>If I overspend, take it off next {unit}</span>
-                      </label>
-                    </div>
-                  )}
-                </>
-              )}
-              <div className="field">
-                <label>Notes (optional)</label>
-                <input value={modal.notes} onChange={e => setModal({ ...modal, notes: e.target.value })} placeholder="e.g. Includes Woolies + Checkers" />
-              </div>
-              {!modal.id && period?.type !== 'custom' && (
-                <div className="field">
-                  <label>Repeat</label>
-                  <select value={modal.forward} onChange={e => setModal({ ...modal, forward: Number(e.target.value) })}>
-                    <option value={0}>This {unit} only</option>
-                    <option value={2}>This + next 2 {unit}s</option>
-                    <option value={5}>This + next 5 {unit}s</option>
-                    <option value={11}>This + next 11 {unit}s</option>
-                  </select>
-                </div>
-              )}
-              <div className="modal-actions">
-                {modal.id ? <button type="button" className="btn-delete" onClick={deleteLine}>Delete</button> : <span />}
-                <div className="modal-actions-right">
-                  <button type="button" className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
-                  <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <BudgetModals {...modalProps} />
     </div>
   )
 }

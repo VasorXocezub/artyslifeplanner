@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
+import BillReminders from './BillReminders'
 
 function toMonthly(amount, frequency) {
   if (frequency === 'weekly') return amount * 4.33
@@ -107,6 +108,7 @@ export default function FinanceOverview({ currency }) {
     <div>
       {loading && <p className="loading">Adding it all up… 🧮</p>}
       {error && <p className="error-msg">{error}</p>}
+      <BillReminders currency={currency} />
 
       {!loading && !error && data && (
         <>

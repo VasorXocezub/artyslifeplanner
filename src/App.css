@@ -4909,3 +4909,11 @@
   .bd { position: absolute; left: 0; top: 0; width: 100%; }
   .bd-noprint, .bd-tools, .bd-toolbar, .bd-viewtabs, .bd-quick, .bd-handle, .bd-nav-links, .bd-nav .btn-cancel, .modal-backdrop { display: none !important; }
 }
+.bd-txbtn { display: flex; justify-content: space-between; gap: 8px; width: 100%; background: none; border: none; padding: 2px 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.bd-txbtn:hover { text-decoration: underline; }
+.bd-periodnote { margin: 0; padding: 6px 12px; border-radius: var(--r12, 12px); background: var(--accent-tint); font-size: 0.85rem; cursor: pointer; }
+.bd-lookup { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+.bd-lookup-res p { margin: 0 0 4px; }
+.bd-reminders { padding: 10px 16px; border-color: #E0A458; }
+.bd-reminders ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; }
+.bd-reminders li { display: flex; justify-content: space-between; gap: 8px; }

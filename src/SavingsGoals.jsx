@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { keyForDate, loadBudgetMeta, ymd, addDays } from './lib/budgetPeriods'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
@@ -26,6 +27,7 @@ export default function SavingsGoals({ currency }) {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [addFundsInputs, setAddFundsInputs] = useState({})
+  const [budgeted, setBudgeted] = useState({}) // goal id -> { amount, days }
 
   useEffect(() => {
     fetchGoals()
@@ -42,6 +44,27 @@ export default function SavingsGoals({ currency }) {
     if (error) setError(error.message)
     else setGoals(data)
     setLoading(false)
+    loadBudgeted()
+  }
+
+  // how much the budget sets aside for each goal per period (needs the budget tables; silently skipped otherwise)
+  async function loadBudgeted() {
+    try {
+      const meta = await loadBudgetMeta()
+      const key = keyForDate(ymd(new Date()), meta.settings, meta.customs)
+      if (!key) return
+      const { data: lines, error: e1 } = await supabase.from('budget_items').select('planned_amount, items, savings_goal_id').eq('month', key).not('savings_goal_id', 'is', null)
+      if (e1 || !lines) return
+      const t = meta.settings.period_type
+      const days = t === 'weekly' ? 7 : t === 'fortnightly' ? 14 : 30
+      const map = {}
+      lines.forEach(l => {
+        const parts = Array.isArray(l.items) ? l.items.filter(p => p && p.name) : []
+        const amt = parts.length ? parts.reduce((a, p) => a + (Number(p.amount) || 0), 0) : Number(l.planned_amount) || 0
+        map[l.savings_goal_id] = { amount: (map[l.savings_goal_id]?.amount || 0) + amt, days, unit: t === 'weekly' ? 'week' : t === 'fortnightly' ? 'fortnight' : 'month' }
+      })
+      setBudgeted(map)
+    } catch { /* budget not set up */ }
   }
 
   function openAdd() {
@@ -235,6 +258,15 @@ export default function SavingsGoals({ currency }) {
                     {reached ? 'Goal reached 🎉' : `${formatMoney(Number(g.target_amount) - Number(g.current_amount), currency)} to go`}
                   </span>
                 </div>
+
+                {(() => {
+                  const b = budgeted[g.id]
+                  if (!b || b.amount <= 0 || reached) return null
+                  const left = Number(g.target_amount) - Number(g.current_amount)
+                  const periods = Math.ceil(left / b.amount)
+                  const eta = addDays(new Date(), periods * b.days)
+                  return <p className="progress-label" style={{ marginTop: 4 }}>💖 {formatMoney(b.amount, currency)} per {b.unit} budgeted · on track by {eta.toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })}</p>
+                })()}
 
                 <div className="habit-actions">
                   <div className="log-value-row">

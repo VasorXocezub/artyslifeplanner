@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import { getEra, setEra as saveEra, getTheme } from './lib/localPrefs'
 import WeatherWidget from './WeatherWidget'
+import BillReminders from './BillReminders'
 
 const ERAS = [
   { key: 'rich_girl', label: '💅 Rich Girl Era' },
@@ -406,6 +407,8 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
           )}
         </>
       )}
+
+      {!hiddenModules.includes('finances') && <BillReminders currency={currency} />}
 
       {MODULES.map((group) => {
         const visibleItems = group.items.filter((m) => !hiddenModules.includes(m.key))
