@@ -5,7 +5,9 @@ import UndoBar from './UndoBar'
 import {
   derivedPct, effectivePct, effectiveStatus, dueInfo, computeBadges, progressStage,
   habitConsistency, sparkPoints, sortGoals,
+  firstOpenStep, moveItem, stepDue, projectFinish, isStalled, recapStats, TEMPLATES,
 } from './lib/goals'
+import { toIso } from './lib/social'
 
 const emptyForm = {
   title: '', category: '', newEra: '', target_date: '', status: 'not_started', notes: '',
@@ -78,6 +80,12 @@ export default function GoalsView() {
   const [undo, setUndo] = useState(null)
   const [celebrate, setCelebrate] = useState(null)
   const [newStep, setNewStep] = useState('')
+  const [view, setView] = useState('cards')
+  const [groupEra, setGroupEra] = useState(false)
+  const [chartId, setChartId] = useState(null)
+  const [recapOpen, setRecapOpen] = useState(false)
+  const [expanded, setExpanded] = useState({})
+  const [inlineStep, setInlineStep] = useState({})
 
   useEffect(() => { fetchAll() }, [])
 
@@ -192,6 +200,10 @@ export default function GoalsView() {
       linked_savings_id: form.linked_savings_id || null,
       linked_habit_id: form.linked_habit_id || null,
     }
+    if (existing) {
+      if ('touched_at' in existing) payload.touched_at = new Date().toISOString()
+      if ('completed_at' in existing && effectiveStatus(existing, ctx) !== 'done' && effectiveStatus({ ...existing, ...payload }, ctx) === 'done') payload.completed_at = new Date().toISOString()
+    }
     Object.entries(v2).forEach(([k, v]) => {
       const used = Array.isArray(v) ? v.length > 0 : v != null
       if (used || (existing && k in existing)) payload[k] = v
@@ -222,8 +234,51 @@ export default function GoalsView() {
   async function toggleStep(goal, idx) {
     const before = effectiveStatus(goal, ctx)
     const ms = goal.milestones.map((m, i) => (i === idx ? { ...m, d: !m.d } : m))
-    const ok = await patchGoal(goal.id, { milestones: ms })
-    if (ok && before !== 'done' && effectiveStatus({ ...goal, milestones: ms }, ctx) === 'done') fireCelebration(goal.id)
+    const becameDone = before !== 'done' && effectiveStatus({ ...goal, milestones: ms }, ctx) === 'done'
+    const ok = await patchGoal(goal.id, { milestones: ms, ...stamps(goal, becameDone) })
+    if (ok && becameDone) fireCelebration(goal.id)
+  }
+
+  async function addInlineStep(goal) {
+    const t = (inlineStep[goal.id] || '').trim()
+    if (!t) return
+    const ms = [...(Array.isArray(goal.milestones) ? goal.milestones : []), { t, d: false }]
+    const ok = await patchGoal(goal.id, { milestones: ms, ...stamps(goal, false) })
+    if (ok) setInlineStep((v) => ({ ...v, [goal.id]: '' }))
+  }
+
+  async function moveStep(goal, i, dir) {
+    await patchGoal(goal.id, { milestones: moveItem(goal.milestones, i, dir) })
+  }
+
+  async function togglePin(goal) {
+    if (!goal.pinned && live.filter((g) => g.pinned).length >= 3) { setError('You can pin up to 3 dreams to "This week" — unpin one first.'); return }
+    await patchGoal(goal.id, { pinned: !goal.pinned })
+  }
+
+  async function snooze(goal) {
+    const d = new Date(); d.setDate(d.getDate() + 30)
+    await patchGoal(goal.id, { snoozed_until: toIso(d) }, { message: `Snoozed "${goal.title}" for 30 days`, run: async () => { await patchGoal(goal.id, { snoozed_until: null }) } })
+  }
+
+  function stamps(goal, becameDone) {
+    const out = {}
+    if ('touched_at' in goal) out.touched_at = new Date().toISOString()
+    if (becameDone && 'completed_at' in goal) out.completed_at = new Date().toISOString()
+    return out
+  }
+
+  function applyTemplate(t) {
+    setForm({ ...emptyForm, ...t.form, milestones: (t.form.milestones || []).map((x) => ({ t: x, d: false })) })
+    setMoreOpen(!!t.form.cover_emoji)
+  }
+
+  function duplicateGoal() {
+    setEditingId(null)
+    setForm((f) => ({
+      ...f, title: `${f.title} (copy)`, status: 'not_started',
+      current_value: f.goal_type === 'progress' ? f.start_value : '', milestones: f.milestones.map((m) => ({ ...m, d: false })),
+    }))
   }
 
   async function updateProgress(goal) {
@@ -233,7 +288,8 @@ export default function GoalsView() {
     if (isNaN(value)) { setError('Enter a number for the new value.'); return }
     const prev = goal.current_value
     const before = effectiveStatus(goal, ctx)
-    const { error } = await supabase.from('goals').update({ current_value: value }).eq('id', goal.id)
+    const becameDone = before !== 'done' && effectiveStatus({ ...goal, current_value: value }, ctx) === 'done'
+    const { error } = await supabase.from('goals').update({ current_value: value, ...stamps(goal, becameDone) }).eq('id', goal.id)
     if (error) { setError(hint(error.message)); return }
     let logId = null
     if (!note) {
@@ -316,6 +372,182 @@ export default function GoalsView() {
   active.forEach((g) => { if (g.category) eraCounts[g.category] = (eraCounts[g.category] || 0) + 1 })
   const topEra = Object.entries(eraCounts).sort((a, b) => b[1] - a[1])[0]
 
+  const showFocus = statusFilter === 'all' && !search
+  const focus = showFocus ? filtered.filter((g) => g.pinned) : []
+  const rest = showFocus ? filtered.filter((g) => !g.pinned) : filtered
+  const eraGroups = groupEra
+    ? Object.entries(rest.reduce((m, g) => { const k = g.category || 'No era yet'; (m[k] = m[k] || []).push(g); return m }, {}))
+    : null
+  const chartGoal = goals.find((g) => g.id === chartId)
+  const recapYear = new Date().getFullYear()
+  const recap = recapOpen ? recapStats(goals, ctx, recapYear) : null
+
+  function renderCard(g) {
+    const status = effectiveStatus(g, ctx)
+    const pct = effectivePct(g, ctx)
+    const real = derivedPct(g, ctx) != null
+    const stage = progressStage(pct)
+    const ups = updatesByGoal[g.id] || []
+    const badges = computeBadges(g, pct, status, ups, ctx)
+    const due = dueInfo(g, status)
+    const steps = Array.isArray(g.milestones) ? g.milestones : []
+    const next = firstOpenStep(g)
+    const open = !!expanded[g.id]
+    const isProgress = g.goal_type === 'progress'
+    const sv = g.linked_savings_id && ctx.savings[g.linked_savings_id]
+    const hb = g.linked_habit_id && habits.find((h) => String(h.id) === String(g.linked_habit_id))
+    const accent = g.cover_color || STATUS_COLORS[status]
+    const spark = sparkPoints([Number(g.start_value), ...ups.map((u) => Number(u.value))])
+    const stalled = isStalled(g, status, ups)
+    const shown = open ? steps.map((m, i) => i) : next ? [next.index] : []
+    return (
+      <div className="contact-card dream-card" key={g.id} style={{ borderTopColor: accent }}>
+        {celebrate === g.id && <Confetti />}
+        {g.cover_url && <img className="dream-cover" src={g.cover_url} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+        <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
+          <div className="dream-top">
+            <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>{STATUS_LABELS[status]}</span>
+            <span className="dream-top-right">
+              {due && <span className={`dream-due dream-due-${due.tone}`}>{due.label}</span>}
+              {!isArchived(g) && (
+                <button className={`dream-pin ${g.pinned ? 'on' : ''}`} aria-label={g.pinned ? 'Unpin from this week' : 'Pin to this week'} title={g.pinned ? 'Unpin from this week' : 'Pin to this week'} onClick={(e) => { e.stopPropagation(); togglePin(g) }}>{g.pinned ? '★' : '☆'}</button>
+              )}
+            </span>
+          </div>
+          <h3 className="contact-name" title={g.title}>
+            {g.cover_emoji && <span className="dream-emoji" style={{ background: g.cover_color || 'var(--accent-tint)' }}>{g.cover_emoji}</span>}
+            {g.title}
+          </h3>
+          {g.category && <p className="contact-relationship goal-era">{g.category}</p>}
+          {g.target_date && <p className="dream-date">Target {formatDate(g.target_date)}</p>}
+          {g.notes && <p className="contact-notes">{g.notes}</p>}
+        </div>
+
+        {(real || status === 'in_progress') && (
+          <div className="progress-row">
+            <div className="progress-track"><div className="progress-fill" style={{ width: `${pct}%`, background: STATUS_COLORS[status] }} /></div>
+            <span className="progress-label">
+              {stage.icon} {stage.label}
+              {steps.length > 0 && ` — ${steps.filter((m) => m.d).length} of ${steps.length} steps`}
+              {isProgress && ` — ${g.current_value} / ${g.target_value} ${g.unit || ''}`}
+              {sv && ` — ${sv.icon || '💰'} ${sv.name}`}
+              {hb && ` — 🔁 ${hb.name} (30d)`}
+              {' '}({pct}%)
+            </span>
+          </div>
+        )}
+
+        {steps.length > 0 && (
+          <div className="dream-steps-wrap">
+            <ul className="dream-steps">
+              {shown.map((i) => {
+                const m = steps[i]
+                const sd = stepDue(m)
+                return (
+                  <li key={i}>
+                    <label>
+                      <input type="checkbox" checked={!!m.d} onChange={() => toggleStep(g, i)} />
+                      <span className={m.d ? 'dream-step-done' : ''}>{!open && <em className="dream-next">Next: </em>}{m.t}</span>
+                      {sd && <span className={`dream-due dream-due-${sd.tone}`}>{sd.label}</span>}
+                    </label>
+                    {open && (
+                      <span className="dream-step-move">
+                        <button aria-label="Move step up" disabled={i === 0} onClick={() => moveStep(g, i, -1)}>▲</button>
+                        <button aria-label="Move step down" disabled={i === steps.length - 1} onClick={() => moveStep(g, i, 1)}>▼</button>
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+            <button className="sc-more-toggle" onClick={() => setExpanded((v) => ({ ...v, [g.id]: !open }))}>
+              {open ? '▾ Hide steps' : `▸ All steps (${steps.length})`}
+            </button>
+            {open && (
+              <div className="dream-step-edit">
+                <input value={inlineStep[g.id] || ''} placeholder="Add a step" onChange={(e) => setInlineStep((v) => ({ ...v, [g.id]: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && addInlineStep(g)} />
+                <button className="sc-chip-btn" onClick={() => addInlineStep(g)}>Add</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isProgress && ups.length > 0 && spark && (
+          <button className="dream-spark-btn" onClick={() => setChartId(g.id)} aria-label="Open progress history">
+            <svg className="dream-spark" viewBox="0 0 120 24" preserveAspectRatio="none"><polyline points={spark} fill="none" stroke="var(--accent-deep)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" /></svg>
+            <span>📈 History</span>
+          </button>
+        )}
+
+        {stalled && !isArchived(g) && (
+          <div className="dream-stalled">
+            <span>💤 No movement in 30+ days — still want this?</span>
+            <span className="dream-stalled-actions">
+              <button className="sc-chip-btn" onClick={() => snooze(g)}>Snooze 30d</button>
+              <button className="sc-chip-btn" onClick={() => archiveGoal(g, true)}>Archive</button>
+              <button className="sc-chip-btn" onClick={() => openEdit(g)}>Update</button>
+            </span>
+          </div>
+        )}
+
+        {badges.length > 0 && (
+          <div className="goal-badges-row">
+            {badges.map((b) => <span className="goal-badge" key={b.label}>{b.icon} {b.label}</span>)}
+          </div>
+        )}
+
+        {g.reward && (
+          <p className="goal-reward">
+            🎁 {g.reward_claimed ? 'Claimed: ' : 'Reward: '}{g.reward}
+            {status === 'done' && !g.reward_claimed && (
+              <button className="sc-chip-btn dream-claim" onClick={() => claimReward(g)}>Claim reward</button>
+            )}
+          </p>
+        )}
+
+        {isProgress && !isArchived(g) && !g.linked_savings_id && (
+          <div className="log-value-row">
+            <input
+              type="number" className="log-value-input" placeholder="Update current value"
+              value={progressInputs[g.id] || ''}
+              onChange={(e) => setProgressInputs((v) => ({ ...v, [g.id]: e.target.value }))}
+              onKeyDown={(e) => e.key === 'Enter' && updateProgress(g)}
+            />
+            <button className="btn-check log-value-btn" onClick={() => updateProgress(g)}>Update</button>
+          </div>
+        )}
+
+        {status === 'done' && !isArchived(g) && (
+          <button className="sc-chip-btn dream-archive" onClick={() => archiveGoal(g, true)}>🗄️ Archive</button>
+        )}
+        {isArchived(g) && (
+          <button className="sc-chip-btn dream-archive" onClick={() => archiveGoal(g, false)}>↩ Restore</button>
+        )}
+      </div>
+    )
+  }
+
+  function renderTile(g) {
+    const status = effectiveStatus(g, ctx)
+    const pct = effectivePct(g, ctx)
+    const bg = g.cover_url ? `center / cover url("${g.cover_url}")` : (g.cover_color || 'var(--accent-tint)')
+    return (
+      <button key={g.id} className="dream-tile" style={{ background: bg }} onClick={() => openEdit(g)}>
+        {g.pinned && <span className="dream-tile-pin">★</span>}
+        {status === 'done' && <span className="dream-tile-done">👑</span>}
+        {!g.cover_url && <span className="dream-tile-emoji">{g.cover_emoji || '✨'}</span>}
+        <span className="dream-tile-label">
+          <b>{g.title}</b>
+          <span className="progress-track"><span className="progress-fill" style={{ width: `${pct}%`, display: 'block', height: '100%', background: STATUS_COLORS[status] }} /></span>
+        </span>
+      </button>
+    )
+  }
+
+  const renderList = (list) => (view === 'vision'
+    ? <div className="dream-vision">{list.map(renderTile)}</div>
+    : <div className="card-grid">{list.map(renderCard)}</div>)
+
   return (
     <div>
       <div className="view-header">
@@ -356,6 +588,13 @@ export default function GoalsView() {
         )}
       </div>
 
+      <div className="dream-viewbar">
+        <button className={`sc-filter-btn ${view === 'cards' ? 'on' : ''}`} onClick={() => setView('cards')}>▦ Cards</button>
+        <button className={`sc-filter-btn ${view === 'vision' ? 'on' : ''}`} onClick={() => setView('vision')}>🖼 Vision board</button>
+        {view === 'cards' && <button className={`sc-filter-btn ${groupEra ? 'on' : ''}`} onClick={() => setGroupEra((v) => !v)}>Group by era</button>}
+        <button className="sc-filter-btn" onClick={() => setRecapOpen(true)}>🏆 Recap</button>
+      </div>
+
       {loading && <p className="loading">Rounding up your ambitions… 🌟</p>}
       {error && <p className="error-msg">{error}</p>}
       {note && <p className="field-hint">{note}</p>}
@@ -367,127 +606,39 @@ export default function GoalsView() {
         </div>
       )}
 
-      {!loading && filtered.length > 0 && (
-        <div className="card-grid">
-          {filtered.map((g) => {
-            const status = effectiveStatus(g, ctx)
-            const pct = effectivePct(g, ctx)
-            const real = derivedPct(g, ctx) != null
-            const stage = progressStage(pct)
-            const ups = updatesByGoal[g.id] || []
-            const badges = computeBadges(g, pct, status, ups, ctx)
-            const due = dueInfo(g, status)
-            const steps = Array.isArray(g.milestones) ? g.milestones : []
-            const isProgress = g.goal_type === 'progress'
-            const sv = g.linked_savings_id && ctx.savings[g.linked_savings_id]
-            const hb = g.linked_habit_id && habits.find((h) => String(h.id) === String(g.linked_habit_id))
-            const accent = g.cover_color || STATUS_COLORS[status]
-            const spark = sparkPoints([isProgress ? Number(g.start_value) : 0, ...ups.map((u) => Number(u.value))].slice(isProgress ? 0 : 1))
-            return (
-              <div className="contact-card dream-card" key={g.id} style={{ borderTopColor: accent }}>
-                {celebrate === g.id && <Confetti />}
-                {g.cover_url && <img className="dream-cover" src={g.cover_url} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
-                <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
-                  <div className="dream-top">
-                    <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>{STATUS_LABELS[status]}</span>
-                    {due && <span className={`dream-due dream-due-${due.tone}`}>{due.label}</span>}
-                  </div>
-                  <h3 className="contact-name" title={g.title}>
-                    {g.cover_emoji && <span className="dream-emoji" style={{ background: g.cover_color || 'var(--accent-tint)' }}>{g.cover_emoji}</span>}
-                    {g.title}
-                  </h3>
-                  {g.category && <p className="contact-relationship goal-era">{g.category}</p>}
-                  {g.target_date && <p className="dream-date">Target {formatDate(g.target_date)}</p>}
-                  {g.notes && <p className="contact-notes">{g.notes}</p>}
-                </div>
+      {!loading && focus.length > 0 && (
+        <section className="dream-focus">
+          <h2 className="dream-section">⭐ This week</h2>
+          {renderList(focus)}
+        </section>
+      )}
 
-                {(real || status === 'in_progress') && (
-                  <div className="progress-row">
-                    <div className="progress-track"><div className="progress-fill" style={{ width: `${pct}%`, background: STATUS_COLORS[status] }} /></div>
-                    <span className="progress-label">
-                      {stage.icon} {stage.label}
-                      {steps.length > 0 && ` — ${steps.filter((m) => m.d).length} of ${steps.length} steps`}
-                      {isProgress && ` — ${g.current_value} / ${g.target_value} ${g.unit || ''}`}
-                      {sv && ` — ${sv.icon || '💰'} ${sv.name}`}
-                      {hb && ` — 🔁 ${hb.name} (30d)`}
-                      {' '}({pct}%)
-                    </span>
-                  </div>
-                )}
-
-                {steps.length > 0 && (
-                  <ul className="dream-steps">
-                    {steps.map((m, i) => (
-                      <li key={i}>
-                        <label>
-                          <input type="checkbox" checked={!!m.d} onChange={() => toggleStep(g, i)} />
-                          <span className={m.d ? 'dream-step-done' : ''}>{m.t}</span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {spark && isProgress && (
-                  <svg className="dream-spark" viewBox="0 0 120 24" preserveAspectRatio="none" aria-label="Progress trend">
-                    <polyline points={spark} fill="none" stroke="var(--accent-deep)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-                  </svg>
-                )}
-
-                {badges.length > 0 && (
-                  <div className="goal-badges-row">
-                    {badges.map((b) => <span className="goal-badge" key={b.label}>{b.icon} {b.label}</span>)}
-                  </div>
-                )}
-
-                {g.reward && (
-                  <p className="goal-reward">
-                    🎁 {g.reward_claimed ? 'Claimed: ' : 'Reward: '}{g.reward}
-                    {status === 'done' && !g.reward_claimed && (
-                      <button className="sc-chip-btn dream-claim" onClick={() => claimReward(g)}>Claim reward</button>
-                    )}
-                  </p>
-                )}
-
-                {isProgress && !isArchived(g) && !g.linked_savings_id && (
-                  <div className="log-value-row">
-                    <input
-                      type="number" className="log-value-input" placeholder="Update current value"
-                      value={progressInputs[g.id] || ''}
-                      onChange={(e) => setProgressInputs((v) => ({ ...v, [g.id]: e.target.value }))}
-                      onKeyDown={(e) => e.key === 'Enter' && updateProgress(g)}
-                    />
-                    <button className="btn-check log-value-btn" onClick={() => updateProgress(g)}>Update</button>
-                  </div>
-                )}
-
-                {status === 'done' && !isArchived(g) && (
-                  <button className="sc-chip-btn dream-archive" onClick={() => archiveGoal(g, true)}>🗄️ Archive</button>
-                )}
-                {isArchived(g) && (
-                  <button className="sc-chip-btn dream-archive" onClick={() => archiveGoal(g, false)}>↩ Restore</button>
-                )}
-              </div>
-            )
-          })}
-        </div>
+      {!loading && rest.length > 0 && (
+        eraGroups ? eraGroups.map(([era, list]) => (
+          <details className="dream-group" key={era} open>
+            <summary>{era} <span>({list.length})</span></summary>
+            {renderList(list)}
+          </details>
+        )) : (
+          <>
+            {focus.length > 0 && <h2 className="dream-section">Everything else</h2>}
+            {renderList(rest)}
+          </>
+        )
       )}
 
       {undo && <UndoBar message={undo.message} onUndo={() => { const r = undo.run; setUndo(null); r() }} onDismiss={() => setUndo(null)} />}
-
-      {confirmDelete && (
-        <ConfirmSheet
-          title="Delete this dream?"
-          body="You can undo for a few seconds after."
-          confirmLabel="Delete" danger
-          onConfirm={handleDelete} onCancel={() => setConfirmDelete(false)}
-        />
-      )}
 
       {modalOpen && (
         <div className="modal-backdrop" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>{editingId ? 'Edit dream' : 'New dream'}</h2>
+            {!editingId && !form.title && (
+              <div className="dream-templates">
+                <span className="field-hint">Start from a template:</span>
+                {TEMPLATES.map((t) => <button type="button" key={t.label} className="sc-chip-btn" onClick={() => applyTemplate(t)}>{t.label}</button>)}
+              </div>
+            )}
             <form onSubmit={handleSave}>
               <div className="field">
                 <label>Title</label>
@@ -521,6 +672,9 @@ export default function GoalsView() {
                       <div className="dream-step-edit" key={i}>
                         <input type="checkbox" checked={!!m.d} onChange={() => setForm({ ...form, milestones: form.milestones.map((x, j) => (j === i ? { ...x, d: !x.d } : x)) })} />
                         <input value={m.t} onChange={(e) => setForm({ ...form, milestones: form.milestones.map((x, j) => (j === i ? { ...x, t: e.target.value } : x)) })} />
+                        <input type="date" className="dream-step-date" aria-label="Step due date" value={m.due || ''} onChange={(e) => setForm({ ...form, milestones: form.milestones.map((x, j) => (j === i ? { ...x, due: e.target.value || undefined } : x)) })} />
+                        <button type="button" className="sc-icon-btn" aria-label="Move step up" disabled={i === 0} onClick={() => setForm({ ...form, milestones: moveItem(form.milestones, i, -1) })}>▲</button>
+                        <button type="button" className="sc-icon-btn" aria-label="Move step down" disabled={i === form.milestones.length - 1} onClick={() => setForm({ ...form, milestones: moveItem(form.milestones, i, 1) })}>▼</button>
                         <button type="button" className="sc-icon-btn" aria-label="Remove step" onClick={() => setForm({ ...form, milestones: form.milestones.filter((_, j) => j !== i) })}>✕</button>
                       </div>
                     ))}
@@ -605,6 +759,7 @@ export default function GoalsView() {
               <div className="modal-actions">
                 <div>
                   {editingId && <button type="button" className="btn-delete" onClick={() => setConfirmDelete(true)} disabled={saving}>Delete</button>}
+                  {editingId && <button type="button" className="btn-cancel" style={{ marginLeft: 6 }} onClick={duplicateGoal}>Duplicate</button>}
                 </div>
                 <div className="modal-actions-right">
                   <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
@@ -612,6 +767,66 @@ export default function GoalsView() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {confirmDelete && (
+        <ConfirmSheet
+          title="Delete this dream?"
+          body="You can undo for a few seconds after."
+          confirmLabel="Delete" danger
+          onConfirm={handleDelete} onCancel={() => setConfirmDelete(false)}
+        />
+      )}
+
+      {chartGoal && (() => {
+        const ups = updatesByGoal[chartGoal.id] || []
+        const pts = [...(chartGoal.start_value != null ? [{ v: Number(chartGoal.start_value), t: chartGoal.created_at }] : []), ...ups.map((u) => ({ v: Number(u.value), t: u.created_at }))]
+        const vals = pts.map((p) => p.v).concat(Number(chartGoal.target_value))
+        const min = Math.min(...vals), max = Math.max(...vals), span = max - min || 1
+        const xy = (p, i) => `${Math.round(20 + (i / Math.max(1, pts.length - 1)) * 260)},${Math.round(100 - ((p.v - min) / span) * 80)}`
+        const ty = Math.round(100 - ((Number(chartGoal.target_value) - min) / span) * 80)
+        const finish = projectFinish(chartGoal, ups)
+        return (
+          <div className="modal-backdrop" onClick={() => setChartId(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h2>{chartGoal.title}</h2>
+              <svg viewBox="0 0 300 120" className="dream-chart" role="img" aria-label="Progress history">
+                <line x1="20" x2="280" y1={ty} y2={ty} stroke="var(--lavender)" strokeDasharray="4 4" />
+                <text x="282" y={ty + 3} fontSize="8" fill="var(--ink-dim)">goal</text>
+                <polyline points={pts.map(xy).join(' ')} fill="none" stroke="var(--accent-deep)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                {pts.map((p, i) => <circle key={i} cx={xy(p, i).split(',')[0]} cy={xy(p, i).split(',')[1]} r="3.5" fill="var(--accent-deep)" />)}
+              </svg>
+              <p className="field-hint">
+                {finish ? `At this pace you'll reach ${chartGoal.target_value} ${chartGoal.unit || ''} around ${formatDate(finish)}.` : 'Log a couple more updates to see a projected finish date.'}
+              </p>
+              <ul className="dream-history">
+                {[...ups].reverse().map((u) => (
+                  <li key={u.id}><span>{new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span><b>{u.value} {chartGoal.unit || ''}</b></li>
+                ))}
+              </ul>
+              <div className="modal-actions"><div /><div className="modal-actions-right"><button className="btn-cancel" onClick={() => setChartId(null)}>Close</button></div></div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {recap && (
+        <div className="modal-backdrop" onClick={() => setRecapOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>🏆 {recapYear} recap</h2>
+            <p className="dream-summary"><b>{recap.slayed.length}</b> dreams slayed · <b>{recap.rewards}</b> rewards claimed{recap.topEra && <> · top era: <b>{recap.topEra}</b></>}</p>
+            {recap.slayed.length === 0 ? <p className="field-hint">No slayed dreams yet this year — your first trophy is coming. 👑</p> : (
+              <div className="dream-shelf">
+                {recap.slayed.map((g) => (
+                  <div className="dream-trophy" key={g.id} style={{ background: g.cover_color || 'var(--accent-tint)' }}>
+                    <span>{g.cover_emoji || '🏆'}</span><b>{g.title}</b>
+                    {g.completed_at && <small>{formatDate(g.completed_at.slice(0, 10))}</small>}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="modal-actions"><div /><div className="modal-actions-right"><button className="btn-cancel" onClick={() => setRecapOpen(false)}>Close</button></div></div>
           </div>
         </div>
       )}

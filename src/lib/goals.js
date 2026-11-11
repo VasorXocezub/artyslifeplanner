@@ -95,3 +95,112 @@ export function sortGoals(list, how, ctx) {
   if (how === 'close') return a.sort((x, y) => effectivePct(y, ctx) - effectivePct(x, ctx))
   return a
 }
+
+// ---------- round 2 ----------
+const DAY = 86400000
+const isoOf = toIso
+
+export function firstOpenStep(goal) {
+  const ms = Array.isArray(goal.milestones) ? goal.milestones : []
+  const i = ms.findIndex((m) => !m.d)
+  return i < 0 ? null : { index: i, step: ms[i] }
+}
+
+export function moveItem(arr, i, dir) {
+  const j = i + dir
+  if (j < 0 || j >= arr.length) return arr
+  const a = [...arr]
+  ;[a[i], a[j]] = [a[j], a[i]]
+  return a
+}
+
+export function stepDue(step, today = new Date()) {
+  if (!step || step.d || !step.due) return null
+  return dueInfo({ target_date: step.due }, 'in_progress', today)
+}
+
+// Linear projection of when a progress goal will finish, from its logged updates.
+export function projectFinish(goal, updates, now = new Date()) {
+  const pts = updates.map((u) => ({ t: new Date(u.created_at).getTime(), v: Number(u.value) })).filter((p) => !isNaN(p.t) && !isNaN(p.v))
+  if (pts.length < 2) return null
+  const first = pts[0], last = pts[pts.length - 1]
+  const dt = last.t - first.t
+  if (dt <= 0) return null
+  const slope = (last.v - first.v) / dt
+  const remaining = Number(goal.target_value) - last.v
+  if (slope === 0 || remaining / slope < 0) return null
+  if (remaining === 0) return isoOf(new Date(last.t))
+  const finish = new Date(last.t + remaining / slope)
+  if (finish.getTime() < now.getTime() - DAY * 365 || finish.getFullYear() > now.getFullYear() + 20) return null
+  return isoOf(finish)
+}
+
+// No real movement for 30+ days (unless snoozed)
+export function isStalled(goal, status, updates = [], now = new Date(), days = 30) {
+  if (status === 'done' || goal.archived) return false
+  if (goal.snoozed_until && new Date(goal.snoozed_until + 'T23:59:59') >= now) return false
+  const stamps = [goal.created_at, goal.touched_at, ...updates.map((u) => u.created_at)].filter(Boolean).map((s) => new Date(s).getTime())
+  if (!stamps.length) return false
+  return now.getTime() - Math.max(...stamps) >= days * DAY
+}
+
+export function recapStats(goals, ctx, year) {
+  const doneIn = goals.filter((g) => {
+    if (effectiveStatus(g, ctx) !== 'done') return false
+    const when = g.completed_at || g.created_at
+    return when && new Date(when).getFullYear() === year
+  })
+  const eras = {}
+  doneIn.forEach((g) => { if (g.category) eras[g.category] = (eras[g.category] || 0) + 1 })
+  const top = Object.entries(eras).sort((a, b) => b[1] - a[1])[0]
+  return {
+    slayed: doneIn,
+    rewards: doneIn.filter((g) => g.reward_claimed).length,
+    topEra: top ? top[0] : null,
+  }
+}
+
+export function dreamReminders(goals, ctx, today = new Date()) {
+  const out = []
+  const stamp = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`
+  for (const g of goals) {
+    if (g.archived) continue
+    const status = effectiveStatus(g, ctx)
+    if (status === 'done') continue
+    const d = dueInfo(g, status, today)
+    if (d && d.days === 0) out.push({ key: `d-${g.id}-0-${stamp}`, title: `🌱 "${g.title}" is due today`, body: 'Last push — you got this.' })
+    else if (d && d.days === 1) out.push({ key: `d-${g.id}-1-${stamp}`, title: `🌱 "${g.title}" is due tomorrow`, body: '' })
+    else if (d && d.days === 7) out.push({ key: `d-${g.id}-7-${stamp}`, title: `🌱 "${g.title}" is due in a week`, body: '' })
+    ;(Array.isArray(g.milestones) ? g.milestones : []).forEach((m, i) => {
+      const s = stepDue(m, today)
+      if (s && s.days === 0) out.push({ key: `s-${g.id}-${i}-${stamp}`, title: `✅ Step due today: ${m.t}`, body: g.title })
+    })
+  }
+  return out
+}
+
+// Home-page tie-in
+export function dreamHighlights(goals, ctx, today = new Date()) {
+  const live = goals.filter((g) => !g.archived && effectiveStatus(g, ctx) !== 'done')
+  const chips = []
+  const pinned = live.filter((g) => g.pinned)
+  const seen = new Set()
+  for (const g of live) {
+    const d = dueInfo(g, effectiveStatus(g, ctx), today)
+    if (d && d.days <= 7) { chips.push({ text: `${g.title} · ${d.label}` }); seen.add(g.id) }
+  }
+  for (const g of pinned) if (!seen.has(g.id)) chips.push({ text: `${g.title} · ${effectivePct(g, ctx)}%` })
+  const closest = live
+    .filter((g) => derivedPct(g, ctx) != null)
+    .map((g) => ({ title: g.title, pct: effectivePct(g, ctx) }))
+    .sort((a, b) => b.pct - a.pct)[0] || null
+  return { chips: chips.slice(0, 3), closest }
+}
+
+export const TEMPLATES = [
+  { label: '💸 Save R10k', form: { title: 'Save R10 000', category: '💸 Rich Girl Era', goal_type: 'progress', start_value: '0', current_value: '0', target_value: '10000', unit: 'R', cover_emoji: '💸' } },
+  { label: '🏃 Run a 5k', form: { title: 'Run a 5k', category: '💪 Strong Girl Era', goal_type: 'simple', cover_emoji: '🏃', milestones: ['Get running shoes', 'Run 1k without stopping', 'Run 3k', 'Run 5k'] } },
+  { label: '📚 Read 12 books', form: { title: 'Read 12 books', category: '📚 Smart Girl Era', goal_type: 'progress', start_value: '0', current_value: '0', target_value: '12', unit: 'books', cover_emoji: '📚' } },
+  { label: '🌍 Plan a trip', form: { title: 'Plan a dream trip', category: '✈️ Passport Princess Era', goal_type: 'simple', cover_emoji: '✈️', milestones: ['Pick destination', 'Set budget', 'Book flights', 'Book stay', 'Pack'] } },
+  { label: '🏡 Declutter home', form: { title: 'Declutter the house', category: '🏡 Cozy Girl Era', goal_type: 'simple', cover_emoji: '🏡', milestones: ['Wardrobe', 'Kitchen', 'Bathroom', 'Paperwork', 'Donate bags'] } },
+]

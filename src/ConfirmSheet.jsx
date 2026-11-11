@@ -1,6 +1,6 @@
 export default function ConfirmSheet({ title, body, confirmLabel = 'Confirm', danger = false, onConfirm, onCancel }) {
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
+    <div className="modal-backdrop sc-confirm-backdrop" onClick={onCancel}>
       <div className="modal sc-confirm" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-label={title}>
         <h2>{title}</h2>
         {body && <p className="field-hint">{body}</p>}

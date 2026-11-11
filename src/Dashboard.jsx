@@ -1,3 +1,4 @@
+import { dreamHighlights } from './lib/goals'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { toIso, planItem } from './lib/social'
@@ -141,6 +142,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     todayBirthdays: [],
     todayPlans: [],
     giftNudges: [],
+    dreams: { chips: [], closest: null },
   })
   const [loading, setLoading] = useState(true)
 
@@ -192,6 +194,9 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const todayBirthdays = withBirthdays.filter((b) => b.daysAway === 0).map((b) => b.name)
     const giftNudges = withBirthdays.filter((b) => b.daysAway > 0 && b.daysAway <= 7 && b.giftNeeded).slice(0, 3)
 
+    const savingsMap = {}
+    ;(savingsData || []).forEach((x) => { savingsMap[x.id] = x })
+    const dreams = dreamHighlights(goalsData || [], { savings: savingsMap })
     const goalsInProgress = (goalsData || []).filter((g) => g.status === 'in_progress').length
 
     const todayStr = toIso(now)
@@ -227,7 +232,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const todayPlans = upcomingPlans.filter((p) => p.daysAway === 0).map((p) => p.title)
     const nextPlans = upcomingPlans.slice(0, 4).map((p) => ({ title: p.title, daysAway: p.daysAway }))
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges, dreams })
     setLoading(false)
   }
 
@@ -376,6 +381,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   if (!hiddenModules.includes('contacts')) for (const n of stats.todayBirthdays) todayItems.push({ icon: '🎉', text: `${n}'s birthday`, nav: 'contacts' })
   if (!hiddenModules.includes('social')) for (const t of stats.todayPlans) todayItems.push({ icon: '💌', text: t, nav: 'social' })
   if (!hiddenModules.includes('habits') && stats.habitsTotal > 0 && stats.habitsDoneToday < stats.habitsTotal) todayItems.push({ icon: '🌸', text: `${stats.habitsTotal - stats.habitsDoneToday} habit${stats.habitsTotal - stats.habitsDoneToday > 1 ? 's' : ''} left`, nav: 'habits' })
+  if (!hiddenModules.includes('goals')) for (const c of stats.dreams.chips) todayItems.push({ icon: '🌱', text: c.text, nav: 'goals' })
   if (!hiddenModules.includes('todos') && stats.todosOpen > 0) todayItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} open`, nav: 'todos' })
 
   return (

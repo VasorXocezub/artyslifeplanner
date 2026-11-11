@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { dreamReminders } from './goals'
 import { startOfToday, nextBirthday, giftNeeded, planItem, isIsoDate } from './social'
 
 const PREF = 'sc-reminders-on'
@@ -39,9 +40,11 @@ export function dueReminders(contacts, events, today = startOfToday()) {
 // Runs while the app is open. Each reminder fires once.
 export async function runReminders() {
   if (!remindersOn()) return 0
-  const [c, e] = await Promise.all([
+  const [c, e, gl, sv] = await Promise.all([
     supabase.from('contacts').select('*').not('birthday', 'is', null),
     supabase.from('social_events').select('*'),
+    supabase.from('goals').select('*'),
+    supabase.from('savings_goals').select('id,target_amount,current_amount'),
   ])
   if (c.error || e.error) return 0
   const contacts = (c.data || []).filter((x) => !x.archived && x.name && isIsoDate(x.birthday))
@@ -49,7 +52,10 @@ export async function runReminders() {
   let seen = {}
   try { seen = JSON.parse(localStorage.getItem(SEEN) || '{}') } catch { seen = {} }
   let fired = 0
-  for (const r of dueReminders(contacts, events)) {
+  const savings = {}
+  ;(sv.data || []).forEach((x) => { savings[x.id] = x })
+  const dreams = gl.error ? [] : dreamReminders(gl.data || [], { savings })
+  for (const r of [...dueReminders(contacts, events), ...dreams]) {
     if (seen[r.key]) continue
     try { new Notification(r.title, { body: r.body }); seen[r.key] = Date.now(); fired++ } catch { /* ignore */ }
   }
