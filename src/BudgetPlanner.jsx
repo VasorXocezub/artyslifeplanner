@@ -2,9 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
-import { partsOf, plannedOf, billDueDate, computeCarries, csvEscape, downloadBlob } from './lib/budgetEngine'
+import { plannedOf, computeCarries, csvEscape, downloadBlob, buildRows, incomeBaseFor, safeToSpend } from './lib/budgetEngine'
 import { Donut, TrendBars } from './BudgetCharts'
 import BudgetModals from './budget/BudgetModals'
+import ImportModal from './budget/ImportModal'
+import RulesModal from './budget/RulesModal'
+import BudgetCalendar from './budget/BudgetCalendar'
+import { loadRules } from './lib/budgetRules'
 import { COLORS, round2 } from './budget/constants'
 import {
   DEFAULT_SETTINGS, ymd, parseD, addDays, diffDays, fmtShort, toMonthly, lastMonday,
@@ -25,12 +29,10 @@ const PERIOD_TYPES = [
   { key: 'fortnightly', label: 'Fortnightly (every 2 weeks)' },
   { key: 'custom', label: 'Custom periods (I set the dates)' },
 ]
-const LEGACY_COLORS = { '#1E5C57': '#E4786A', '#8FC2BE': '#EC9A8C', '#D9A8B8': '#EC9A8C', '#E4CBA0': '#F6D0C8', '#7BA37A': '#6B7B3F', '#C2567D': '#E4786A', '#E8A5BC': '#EC9A8C', '#B896C9': '#C5CDE6', '#F3C9A8': '#F6D0C8', '#7BC4A8': '#6B7B3F', '#E0A458': '#EDD98A' }
-const fixColor = (c) => (c && LEGACY_COLORS[c.toUpperCase()]) || c
-const WARN_COLOR = '#E0A458'
+const WARN_COLOR = '#B7791F'
 
 const emptyLine = { id: null, kind: 'expense', category: '', customCategory: false, icon: '🧾', color: COLORS[0], grp: '', planned_amount: '', rollover: false, notes: '', forward: 0, parts: [],
-  amountMode: 'fixed', pct: '', fundTotal: '', fundPeriods: '', isBill: false, dueDay: '', goalId: '', rolloverMode: 'prev', carryDebt: false }
+  amountMode: 'fixed', pct: '', fundTotal: '', fundPeriods: '', isBill: false, dueDay: '', goalId: '', rolloverMode: 'prev', carryDebt: false, rolloverCap: '', debtOn: false, debtBalance: '', debtDate: '' }
 // short-lived cache for rarely-changing lookups, so flipping between periods stays quick
 const memo = {}
 const cached = (k, fn) => { const m = memo[k]; if (m && Date.now() - m.t < 30000) return Promise.resolve(m.v); return fn().then(v => { if (!v.error) memo[k] = { t: Date.now(), v }; return v }) }
@@ -55,6 +57,7 @@ export default function BudgetPlanner({ currency }) {
   const [prevItems, setPrevItems] = useState([])
   const [tx, setTx] = useState([])
   const [prevTx, setPrevTx] = useState([])
+  const lastKey = useRef(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
@@ -74,6 +77,12 @@ export default function BudgetPlanner({ currency }) {
   const [balance, setBalance] = useState(null)
   const [undo, setUndo] = useState(null) // { msg, restore }
   const undoTimer = useRef(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [rulesOpen, setRulesOpen] = useState(false)
+  const [rules, setRules] = useState([])
+  const [notifOn, setNotifOn] = useState(() => { try { return localStorage.getItem('bd-notify') === '1' } catch { return false } })
+  const [recentIncome, setRecentIncome] = useState([])
+  const [debtSpend, setDebtSpend] = useState({})
   const [billModal, setBillModal] = useState(null)
   const [txModal, setTxModal] = useState(null)
   const [note, setNote] = useState('')
@@ -126,10 +135,13 @@ export default function BudgetPlanner({ currency }) {
   }, [])
 
   useEffect(() => { loadMeta(false) }, [loadMeta])
+  useEffect(() => { loadRules().then(setRules) }, [])
 
   const load = useCallback(async () => {
     if (!periodKey) { setItems([]); setTx([]); setLoading(false); return }
-    setLoading(true)
+    // only blank the screen when moving to another period; edits refresh quietly in place
+    if (lastKey.current !== periodKey) { setLoading(true); setItems([]) }
+    lastKey.current = periodKey
     setError(null)
     const cur = describePeriod(periodKey, settings, customs)
     const pk = shiftKey(periodKey, -1, settings, customs)
@@ -170,6 +182,24 @@ export default function BudgetPlanner({ currency }) {
       const all = await soft(supabase.from('transactions').select('type, amount').gte('date', ac.data.start_date))
       setBalance(all.data ? Number(ac.data.starting_balance) + all.data.reduce((a, x) => a + (x.type === 'income' ? 1 : -1) * Number(x.amount), 0) : null)
     } else setBalance(null)
+    // irregular income: what came in over the last few periods
+    if (settings.income_mode && settings.income_mode !== 'planned') {
+      const ds = [-1, -2, -3].map(n => describePeriod(shiftKey(periodKey, n, settings, customs), settings, customs)).filter(Boolean)
+      if (ds.length) {
+        const mn = ds.reduce((m, d) => (d.start < m ? d.start : m), ds[0].start), mx = ds.reduce((m, d) => (d.end > m ? d.end : m), ds[0].end)
+        const ir = await soft(supabase.from('transactions').select('date, amount').eq('type', 'income').gte('date', ymd(mn)).lte('date', ymd(mx)))
+        setRecentIncome(ds.map(d => (ir.data || []).filter(x => x.date >= ymd(d.start) && x.date <= ymd(d.end)).reduce((a, x) => a + Number(x.amount), 0)))
+      } else setRecentIncome([])
+    } else setRecentIncome([])
+    // debt lines: how much has been paid since the starting date
+    const debts = (b.data || []).filter(l => Number(l.debt_start_balance) > 0 && l.debt_start_date)
+    if (debts.length) {
+      const dmin = debts.map(l => l.debt_start_date).sort()[0]
+      const dr = await soft(supabase.from('transactions').select('date, amount, category').eq('type', 'expense').gte('date', dmin))
+      const map = {}
+      debts.forEach(l => { map[l.id] = (dr.data || []).filter(x => x.date >= l.debt_start_date && (x.category || '').toLowerCase() === l.category.toLowerCase()).reduce((a, x) => a + Number(x.amount), 0) })
+      setDebtSpend(map)
+    } else setDebtSpend({})
     setLoading(false)
   }, [periodKey, settings, customs])
 
@@ -200,37 +230,13 @@ export default function BudgetPlanner({ currency }) {
 
   useEffect(() => { if (ready && view === 'history') loadHistory() }, [ready, view, loadHistory])
 
-  const sumTx = (list, kind, cat) =>
-    list.filter(t => t.type === kind && (t.category || 'Uncategorized').toLowerCase() === cat.toLowerCase())
-      .reduce((s, t) => s + Number(t.amount), 0)
-
   const carries = useMemo(() => computeCarries(items, rollItems, spendRows, periodKey, settings, customs), [items, rollItems, spendRows, periodKey, settings, customs])
   const linkedGoals = useMemo(() => new Set(items.map(i => i.savings_goal_id).filter(Boolean)), [items])
 
-  const rows = useMemo(() => {
-    const incomeBase = items.filter(i => i.kind === 'income' && !(Number(i.pct_of_income) > 0)).reduce((a, i) => a + plannedOf(i), 0)
-    return items.map((i, idx) => {
-      const parts = partsOf(i)
-      const pctOf = Number(i.pct_of_income) || 0
-      const basePlanned = pctOf > 0 ? round2(incomeBase * pctOf / 100) : plannedOf(i)
-      const carry = carries[i.id] || 0
-      const fundTotal = Number(i.fund_total) || 0
-      const planned = fundTotal > 0 ? Math.max(0, Math.min(basePlanned, fundTotal - carry)) : basePlanned
-      const budget = planned + carry
-      const cat = i.category.toLowerCase()
-      const catTx = tx.filter(t => t.type === i.kind && (t.category || 'Uncategorized').toLowerCase() === cat)
-      const lineTx = i.savings_goal_id
-        ? [...tx.filter(t => t.savings_goal_id === i.savings_goal_id), ...catTx.filter(t => !t.savings_goal_id)]
-        : catTx.filter(t => !(t.savings_goal_id && linkedGoals.has(t.savings_goal_id)))
-      const actual = lineTx.reduce((a, t) => a + Number(t.amount), 0)
-      const prevActual = sumTx(prevTx, i.kind, i.category)
-      const pct = budget > 0 ? (actual / budget) * 100 : (actual > 0 ? 999 : 0)
-      const goal = i.savings_goal_id ? goals.find(g => g.id === i.savings_goal_id) : null
-      const pay = payments.find(p => p.item_id === i.id)
-      const due = i.is_bill && i.due_day ? billDueDate(i.due_day, period) : null
-      return { ...i, fundDone: fundTotal > 0 && carry >= fundTotal, color: fixColor(i.color), parts, planned, carry, budget, actual, prevActual, lineTx, pct, goal, pay, due, pctOf, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
-    })
-  }, [items, carries, tx, prevTx, goals, payments, linkedGoals, period]) // eslint-disable-line react-hooks/exhaustive-deps
+  const incomeBase = useMemo(() => incomeBaseFor(items, settings.income_mode, recentIncome), [items, settings.income_mode, recentIncome])
+  const rows = useMemo(
+    () => buildRows({ items, carries, tx, prevTx, goals, payments, period, incomeBase, debtSpend }),
+    [items, carries, tx, prevTx, goals, payments, period, incomeBase, debtSpend]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // keep the stored amount of %-of-income lines in step with income, so History stays right
   const synced = useRef({})
@@ -260,11 +266,14 @@ export default function BudgetPlanner({ currency }) {
   const remaining = totalBudget - totalActual
   const plannedIncome = sum(incomeRows, 'budget')
   const receivedIncome = sum(incomeRows, 'actual')
-  const unallocated = plannedIncome - totalBudget
+  const incomeLabel = settings.income_mode === 'lowest' ? 'lowest recent income' : settings.income_mode === 'average' ? 'average recent income' : 'planned income'
+  const planIncome = settings.income_mode !== 'planned' && recentIncome.length ? incomeBase : plannedIncome
+  const unallocated = planIncome - totalBudget
   const usedPct = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0
   const paceFrac = totalDays ? elapsedDays / totalDays : 0
   const projected = elapsedDays > 0 && inPeriod ? (totalActual / elapsedDays) * totalDays : totalActual
   const dailyLeft = daysLeft > 0 ? remaining / daysLeft : null
+  const safe = safeToSpend(rows, inPeriod ? daysLeft + 1 : 0) // today counts as a day you can still spend
 
   // early warnings, bills and projected balance
   const warnings = expenseRows.filter(r => r.budget > 0).map(r => {
@@ -320,6 +329,7 @@ export default function BudgetPlanner({ currency }) {
       parts: (r.parts || []).map(p => ({ name: p.name, amount: String(p.amount ?? '') })),
       amountMode: mode, pct: raw.pct_of_income ? String(raw.pct_of_income) : '', fundTotal: raw.fund_total ? String(raw.fund_total) : '', fundPeriods: raw.fund_periods ? String(raw.fund_periods) : '',
       isBill: !!raw.is_bill, dueDay: raw.due_day ? String(raw.due_day) : '', goalId: raw.savings_goal_id || '', rolloverMode: raw.rollover_mode || 'prev', carryDebt: !!raw.carry_debt,
+      rolloverCap: raw.rollover_cap ? String(raw.rollover_cap) : '', debtOn: Number(raw.debt_start_balance) > 0, debtBalance: raw.debt_start_balance ? String(raw.debt_start_balance) : '', debtDate: raw.debt_start_date || '',
     })
   }
 
@@ -355,8 +365,12 @@ export default function BudgetPlanner({ currency }) {
       pct_of_income: mode === 'pct' ? pctVal : null, savings_goal_id: isExp && modal.goalId ? modal.goalId : null,
       fund_total: mode === 'fund' ? fundTotal : null, fund_periods: mode === 'fund' ? fundPeriods : null,
       rollover_mode: mode === 'fund' ? 'all' : modal.rolloverMode, carry_debt: isExp && !!modal.carryDebt && modal.rollover,
+      rollover_cap: isExp && modal.rollover && parseFloat(modal.rolloverCap) > 0 ? parseFloat(modal.rolloverCap) : null,
+      debt_start_balance: isExp && modal.debtOn ? parseFloat(modal.debtBalance) : null,
+      debt_start_date: isExp && modal.debtOn ? modal.debtDate : null,
     }
-    const usesV3 = v3.is_bill || v3.pct_of_income || v3.savings_goal_id || v3.fund_total || v3.rollover_mode === 'all' || v3.carry_debt
+    if (isExp && modal.debtOn && (!(parseFloat(modal.debtBalance) > 0) || !modal.debtDate)) { setSaving(false); setError('For a debt line, enter the balance you owe and the date it starts from.'); return }
+    const usesV3 = v3.rollover_cap || v3.debt_start_balance || v3.is_bill || v3.pct_of_income || v3.savings_goal_id || v3.fund_total || v3.rollover_mode === 'all' || v3.carry_debt
     const hasV3 = items.length ? 'is_bill' in items[0] : false
     if (usesV3 || hasV3) Object.assign(base, v3)
     let err
@@ -468,7 +482,7 @@ export default function BudgetPlanner({ currency }) {
   }
 
   async function importRecurring() {
-    const { data, error: err } = await supabase.from('recurring_expenses').select('*').eq('active', true)
+    const { data, error: err } = await supabase.from('recurring_expenses').select('*').or('active.is.null,active.eq.true')
     if (err) { setError(err.message); return }
     const factor = period?.type === 'monthly' ? 1 : totalDays / 30.44
     const map = {}
@@ -500,6 +514,27 @@ export default function BudgetPlanner({ currency }) {
     await bulkInsert(Object.entries(map).map(([category, total]) => ({ category, kind: 'expense', planned_amount: Math.ceil(total / descs.length / 10) * 10 })), `Filled from your ${descs.length}-${unit} average`)
   }
 
+  // ----- bill reminders (browser notifications, only while the app is open) -----
+  async function toggleNotify() {
+    if (notifOn) { setNotifOn(false); try { localStorage.setItem('bd-notify', '0') } catch { /* private mode */ } return }
+    const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
+    if (perm !== 'granted') { setError('Notifications are blocked in this browser. Allow them for this site and try again.'); return }
+    setNotifOn(true)
+    try { localStorage.setItem('bd-notify', '1') } catch { /* private mode */ }
+    flash('Bill reminders on — you’ll get a nudge when you open the app and a bill is due soon')
+  }
+  useEffect(() => {
+    if (!notifOn || typeof Notification === 'undefined' || Notification.permission !== 'granted' || !bills.length) return
+    const soon = bills.filter(b => !b.pay && Math.round((b.due - today) / 864e5) <= 2)
+    if (!soon.length) return
+    try {
+      const stamp = ymd(today)
+      if (localStorage.getItem('bd-notified') === stamp) return
+      localStorage.setItem('bd-notified', stamp)
+    } catch { /* ignore */ }
+    new Notification('Bills due soon 💸', { body: soon.map(b => `${b.category} ${b.due < today ? '(overdue)' : fmtShort(b.due)}`).join(', ') })
+  }, [notifOn, bills.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ----- period note -----
   async function saveNote(e) {
     e.preventDefault()
@@ -517,6 +552,7 @@ export default function BudgetPlanner({ currency }) {
   function openTx(t) { setTxModal({ id: t.id, amount: String(t.amount), date: t.date, category: t.category || '', notes: t.notes || '', item: t.budget_item || '', hadItem: !!t.budget_item, type: t.type }) }
   async function saveTx(e) {
     e.preventDefault()
+    if (txModal.split) return saveSplit()
     const amt = parseFloat(txModal.amount)
     if (Number.isNaN(amt) || amt <= 0 || !txModal.date) { setError('Enter an amount above 0 and a date.'); return }
     setSaving(true); setError(null)
@@ -528,6 +564,23 @@ export default function BudgetPlanner({ currency }) {
     setSaving(false)
     if (err) { setError(err.message); return }
     setTxModal(null); load()
+  }
+  async function saveSplit() {
+    const total = parseFloat(txModal.amount)
+    const parts = txModal.split.map(p => ({ category: p.category.trim(), amount: parseFloat(p.amount) }))
+    if (parts.length < 2 || parts.some(p => Number.isNaN(p.amount) || p.amount <= 0)) { setError('Give every part an amount above 0.'); return }
+    const sum = parts.reduce((a, p) => a + p.amount, 0)
+    if (Math.abs(sum - total) > 0.005) { setError(`The parts add up to ${money(sum)} but the transaction is ${money(total)}.`); return }
+    setSaving(true); setError(null)
+    const orig = tx.find(x => x.id === txModal.id)
+    const user_id = await getUserId()
+    const { error: e1 } = await supabase.from('transactions').update({ amount: parts[0].amount, category: parts[0].category || null }).eq('id', txModal.id)
+    if (e1) { setSaving(false); setError(e1.message); return }
+    const extra = parts.slice(1).map(p => ({ user_id, date: txModal.date, type: txModal.type, amount: p.amount, category: p.category || null, notes: txModal.notes.trim() || null }))
+    const { error: e2 } = await supabase.from('transactions').insert(extra)
+    if (e2) { await supabase.from('transactions').update({ amount: Number(orig?.amount ?? total), category: orig?.category ?? null }).eq('id', txModal.id); setSaving(false); setError(e2.message); return }
+    for (const p of parts) if (p.category) await saveFinanceCategory(p.category)
+    setSaving(false); setTxModal(null); flash(`Split into ${parts.length}`); load()
   }
   async function deleteTx() {
     const t = tx.find(x => x.id === txModal.id)
@@ -708,6 +761,7 @@ export default function BudgetPlanner({ currency }) {
       period_type: next.period_type, month_start_day: Number(next.month_start_day) || 1,
       anchor_date: next.anchor_date || null, warn_pct: Number(next.warn_pct) || 80,
     }
+    if (next.income_mode !== 'planned' || (settingsRow && 'income_mode' in settingsRow)) payload.income_mode = next.income_mode || 'planned'
     let err
     if (settingsRow) ({ error: err } = await supabase.from('budget_settings').update(payload).eq('id', settingsRow.id))
     else {
@@ -824,7 +878,8 @@ export default function BudgetPlanner({ currency }) {
       <div key={r.id} data-bd-id={r.id} className={`bd-row ${open ? 'bd-row-open' : ''} ${dragging ? 'bd-dragging' : ''} ${dropTarget ? 'bd-drop' : ''}`}>
         <div className="bd-row-line">
           {sortKey === 'custom' && (
-            <button type="button" className="bd-handle" aria-label={`Drag to reorder ${r.category}`} title="Drag to reorder"
+            <button type="button" className="bd-handle" aria-label={`Reorder ${r.category}: drag, or press the up and down arrow keys`} title="Drag to reorder"
+              onKeyDown={e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); move(r, e.key === 'ArrowUp' ? -1 : 1) } }}
               onPointerDown={e => startDrag(e, r)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={() => setDrag(null)}>⋮⋮</button>
           )}
           <button type="button" className="bd-row-main" onClick={() => setExpanded(open ? null : r.id)} aria-expanded={open}>
@@ -872,6 +927,7 @@ export default function BudgetPlanner({ currency }) {
             {r.carry !== 0 && <p className="bd-dim bd-note">↻ {r.carry > 0 ? `Includes ${money(r.carry)} rolled over` : `${money(-r.carry)} overspend carried into this ${unit}`}</p>}
             {r.fund_total > 0 && <p className="bd-dim bd-note">🐖 Sinking fund: {money(Math.max(0, r.budget - r.actual))} saved of {money(Number(r.fund_total))}{r.fundDone ? ' · fully funded 🎉' : ` · ${money(r.planned)} per ${unit}`}</p>}
             {r.goal && <p className="bd-dim bd-note">{r.goal.icon || '💰'} {r.goal.name}: {money(Number(r.goal.current_amount))} of {money(Number(r.goal.target_amount))} saved</p>}
+            {r.debtLeft !== null && <p className="bd-dim bd-note">💳 {money(r.debtLeft)} still owed (of {money(Number(r.debt_start_balance))}){r.debtLeft === 0 ? ' · debt-free 🎉' : r.planned > 0 ? ` · debt-free by ${addDays(new Date(), Math.ceil(r.debtLeft / r.planned) * (period ? Math.max(1, diffDays(period.start, period.end) + 1) : 30)).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })} at this pace` : ''}</p>}
             {r.is_bill && r.due && <p className="bd-dim bd-note">🧾 Due {fmtShort(r.due)}{r.pay ? ' · paid ✓' : ''}</p>}
             {delta !== null && !isIncome && <p className="bd-dim bd-note">vs previous {unit}: {money(r.prevActual)} → <strong style={{ color: delta > 10 ? 'var(--danger)' : delta < -10 ? 'var(--good)' : undefined }}>{delta > 0 ? '+' : ''}{Math.round(delta)}%</strong></p>}
             {catTx.length === 0 ? <p className="bd-dim bd-note">Nothing logged here this period yet.</p> : (
@@ -917,10 +973,11 @@ export default function BudgetPlanner({ currency }) {
     <div className="bd">
       <div className="bd-viewtabs filter-row">
         <button className={`filter-pill ${view === 'plan' ? 'filter-pill-active' : ''}`} onClick={() => setView('plan')}>Plan</button>
+        <button className={`filter-pill ${view === 'calendar' ? 'filter-pill-active' : ''}`} onClick={() => setView('calendar')}>Calendar</button>
         <button className={`filter-pill ${view === 'history' ? 'filter-pill-active' : ''}`} onClick={() => setView('history')}>History</button>
       </div>
 
-      {view === 'plan' && (
+      {(view === 'plan' || view === 'calendar') && (
         <div className="bd-nav">
           <button className="btn-cancel" disabled={!prevKey} onClick={() => prevKey && setPeriodKey(prevKey)} aria-label={`Previous ${unit}`}>←</button>
           <div className="bd-nav-label">
@@ -951,9 +1008,10 @@ export default function BudgetPlanner({ currency }) {
         </div>
       )}
 
-      {view === 'plan' && loading && periodKey && <p className="loading">Crunching the plan… 🧮</p>}
+      {view === 'plan' && loading && periodKey && !items.length && <p className="loading">Crunching the plan… 🧮</p>}
+      {view === 'calendar' && periodKey && <BudgetCalendar period={period} rows={rows} tx={tx} money={money} today={today} />}
 
-      {view === 'plan' && !loading && periodKey && (
+      {view === 'plan' && (!loading || items.length > 0) && periodKey && (
         <>
           <div className="calendar-card bd-hero">
             <div className="bd-eq">
@@ -975,22 +1033,22 @@ export default function BudgetPlanner({ currency }) {
               {inPeriod && totalBudget > 0 ? ` · ${Math.round(paceFrac * 100)}% of the ${unit} gone` : ''}
             </p>
             <div className="bd-stats">
-              {dailyLeft !== null && totalBudget > 0 && (
-                <div><span className="bd-eq-label">Daily allowance</span><strong>{dailyLeft >= 0 ? money(dailyLeft) : '—'}</strong></div>
+              {dailyLeft !== null && totalBudget > 0 && inPeriod && (
+                <div title={`After ${money(safe.unpaidBills)} of unpaid bills`}><span className="bd-eq-label">Safe to spend / day</span><strong style={{ color: safe.perDay < 0 ? 'var(--danger)' : undefined }}>{safe.perDay >= 0 ? money(Math.floor(safe.perDay)) : '—'}</strong></div>
               )}
               {inPeriod && totalActual > 0 && (
                 <div><span className="bd-eq-label">On pace to spend</span><strong style={{ color: projected > totalBudget && totalBudget > 0 ? 'var(--danger)' : undefined }}>{money(Math.round(projected))}</strong></div>
               )}
-              <div><span className="bd-eq-label">Income {plannedIncome > 0 ? 'planned' : 'received'}</span><strong>{money(plannedIncome > 0 ? plannedIncome : receivedIncome)}</strong></div>
-              {plannedIncome > 0 && (
-                <div><span className="bd-eq-label">{unallocated >= 0 ? 'Unallocated' : 'Over-allocated'}</span><strong style={{ color: unallocated < 0 ? 'var(--danger)' : undefined }}>{money(Math.abs(unallocated))}</strong></div>
+              <div><span className="bd-eq-label">Income {planIncome > 0 ? (settings.income_mode === 'planned' || !recentIncome.length ? 'planned' : settings.income_mode) : 'received'}</span><strong>{money(planIncome > 0 ? planIncome : receivedIncome)}</strong></div>
+              {planIncome > 0 && (
+                <div title={`Worked out from ${incomeLabel}`}><span className="bd-eq-label">{unallocated >= 0 ? 'Unallocated' : 'Over-allocated'}</span><strong style={{ color: unallocated < 0 ? 'var(--danger)' : undefined }}>{money(Math.abs(unallocated))}</strong></div>
               )}
               {projectedBalance !== null && inPeriod && (
                 <div title="Account balance + income still to come − budget still to spend"><span className="bd-eq-label">Balance at {unit} end</span><strong style={{ color: projectedBalance < 0 ? 'var(--danger)' : undefined }}>{money(projectedBalance)}</strong></div>
               )}
             </div>
             {bizSpend > 0 && <p className="bd-dim bd-hero-caption">Business spending this {unit}: {money(bizSpend)} (tracked separately, not in this budget)</p>}
-            {plannedIncome > 0 && unallocated > 0.5 && (
+            {planIncome > 0 && unallocated > 0.5 && (
               <div className="bd-job"><span>💅 {money(unallocated)} has no job yet.</span><button type="button" className="bd-mini bd-mini-primary" onClick={openJob}>Give it a job</button></div>
             )}
           </div>
@@ -1109,6 +1167,12 @@ export default function BudgetPlanner({ currency }) {
                   <button className="btn-cancel" onClick={fillFromAverage}>Fill from 3-{unit} average</button>
                   <button className="btn-cancel" onClick={openTemplates}>Templates &amp; copy from any period…</button>
                 </div>
+                <p className="module-group-label">Import &amp; rules</p>
+                <div className="bd-tool-actions">
+                  <button className="btn-cancel" onClick={() => setImportOpen(true)}>Import bank statement (CSV)</button>
+                  <button className="btn-cancel" onClick={() => setRulesOpen(true)}>Auto-categorise rules ({rules.length})</button>
+                  {typeof Notification !== 'undefined' && <button className="btn-cancel" onClick={toggleNotify}>{notifOn ? '🔔 Bill reminders on' : '🔕 Bill reminders off'}</button>}
+                </div>
                 <p className="module-group-label">Export &amp; share</p>
                 <div className="bd-tool-actions">
                   <button className="btn-cancel" onClick={() => window.print()}>Print / save as PDF</button>
@@ -1148,6 +1212,18 @@ export default function BudgetPlanner({ currency }) {
                       <small className="bd-dim">{customs.length} created · use ← → to move between them.</small>
                     </div>
                   )}
+                </div>
+                <p className="module-group-label">Income</p>
+                <div className="bd-pref-grid">
+                  <div className="field">
+                    <label>Plan against</label>
+                    <select value={settings.income_mode || 'planned'} onChange={e => saveSettings({ income_mode: e.target.value })}>
+                      <option value="planned">My planned income</option>
+                      <option value="lowest">My lowest recent period</option>
+                      <option value="average">My average of recent periods</option>
+                    </select>
+                    <small className="bd-dim">For irregular pay. Used for “unallocated” and %-of-income lines. Looks at the last 3 periods.</small>
+                  </div>
                 </div>
                 <p className="module-group-label">Alerts</p>
                 <div className="bd-pref-grid">
@@ -1192,6 +1268,8 @@ export default function BudgetPlanner({ currency }) {
             const finished = tracked.filter(h => h.end < today).length
             const avg = history.length ? history.reduce((a, h) => a + h.spent, 0) / history.length : 0
             const maxVal = Math.max(1, ...history.map(h => Math.max(h.budget, h.spent)))
+            let streak = 0
+            for (const h of history.filter(x => x.end < today && x.budget > 0)) { if (h.spent <= h.budget) streak++; else break }
             return (
               <>
                 <div className="calendar-card bd-hero">
@@ -1199,6 +1277,7 @@ export default function BudgetPlanner({ currency }) {
                     <div><span className="bd-eq-label">Periods tracked</span><strong>{history.length}</strong></div>
                     <div><span className="bd-eq-label">Finished under budget</span><strong>{finished ? `${under} of ${finished}` : '—'}</strong></div>
                     <div><span className="bd-eq-label">Average spend</span><strong>{money(avg)}</strong></div>
+                    {streak > 0 && <div><span className="bd-eq-label">Under-budget streak</span><strong>{streak} 🔥</strong></div>}
                   </div>
                 </div>
                 <div className="calendar-card bd-lookup">
@@ -1261,6 +1340,8 @@ export default function BudgetPlanner({ currency }) {
       )}
 
       <BudgetModals {...modalProps} />
+      {importOpen && <ImportModal onClose={() => setImportOpen(false)} knownCats={knownCats} rules={rules} money={money} currency={currency} onDone={(n) => { setImportOpen(false); refreshCats(); flash(`Imported ${n} transactions`); load() }} />}
+      {rulesOpen && <RulesModal onClose={() => { setRulesOpen(false); loadRules().then(setRules) }} knownCats={knownCats} />}
     </div>
   )
 }

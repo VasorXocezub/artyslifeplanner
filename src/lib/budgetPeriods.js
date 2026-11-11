@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export const DEFAULT_SETTINGS = { period_type: 'monthly', month_start_day: 25, anchor_date: null, warn_pct: 80 }
+export const DEFAULT_SETTINGS = { period_type: 'monthly', month_start_day: 25, anchor_date: null, warn_pct: 80, income_mode: 'planned' }
 
 export const pad = (n) => String(n).padStart(2, '0')
 export const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`

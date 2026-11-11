@@ -37,7 +37,7 @@ export default function FinanceOverview({ currency }) {
       supabase.from('transactions').select('*').gte('date', monthStart).lte('date', monthEnd),
       supabase.from('savings_goals').select('*'),
       supabase.from('business_settings').select('*').limit(1).maybeSingle(),
-      supabase.from('recurring_expenses').select('*').eq('active', true),
+      supabase.from('recurring_expenses').select('*').or('active.is.null,active.eq.true'),
       supabase.from('business_expenses').select('*').gte('date', monthStart).lte('date', monthEnd),
       supabase.from('account_settings').select('*').limit(1).maybeSingle(),
     ])

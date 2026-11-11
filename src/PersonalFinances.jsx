@@ -3,6 +3,7 @@ import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategories'
 import BudgetHint from './BudgetHint'
+import { loadRules, matchRule } from './lib/budgetRules'
 
 const emptyForm = {
   date: new Date().toISOString().split('T')[0],
@@ -36,6 +37,9 @@ export default function PersonalFinances({ currency }) {
   const [viewMonth, setViewMonth] = useState(new Date())
   const [savingsGoals, setSavingsGoals] = useState([])
   const { categories: sharedCategories, refresh: refreshCategories } = useFinanceCategories()
+  const [rules, setRules] = useState([])
+  const [autoCat, setAutoCat] = useState(null)
+  useEffect(() => { loadRules().then(setRules) }, [])
 
   useEffect(() => {
     fetchTransactions()
@@ -380,9 +384,10 @@ export default function PersonalFinances({ currency }) {
                     <option key={c} value={c} />
                   ))}
                 </datalist>
+                {autoCat && form.category === autoCat && <small className="bd-dim">Auto-categorised from your rules</small>}
                 {!form.is_savings && (
                   <BudgetHint category={form.category} date={form.date} type={form.type} currency={currency} amount={form.amount}
-                    excludeId={editingId} item={form.budget_item} onItem={(v) => setForm((f) => ({ ...f, budget_item: v }))} />
+                    excludeId={editingId} item={form.budget_item} onItem={(v) => setForm((f) => ({ ...f, budget_item: v }))} onSuggest={(c) => setForm((f) => ({ ...f, category: c }))} />
                 )}
               </div>
 
@@ -422,7 +427,12 @@ export default function PersonalFinances({ currency }) {
                 <label>Notes</label>
                 <textarea
                   value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  onChange={(e) => {
+                    const notes = e.target.value
+                    const hit = !form.category.trim() && !form.is_savings && !editingId ? matchRule(notes, rules) : null
+                    setForm({ ...form, notes, category: hit ? hit.category : form.category })
+                    setAutoCat(hit ? hit.category : null)
+                  }}
                   placeholder="Anything worth remembering…"
                 />
               </div>

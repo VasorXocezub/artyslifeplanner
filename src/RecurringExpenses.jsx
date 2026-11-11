@@ -86,6 +86,7 @@ export default function RecurringExpenses({ currency }) {
       start_date: form.start_date || null,
       end_date: form.end_date || null,
     }
+    if (!editingId) payload.active = true
 
     let error
     if (editingId) {
@@ -126,7 +127,7 @@ export default function RecurringExpenses({ currency }) {
   async function toggleActive(item) {
     const { error } = await supabase
       .from('recurring_expenses')
-      .update({ active: !item.active })
+      .update({ active: item.active === false })
       .eq('id', item.id)
     if (error) {
       setError(error.message)
@@ -140,16 +141,30 @@ export default function RecurringExpenses({ currency }) {
   const { categories: knownCategories, refresh: refreshCategories } = useFinanceCategories()
 
   const activeItems = items.filter((i) => {
-    if (!i.active) return false
+    if (i.active === false) return false // empty (null) counts as active
     if (i.start_date && new Date(i.start_date + 'T00:00:00') > today) return false
     if (i.end_date && new Date(i.end_date + 'T00:00:00') < today) return false
     return true
   })
+  const pausedCount = items.filter((i) => i.active === false).length
+  const outOfRange = items.length - activeItems.length - pausedCount
+  async function resumeAll() {
+    const { error } = await supabase.from('recurring_expenses').update({ active: true }).eq('active', false)
+    if (error) { setError(error.message); return }
+    fetchItems()
+  }
   const monthlyTotal = activeItems.reduce((acc, i) => acc + toMonthly(Number(i.amount), i.frequency), 0)
   const yearlyTotal = monthlyTotal * 12
 
   return (
     <div>
+      {items.length > 0 && activeItems.length === 0 && (
+        <p className="error-msg" role="status">
+          None of your {items.length} recurring expenses are counting right now
+          {pausedCount > 0 ? ` — ${pausedCount} paused` : ''}{outOfRange > 0 ? ` — ${outOfRange} outside their start/end dates` : ''}.
+          {pausedCount > 0 && <> <button type="button" className="bd-link" onClick={resumeAll}>Resume all paused</button></>}
+        </p>
+      )}
       <div className="view-header">
         <div>
           <p className="view-subtitle">
@@ -191,7 +206,7 @@ export default function RecurringExpenses({ currency }) {
             const notStarted = item.start_date && new Date(item.start_date + 'T00:00:00') > today
             return (
             <div
-              className={`contact-card habit-card ${!item.active ? 'recurring-paused' : ''}`}
+              className={`contact-card habit-card ${item.active === false ? 'recurring-paused' : ''}`}
               key={item.id}
               style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
             >
@@ -227,10 +242,10 @@ export default function RecurringExpenses({ currency }) {
 
               <div className="habit-actions">
                 <button
-                  className={`btn-check ${item.active ? 'btn-check-done' : ''}`}
+                  className={`btn-check ${item.active !== false ? 'btn-check-done' : ''}`}
                   onClick={() => toggleActive(item)}
                 >
-                  {item.active ? '✓ Active, thriving ✨' : 'Paused — tap to resume'}
+                  {item.active !== false ? '✓ Active, thriving ✨' : 'Paused — tap to resume'}
                 </button>
                 <button className="btn-delete-small" onClick={() => openEdit(item)}>Edit</button>
               </div>

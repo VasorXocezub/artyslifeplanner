@@ -8,7 +8,7 @@ const getMeta = () => (metaPromise ||= loadBudgetMeta().catch(() => { metaPromis
 
 // Shown under the category field when adding an expense: how much is left on that budget line,
 // plus a picker for the line's items (Spotify, Capcut…) so spending is tracked exactly.
-export default function BudgetHint({ category, date, type, currency, amount, excludeId, item, onItem }) {
+export default function BudgetHint({ category, date, type, currency, amount, excludeId, item, onItem, onSuggest }) {
   const [info, setInfo] = useState(null)
   const money = (n) => { const v = Math.round((Number(n) || 0) * 100) / 100; return formatMoney(v, currency, Number.isInteger(v) ? 0 : 2) }
 
@@ -27,7 +27,15 @@ export default function BudgetHint({ category, date, type, currency, amount, exc
         supabase.from('budget_items').select('*').eq('month', key).eq('kind', 'expense').ilike('category', cat),
         supabase.from('transactions').select('id, amount, category, budget_item').eq('type', 'expense').ilike('category', cat).gte('date', ymd(p.start)).lte('date', ymd(p.end)),
       ])
-      if (!live || b.error || !b.data?.length) return
+      if (!live || b.error) return
+      if (!b.data?.length) {
+        // no exact line: offer the closest one ("grocery" → Groceries)
+        const all = await supabase.from('budget_items').select('category').eq('month', key).eq('kind', 'expense')
+        const q = cat.toLowerCase()
+        const near = (all.data || []).find(l => { const c = l.category.toLowerCase(); return c.includes(q) || q.includes(c) || (q.length > 3 && c.startsWith(q.slice(0, 4))) })
+        if (live && near) setInfo({ suggest: near.category })
+        return
+      }
       const line = b.data[0]
       const parts = Array.isArray(line.items) ? line.items.filter(x => x && x.name) : []
       const spent = (t.data || []).filter(x => x.id !== excludeId).reduce((s, x) => s + Number(x.amount), 0)
@@ -38,6 +46,9 @@ export default function BudgetHint({ category, date, type, currency, amount, exc
   }, [category, date, type, excludeId])
 
   if (!info) return null
+  if (info.suggest) return (
+    <div className="bd-hint"><small>No budget line called “{category}”. Did you mean <button type="button" className="bd-link" onClick={() => onSuggest?.(info.suggest)}>{info.suggest}</button>?</small></div>
+  )
   const after = info.planned - info.spent - (Number(amount) || 0)
   return (
     <div className="bd-hint">

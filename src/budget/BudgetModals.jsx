@@ -63,6 +63,27 @@ export default function BudgetModals({
                 ) : null
               })()}
               <div className="field"><label>Notes</label><input value={txModal.notes} onChange={e => setTxModal({ ...txModal, notes: e.target.value })} /></div>
+              {txModal.split ? (
+                <div className="field">
+                  <label>Split across categories</label>
+                  {txModal.split.map((p, i) => (
+                    <div key={i} className="bd-part-row">
+                      <select value={p.category} onChange={e => setTxModal({ ...txModal, split: txModal.split.map((x, j) => j === i ? { ...x, category: e.target.value } : x) })} aria-label="Category">
+                        <option value="">Uncategorized</option>
+                        {[...new Set([...knownCats, p.category].filter(Boolean))].map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input type="number" inputMode="decimal" step="0.01" min="0" value={p.amount} aria-label="Part amount" onChange={e => setTxModal({ ...txModal, split: txModal.split.map((x, j) => j === i ? { ...x, amount: e.target.value } : x) })} />
+                      <button type="button" className="budget-remove" aria-label="Remove part" disabled={txModal.split.length <= 2} onClick={() => setTxModal({ ...txModal, split: txModal.split.filter((_, j) => j !== i) })}>✕</button>
+                    </div>
+                  ))}
+                  <button type="button" className="bd-mini" onClick={() => setTxModal({ ...txModal, split: [...txModal.split, { category: '', amount: '' }] })}>＋ Add part</button>
+                  <small className="bd-dim" style={{ display: 'block', marginTop: 6 }}>
+                    {(() => { const left = (parseFloat(txModal.amount) || 0) - txModal.split.reduce((a, p) => a + (parseFloat(p.amount) || 0), 0); return Math.abs(left) < 0.005 ? 'Adds up ✓' : `${money(Math.abs(left))} ${left > 0 ? 'still to assign' : 'too much'}` })()}
+                  </small>
+                </div>
+              ) : (
+                <button type="button" className="bd-mini" onClick={() => setTxModal({ ...txModal, split: [{ category: txModal.category, amount: txModal.amount }, { category: '', amount: '' }] })} style={{ marginBottom: 12 }}>Split across categories…</button>
+              )}
               <div className="modal-actions">
                 <button type="button" className="btn-delete" onClick={deleteTx}>Delete</button>
                 <div className="modal-actions-right">
@@ -370,6 +391,16 @@ export default function BudgetModals({
                   {modal.isBill && (
                     <div className="field"><label>Due on day of the month</label><input type="number" min="1" max="31" inputMode="numeric" value={modal.dueDay} onChange={e => setModal({ ...modal, dueDay: e.target.value })} placeholder="e.g. 1" /></div>
                   )}
+                  <label className="bd-check">
+                    <input type="checkbox" checked={modal.debtOn} onChange={e => setModal({ ...modal, debtOn: e.target.checked })} />
+                    <span>Track this as a debt I'm paying off</span>
+                  </label>
+                  {modal.debtOn && (
+                    <div className="field-row">
+                      <div className="field"><label>Balance owed ({currency})</label><input type="number" inputMode="decimal" min="0" step="0.01" value={modal.debtBalance} onChange={e => setModal({ ...modal, debtBalance: e.target.value })} /></div>
+                      <div className="field"><label>As of</label><input type="date" value={modal.debtDate} onChange={e => setModal({ ...modal, debtDate: e.target.value })} /></div>
+                    </div>
+                  )}
                   {goals.length > 0 && (
                     <div className="field"><label>Link to a savings goal (optional)</label>
                       <select value={modal.goalId} onChange={e => setModal({ ...modal, goalId: e.target.value })}>
@@ -387,6 +418,8 @@ export default function BudgetModals({
                   )}
                   {modal.rollover && modal.amountMode !== 'fund' && (
                     <div className="field">
+                      <label>Keep at most (optional, {currency})</label>
+                      <input type="number" inputMode="decimal" min="0" step="0.01" value={modal.rolloverCap} onChange={e => setModal({ ...modal, rolloverCap: e.target.value })} placeholder="No limit" style={{ marginBottom: 8 }} />
                       <select value={modal.rolloverMode} onChange={e => setModal({ ...modal, rolloverMode: e.target.value })} aria-label="Rollover style">
                         <option value="prev">Only last {unit}'s leftover</option>
                         <option value="all">Keep accumulating over many {unit}s</option>
