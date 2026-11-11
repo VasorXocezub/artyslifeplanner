@@ -61,7 +61,7 @@ const RESET_TABLES = [
   'todo_notes', 'todos', 'habit_logs', 'habits', 'reading_logs', 'books',
   'cove_inventory', 'cove_achievements', 'cove_profile', 'focus_sessions',
   'meal_plans', 'recipes', 'pantry_items', 'grocery_budget', 'shopping_items',
-  'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings', 'account_settings', 'budget_items', 'budget_settings', 'finance_categories', 'glp1_injections', 'glp1_settings',
+  'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings', 'account_settings', 'budget_items', 'budget_settings', 'budget_periods', 'finance_categories', 'glp1_injections', 'glp1_settings',
   'wellness_logs', 'cycle_logs', 'cycle_settings', 'weight_logs', 'weight_settings',
   'social_events', 'brain_dump_entries', 'inbox_notes', 'goals', 'contacts',
 ]

@@ -4807,3 +4807,13 @@
   .bd-toolbar-right select { flex: 1; max-width: none; }
   .bd-row-main { padding: 10px 12px; gap: 10px; }
 }
+
+.bd-viewtabs { margin: 0; }
+.bd-nav-links { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.bd-stats-top { border-top: none; padding-top: 0; }
+.bd-hist-row { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: 12px 14px; text-align: left; cursor: pointer; font: inherit; color: inherit; border-left-width: 2px; }
+.bd-hist-current { border-color: var(--ink); }
+.bd-hist-bars { display: flex; flex-direction: column; gap: 3px; }
+.bd-hist-bar { display: block; height: 7px; border-radius: 999px; min-width: 2px; transition: width .3s; }
+.bd-custom-emoji { margin-top: 8px; }
+.bd-custom-emoji input { width: 100%; box-sizing: border-box; }
