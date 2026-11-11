@@ -28,8 +28,9 @@ export default function FinanceOverview({ currency }) {
     setError(null)
 
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+    const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const monthStart = ymd(new Date(now.getFullYear(), now.getMonth(), 1))
+    const monthEnd = ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0))
 
     const [tx, savings, business, recurring, biz_expenses, acctRes] = await Promise.all([
       supabase.from('transactions').select('*').gte('date', monthStart).lte('date', monthEnd),
