@@ -5078,3 +5078,37 @@
 .sc-undo { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 120; display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--surface); border-radius: 999px; padding: 8px 8px 8px 16px; font-size: 13px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.25); max-width: calc(100vw - 32px); }
 .sc-undo .sc-chip-btn { background: var(--surface); color: var(--ink); }
 .sc-more-toggle { background: none; border: none; color: var(--coral); font-weight: 800; font-size: 13px; padding: 6px 0; cursor: pointer; }
+
+/* Dream Board v2 */
+.dream-card { padding: 14px 14px 12px; gap: 6px; position: relative; overflow: hidden; }
+.dream-card::before { display: none; }
+.dream-cover { width: 100%; max-height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 6px; }
+.dream-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.dream-due { font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2px 9px; background: var(--accent-tint); color: var(--ink-dim); white-space: nowrap; }
+.dream-due-late { background: var(--coral); color: #fff; }
+.dream-due-soon { background: var(--pink-soft); color: var(--ink); }
+.dream-emoji { display: inline-flex; width: 26px; height: 26px; border-radius: 8px; align-items: center; justify-content: center; margin-right: 8px; font-size: 15px; vertical-align: middle; }
+.dream-date { margin: 2px 0 0; font-size: 12px; color: var(--ink-dim); }
+.dream-steps { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.dream-steps label { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
+.dream-step-done { text-decoration: line-through; color: var(--ink-dim); }
+.dream-spark { width: 100%; height: 24px; margin-top: 4px; }
+.dream-claim, .dream-archive { margin-left: 8px; }
+.dream-archive { align-self: flex-start; margin: 6px 0 0; }
+.dream-summary { margin: 0 0 10px; font-size: 13px; color: var(--ink-dim); }
+.dream-summary b { color: var(--ink); }
+.dream-sort { border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700; padding: 8px 10px; flex-shrink: 0; }
+.dream-step-edit { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.dream-step-edit input:not([type='checkbox']) { flex: 1; min-width: 0; }
+.dream-swatches { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 6px; }
+.dream-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; padding: 0; }
+.dream-swatch.on { border-color: var(--ink); }
+@media (max-width: 600px) { .dream-sort { max-width: 120px; } }
+@media (max-width: 600px) {
+  .sc-actionbar.dream-actionbar { flex-wrap: wrap !important; }
+  .sc-actionbar.dream-actionbar .search-box { flex: 1 1 100% !important; }
+  .sc-actionbar.dream-actionbar .dream-sort { flex: 1; max-width: none; }
+}
+@media (max-width: 600px) {
+  .sc-actionbar.dream-actionbar .toolbar { width: auto !important; }
+}

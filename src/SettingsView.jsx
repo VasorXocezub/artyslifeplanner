@@ -63,7 +63,7 @@ const RESET_TABLES = [
   'meal_plans', 'recipes', 'pantry_items', 'grocery_budget', 'shopping_items',
   'transactions', 'savings_goals', 'recurring_expenses', 'business_expenses', 'business_settings', 'account_settings', 'budget_items', 'budget_settings', 'budget_periods', 'budget_period_overrides', 'finance_categories', 'budget_bill_payments', 'budget_period_notes', 'category_rules', 'glp1_injections', 'glp1_settings',
   'wellness_logs', 'cycle_logs', 'cycle_settings', 'weight_logs', 'weight_settings',
-  'social_events', 'brain_dump_entries', 'inbox_notes', 'goals', 'gift_history', 'contacts',
+  'social_events', 'brain_dump_entries', 'inbox_notes', 'goal_updates', 'goals', 'gift_history', 'contacts',
 ]
 
 export default function SettingsView({ session, hiddenModules, onSaveModules, onLogout }) {
