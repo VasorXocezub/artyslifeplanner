@@ -6,7 +6,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['#D9A8B8', '#C98A72', '#AFC6DD', '#243B63']
+const CHIP_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)']
 
 const EVENT_TYPES = [
   { key: 'holiday_magic', label: '🎄 Holiday Magic' },

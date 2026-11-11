@@ -24,7 +24,7 @@ const STATUS_LABELS = {
 const STATUS_COLORS = {
   not_started: 'var(--accent-deep)',
   in_progress: 'var(--accent-deep)',
-  done: '#B896C9',
+  done: 'var(--lavender)',
 }
 
 const ERA_OPTIONS = [
@@ -346,7 +346,7 @@ export default function GoalsView() {
               <div
                 className="contact-card"
                 key={g.id}
-                style={{ borderTopColor: STATUS_COLORS[status] || '#B896C9' }}
+                style={{ borderTopColor: STATUS_COLORS[status] || 'var(--lavender)' }}
               >
                 <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
                   <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>

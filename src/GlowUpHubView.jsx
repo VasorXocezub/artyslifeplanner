@@ -50,7 +50,7 @@ const CYCLE_ERAS = {
     vibes: ['🛋️ Blanket Burrito', '🍫 Powered by Chocolate', '💌 Do Not Perceive Me', '🌙 Cozy Goblin Mode', '🦥 Moving at Government Speed'],
     bestFor: ['Reading', 'Journaling', 'Gentle walks', 'Comfort food', 'Early nights', 'Existing softly'],
     reminder: '🌸 Resting is productive too.',
-    energy: 'Low', color: '#D9A8B8',
+    energy: 'Low', color: '#EC9A8C',
     summaryTagline: 'Operating on vibes, snacks, and survival.',
   },
   fresh_start: {
@@ -830,7 +830,7 @@ export default function GlowUpHubView() {
                     </div>
                   </div>
                   <div className="cycle-ring-legend">
-                    <span><span className="cycle-legend-dot" style={{ background: '#D9A8B8' }} /> Menstrual</span>
+                    <span><span className="cycle-legend-dot" style={{ background: '#EC9A8C' }} /> Menstrual</span>
                     <span><span className="cycle-legend-dot" style={{ background: '#AFC5A5' }} /> Follicular</span>
                     <span><span className="cycle-legend-dot" style={{ background: '#E9C86A' }} /> Ovulation</span>
                     <span><span className="cycle-legend-dot" style={{ background: 'var(--accent-mid)' }} /> Luteal</span>

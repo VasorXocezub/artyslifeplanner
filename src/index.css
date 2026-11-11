@@ -1,51 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Pacifico&family=Playfair+Display:wght@500;600;700&family=Quicksand:wght@400;500;600;700&family=Loved+by+the+King&family=Yeseva+One&family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Homemade+Apple&family=Pacifico&family=Gochi+Hand&family=Barlow:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Loved+by+the+King&family=Yeseva+One&family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #FFF4F7;
-  --surface: #FFFFFF;
-  --sidebar-bg: linear-gradient(180deg, #CF6B92 0%, #B24671 100%);
-  --sidebar-text: #FFF4F7;
+  /* Brand board palette */
+  --bg: #F4E8DF;
+  --surface: #FFFBF8;
+  --sidebar-bg: repeating-linear-gradient(90deg, #EC9A8C 0, #EC9A8C 26px, #F1A99B 26px, #F1A99B 52px);
+  --sidebar-edge: #EC9A8C;
+  --sidebar-text: #4E3420;
 
-  --ink: #A9416B;
-  --text-primary: #4A2F3B;
-  --ink-dim: #8A6B78;
-  --ink-faint: #BBA0AC;
+  --ink: #6B4A2E;
+  --text-primary: #4E3420;
+  --ink-dim: #8A6C55;
+  --ink-faint: #B79D88;
 
-  --pink: #E8A5BC;
-  --pink-soft: #FDE8EF;
-  --coral: #C2567D;
-  --coral-soft: #FCE4EC;
-  --olive: #BFE3D6;
-  --olive-dark: #4E9A7E;
-  --maroon: #4A2F3B;
-  --maroon-soft: #F6E9EE;
-  --baby: #F3C9A8;
-  --butter: #B896C9;
-  --butter-soft: #F0E8F5;
-  --lavender: #B896C9;
-  --lavender-soft: #F0E8F5;
-  --peach: #F3C9A8;
-  --peach-soft: #FDEBDD;
+  --pink: #F6D0C8;
+  --pink-soft: #FBE7E2;
+  --coral: #DC6A59;
+  --coral-soft: #FBE3DD;
+  --olive: #A9B57A;
+  --olive-dark: #6B7B3F;
+  --maroon: #4E3420;
+  --maroon-soft: #F0E4DA;
+  --baby: #C5CDE6;
+  --butter: #EDD98A;
+  --butter-soft: #FAF2D3;
+  --lavender: #C5CDE6;
+  --lavender-soft: #E9ECF6;
+  --peach: #F6D0C8;
+  --peach-soft: #FBE7E2;
 
-  --border: #F5D5E0;
-  --border-strong: #EDBFD0;
-  --border-soft: #FBE8EF;
-  --danger: #D9534F;
+  --border: #E8D6C8;
+  --border-strong: #DCC2AE;
+  --border-soft: #F0E2D6;
+  --danger: #B8392B;
 
-  --accent-deep: #C2567D;
-  --accent-mid: #E8A5BC;
-  --accent-tint: #FCE4EC;
-  --good: #4E9A7E;
-  --gingham: rgba(224, 120, 160, 0.10);
+  --accent-deep: #E4786A;
+  --accent-mid: #6B7B3F;
+  --accent-tint: #FBE3DD;
+  --good: #6B7B3F;
+  --gingham: rgba(228, 120, 106, 0.08);
 
   --r10: 14px; --r12: 16px; --r14: 18px; --r16: 22px; --r18: 24px; --r20: 26px;
 
   --font-brand: 'Pacifico', 'Homemade Apple', cursive;
   --font-script: 'Pacifico', 'Homemade Apple', cursive;
   --font-quote: 'Loved by the King', cursive;
-  --font-display: 'Playfair Display', 'Yeseva One', serif;
-  --font-body: 'Quicksand', 'Montserrat', sans-serif;
-  --font-mono: 'Quicksand', 'Montserrat', sans-serif;
+  --font-display: 'Gochi Hand', 'Pacifico', cursive;
+  --font-body: 'Barlow', 'Montserrat', sans-serif;
+  --font-mono: 'DM Mono', 'IBM Plex Mono', monospace;
 }
 
 [data-theme="bold"] {
@@ -111,11 +113,9 @@ body {
   margin: 0;
   overflow-x: hidden;
   background-color: var(--bg);
-  background-image:
-    linear-gradient(90deg, var(--gingham) 50%, transparent 50%),
-    linear-gradient(180deg, var(--gingham) 50%, transparent 50%);
-  background-size: 26px 26px;
-  background-blend-mode: multiply;
+  background-image: repeating-linear-gradient(90deg, var(--gingham) 0, var(--gingham) 26px, transparent 26px, transparent 52px);
+  background-size: auto;
+  background-blend-mode: normal;
   color: var(--text-primary);
   font-family: var(--font-body);
   font-weight: 400;

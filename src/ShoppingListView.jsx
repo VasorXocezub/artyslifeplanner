@@ -198,10 +198,10 @@ function GroceryListTab() {
     const ctx = canvas.getContext('2d')
     ctx.scale(scale, scale)
 
-    ctx.fillStyle = '#FFF4F7'
+    ctx.fillStyle = '#F4E8DF'
     ctx.fillRect(0, 0, width, height)
 
-    ctx.fillStyle = '#C2567D'
+    ctx.fillStyle = '#E4786A'
     let titleFontSize = 24
     ctx.font = `bold ${titleFontSize}px "Playfair Display", Georgia, serif`
     while (ctx.measureText(headerText).width > width - padding * 2 && titleFontSize > 16) {
@@ -225,7 +225,7 @@ function GroceryListTab() {
     let y = headerHeight
     grouped.forEach((s) => {
       ctx.font = 'bold 13px sans-serif'
-      ctx.fillStyle = '#C2567D'
+      ctx.fillStyle = '#E4786A'
       ctx.fillText(s.label.toUpperCase(), padding, y)
       y += lineHeight
 
@@ -234,7 +234,7 @@ function GroceryListTab() {
         ctx.strokeStyle = '#C9BFA8'
         ctx.lineWidth = 1.5
         ctx.strokeRect(padding, y - 13, 15, 15)
-        ctx.fillStyle = '#4A2F3B'
+        ctx.fillStyle = '#4E3420'
         ctx.fillText(item.text, padding + 25, y - 1)
         y += lineHeight
       })
@@ -439,10 +439,10 @@ function MealPlannerTab() {
     const ctx = canvas.getContext('2d')
     ctx.scale(scale, scale)
 
-    ctx.fillStyle = '#FFF4F7'
+    ctx.fillStyle = '#F4E8DF'
     ctx.fillRect(0, 0, width, height)
 
-    ctx.fillStyle = '#C2567D'
+    ctx.fillStyle = '#E4786A'
     ctx.font = 'bold 22px "Playfair Display", Georgia, serif'
     ctx.fillText('🗓️ This Week\'s Meal Plan', padding, 42)
     ctx.fillStyle = '#8a8378'
@@ -457,11 +457,11 @@ function MealPlannerTab() {
     let y = headerHeight
     daysWithMeals.forEach((d) => {
       ctx.font = 'bold 14px sans-serif'
-      ctx.fillStyle = '#C2567D'
+      ctx.fillStyle = '#E4786A'
       ctx.fillText(`${d.day.toUpperCase()} · ${d.dateLabel}`, padding, y)
       y += lineHeight
       ctx.font = '14px sans-serif'
-      ctx.fillStyle = '#4A2F3B'
+      ctx.fillStyle = '#4E3420'
       d.meals.forEach(({ mt, meal }) => {
         ctx.fillText(`${mt.label}: ${meal.meal_name}`, padding + 12, y)
         y += lineHeight

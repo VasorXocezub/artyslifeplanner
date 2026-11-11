@@ -26,7 +26,7 @@
   right: -17px;
   bottom: 0;
   width: 34px;
-  background-image: radial-gradient(circle 17px at 17px 17px, var(--sidebar-bg) 17px, transparent 17.5px);
+  background-image: radial-gradient(circle 17px at 17px 17px, var(--sidebar-edge, var(--sidebar-bg)) 17px, transparent 17.5px);
   background-size: 34px 34px;
   background-repeat: repeat-y;
   pointer-events: none;
@@ -52,7 +52,7 @@
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 214, 228, 0.45) transparent;
+  scrollbar-color: rgba(255, 244, 236, 0.45) transparent;
 }
 
 .nav::-webkit-scrollbar {
@@ -64,12 +64,12 @@
 }
 
 .nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 214, 228, 0.45);
+  background: rgba(255, 244, 236, 0.45);
   border-radius: 999px;
 }
 
 .nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 214, 228, 0.7);
+  background: rgba(255, 244, 236, 0.7);
 }
 
 .nav-item {
@@ -81,7 +81,7 @@
   border-radius: 999px;
   background: none;
   border: none;
-  color: rgba(255, 244, 247, 0.88);
+  color: rgba(78, 52, 32, 0.85);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 14px;
@@ -104,7 +104,7 @@
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 11px;
-  color: rgba(255, 244, 247, 0.6);
+  color: rgba(78, 52, 32, 0.55);
 }
 
 .nav-item.active {
@@ -121,7 +121,7 @@
 
 .nav-item:not(.active):hover {
   color: #fff;
-  background: rgba(194, 86, 125, 0.18);
+  background: rgba(107, 74, 46, 0.18);
 }
 
 .nav-item[disabled] {
@@ -130,7 +130,7 @@
 }
 
 .sidebar-settings-trigger {
-  background: rgba(194, 86, 125, 0.15);
+  background: rgba(107, 74, 46, 0.15);
   border: none;
   color: var(--sidebar-text);
   opacity: 0.85;
@@ -143,7 +143,7 @@
 
 .sidebar-settings-trigger:hover {
   opacity: 1;
-  background: rgba(194, 86, 125, 0.25);
+  background: rgba(107, 74, 46, 0.25);
 }
 
 .sidebar-footer {
@@ -225,14 +225,14 @@
   padding: 11px 20px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(194, 86, 125, 0.25);
+  box-shadow: 0 3px 10px rgba(107, 74, 46, 0.25);
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-primary:hover {
-  background: var(--ink);
+  background: #C65A49;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(194, 86, 125, 0.3);
+  box-shadow: 0 4px 14px rgba(107, 74, 46, 0.3);
 }
 
 .btn-ghost {
@@ -1223,7 +1223,7 @@
   border-radius: 4px 14px 14px 4px;
   padding: 18px 18px 16px 22px;
   position: relative;
-  box-shadow: 0 3px 10px rgba(194, 86, 125, 0.08);
+  box-shadow: 0 3px 10px rgba(107, 74, 46, 0.08);
 }
 
 .bookmark-ribbon {
@@ -2697,7 +2697,7 @@
   margin-bottom: 24px;
   border-radius: 24px;
   background: linear-gradient(120deg, var(--coral-soft) 0%, var(--pink-soft) 55%, var(--peach-soft) 100%);
-  box-shadow: 0 4px 18px rgba(194, 86, 125, 0.1);
+  box-shadow: 0 4px 18px rgba(107, 74, 46, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2953,7 +2953,7 @@
   border-radius: var(--r20);
   padding: 18px 24px;
   margin-bottom: 14px;
-  box-shadow: 0 4px 14px rgba(194, 86, 125, 0.1);
+  box-shadow: 0 4px 14px rgba(107, 74, 46, 0.1);
 }
 
 .hero-stat-icon {
@@ -3061,13 +3061,13 @@
   border: none;
   border-radius: var(--r16);
   padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(194, 86, 125, 0.06);
+  box-shadow: 0 2px 8px rgba(107, 74, 46, 0.06);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .hero-stats-tile:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(194, 86, 125, 0.12);
+  box-shadow: 0 4px 12px rgba(107, 74, 46, 0.12);
 }
 
 .hero-stats-tile-icon {
@@ -3258,7 +3258,7 @@
   border-left-width: 5px;
   border-radius: var(--r18);
   padding: 16px 20px;
-  box-shadow: 0 3px 10px rgba(194, 86, 125, 0.06);
+  box-shadow: 0 3px 10px rgba(107, 74, 46, 0.06);
   flex-wrap: wrap;
 }
 
@@ -4078,7 +4078,7 @@
   color: #fff;
   font-size: 22px;
   border: none;
-  box-shadow: 0 6px 18px rgba(194, 86, 125, 0.3);
+  box-shadow: 0 6px 18px rgba(107, 74, 46, 0.3);
   z-index: 90;
   display: flex;
   align-items: center;
@@ -4088,7 +4088,7 @@
 
 .quick-capture-fab:hover {
   transform: scale(1.08);
-  box-shadow: 0 8px 22px rgba(194, 86, 125, 0.4);
+  box-shadow: 0 8px 22px rgba(107, 74, 46, 0.4);
 }
 
 .quick-capture-fab:active {
@@ -4679,8 +4679,8 @@
 .focus-sidebar-badge {
   display: block;
   width: 100%;
-  background: rgba(255, 214, 228, 0.18);
-  border: 1px solid rgba(255, 214, 228, 0.4);
+  background: rgba(255, 244, 236, 0.18);
+  border: 1px solid rgba(255, 244, 236, 0.4);
   border-radius: var(--r12);
   padding: 10px 12px;
   margin-top: 12px;

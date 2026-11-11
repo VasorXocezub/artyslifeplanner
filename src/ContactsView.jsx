@@ -6,7 +6,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CHIP_COLORS = ['#B896C9', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)']
+const CHIP_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)']
 const ICON_OPTIONS = ['🎂', '🎈', '🎁', '✨', '👑', '💐', '🦋', '🌸', '☕', '🍾', '💌', '🧁']
 
 const RELATIONSHIPS = [
@@ -56,7 +56,7 @@ const emptyForm = {
 
 function ConfettiBurst() {
   const pieces = useMemo(() => {
-    const colors = ['#B896C9', 'var(--accent-deep)', '#F3C9A8', 'var(--accent-mid)', '#D9A8B8']
+    const colors = ['var(--lavender)', 'var(--accent-deep)', '#F6D0C8', 'var(--accent-mid)', '#EC9A8C']
     return Array.from({ length: 14 }, (_, i) => ({
       id: i,
       color: colors[i % colors.length],

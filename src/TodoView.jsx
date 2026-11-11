@@ -4,7 +4,7 @@ import { getHiddenTodoTabs } from './lib/localPrefs'
 
 const PRIORITIES = [
   { key: 'right_now', label: '🔥 Right Now', color: 'var(--accent-deep)' },
-  { key: 'next_up', label: '🌱 Next Up', color: '#F3C9A8' },
+  { key: 'next_up', label: '🌱 Next Up', color: '#F6D0C8' },
   { key: 'later', label: '🌙 Later', color: '#F0E8F5' },
 ]
 const PRIORITY_ORDER = { right_now: 0, next_up: 1, later: 2 }
@@ -16,10 +16,10 @@ const CATEGORIES = [
 
 const ENERGY_TYPES = [
   { key: 'big_girl_job', label: '💪 Big Girl Jobs', color: 'var(--accent-deep)' },
-  { key: 'deep_focus', label: '🧠 Deep Focus', color: '#B896C9' },
-  { key: 'quick_win', label: '⚡ Quick Wins', color: '#F3C9A8' },
+  { key: 'deep_focus', label: '🧠 Deep Focus', color: 'var(--lavender)' },
+  { key: 'quick_win', label: '⚡ Quick Wins', color: '#F6D0C8' },
   { key: 'soft_task', label: '☕ Soft Tasks', color: 'var(--accent-mid)' },
-  { key: 'self_care', label: '🌸 Self Care', color: '#D9A8B8' },
+  { key: 'self_care', label: '🌸 Self Care', color: '#EC9A8C' },
 ]
 const ENERGY_ORDER = { big_girl_job: 0, deep_focus: 1, quick_win: 2, soft_task: 3, self_care: 4 }
 

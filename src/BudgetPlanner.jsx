@@ -4,7 +4,7 @@ import { formatMoney } from './lib/currency'
 import { useFinanceCategories } from './lib/financeCategories'
 
 const ICONS = ['🛒', '🏠', '🚗', '⛽', '💡', '📱', '🍽️', '☕', '🎬', '👗', '💅', '💊', '🐾', '✈️', '🎁', '🎓', '💻', '🏋️', '🧾', '🐷', '💖', '✨']
-const COLORS = ['#C2567D', '#E8A5BC', '#B896C9', '#F3C9A8', '#E0A458', '#7BC4A8', '#6E8FB5', '#8A6B78']
+const COLORS = ['#E4786A', '#EC9A8C', '#C5CDE6', '#EDD98A', '#6B7B3F', '#6B4A2E', '#F6D0C8', '#8A9BC9']
 const GROUP_SUGGESTIONS = ['Needs', 'Wants', 'Savings & goals', 'Fun money']
 const SORTS = [
   { key: 'custom', label: 'My order' },
@@ -20,7 +20,7 @@ const PERIOD_TYPES = [
   { key: 'fortnightly', label: 'Fortnightly (every 2 weeks)' },
   { key: 'custom', label: 'Custom periods (I set the dates)' },
 ]
-const LEGACY_COLORS = { '#1E5C57': '#C2567D', '#8FC2BE': '#E8A5BC', '#D9A8B8': '#E8A5BC', '#E4CBA0': '#F3C9A8', '#7BA37A': '#7BC4A8' }
+const LEGACY_COLORS = { '#1E5C57': '#E4786A', '#8FC2BE': '#EC9A8C', '#D9A8B8': '#EC9A8C', '#E4CBA0': '#F6D0C8', '#7BA37A': '#6B7B3F', '#C2567D': '#E4786A', '#E8A5BC': '#EC9A8C', '#B896C9': '#C5CDE6', '#F3C9A8': '#F6D0C8', '#7BC4A8': '#6B7B3F', '#E0A458': '#EDD98A' }
 const fixColor = (c) => (c && LEGACY_COLORS[c.toUpperCase()]) || c
 const WARN_COLOR = '#E0A458'
 

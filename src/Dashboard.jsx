@@ -48,7 +48,7 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Cake Club', desc: 'Because panic-buying gifts isn\'t a personality trait. 🎁', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
+      { key: 'contacts', title: 'Cake Club', desc: 'Because panic-buying gifts isn\'t a personality trait. 🎁', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
       { key: 'social', title: 'Social Club', desc: '🌸 The group chat\'s HR department.', enabled: true, accent: '#C98A72', tint: '#FBF3EF' },
     ],
   },
@@ -69,15 +69,15 @@ const MODULES = [
   {
     group: 'WELLNESS',
     items: [
-      { key: 'glowup', title: 'Glow Up Hub', desc: 'Mind, body and main character energy. ✨', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
+      { key: 'glowup', title: 'Glow Up Hub', desc: 'Mind, body and main character energy. ✨', enabled: true, accent: '#EC9A8C', tint: '#FBF3F6' },
     ],
   },
   {
     group: 'MONEY',
     items: [
       { key: 'finances', title: 'Rich Girl Era', desc: '💸 We listen and we don\'t judge.', enabled: true, accent: 'var(--accent-deep)', tint: '#F7EFDF' },
-      { key: 'shopping', title: 'Kitchen Club', desc: '🍓 Girl dinner is not a food group.', enabled: true, accent: '#B896C9', tint: '#F0E8F5' },
-      { key: 'wishlist', title: 'Wishlist', desc: '🎀 Manifesting these into my cart.', enabled: true, accent: '#D9A8B8', tint: '#FBF3F6' },
+      { key: 'shopping', title: 'Kitchen Club', desc: '🍓 Girl dinner is not a food group.', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
+      { key: 'wishlist', title: 'Wishlist', desc: '🎀 Manifesting these into my cart.', enabled: true, accent: '#EC9A8C', tint: '#FBF3F6' },
     ],
   },
 ]
@@ -246,7 +246,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       key: 'birthday', nav: 'contacts', icon: '🎂', title: `${name}'s Birthday`,
       bigNumber: daysAway, unit: daysAway === 1 ? 'day to go' : 'days to go',
       subtitle, progressPct: Math.max(2, Math.round(((365 - Math.min(daysAway, 365)) / 365) * 100)),
-      color: '#D9A8B8', insight: birthdayLabel().replace('🎂 ', ''),
+      color: '#EC9A8C', insight: birthdayLabel().replace('🎂 ', ''),
     })
   }
   if (!hiddenModules.includes('habits') && stats.habitsDoneToday > 0) {
@@ -271,7 +271,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
       key: 'savings', nav: 'finances', icon: '✨', title: currentEraLabel,
       bigNumber: formatMoney(stats.totalSaved, currency), unit: 'saved',
       subtitle: 'Every little bit adds up to something big 🌷',
-      progressPct: null, color: '#B896C9', insight: `${currentEraLabel}: ${formatMoney(stats.totalSaved, currency)} saved`,
+      progressPct: null, color: 'var(--lavender)', insight: `${currentEraLabel}: ${formatMoney(stats.totalSaved, currency)} saved`,
     })
   }
   if (!hiddenModules.includes('goals') && stats.goalsInProgress > 0) {

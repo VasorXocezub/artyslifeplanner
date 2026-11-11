@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
-const CARD_COLORS = ['#B896C9', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-mid)']
+const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
 
 function formatDate(d) {
   if (!d) return null

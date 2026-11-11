@@ -3,7 +3,7 @@ import { supabase, getUserId } from './lib/supabase'
 import { formatMoney } from './lib/currency'
 
 const emptyForm = { name: '', icon: '💰', target_amount: '', current_amount: '0' }
-const CARD_COLORS = ['#B896C9', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-deep)', 'var(--accent-mid)']
+const CARD_COLORS = ['var(--lavender)', 'var(--accent-deep)', 'var(--butter)', 'var(--accent-mid)', '#EC9A8C', 'var(--lavender)']
 const ICON_OPTIONS = ['💰', '✈️', '🏠', '🚗', '🎓', '💍', '🛍️', '🏝️', '💻', '🐶', '🎉', '🩺']
 
 export default function SavingsGoals({ currency }) {
