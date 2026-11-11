@@ -70,7 +70,7 @@ export default function SocialCalendarHub({ initialTab = 'contacts', onTabChange
       <div className="view-header">
         <div>
           <h1 className="view-title">Social Calendar</h1>
-          <p className="view-subtitle cake-club-subtitle sc-tagline">“It’s in my head” was never a system, babe. 🎀</p>
+          <p className="view-subtitle cake-club-subtitle">🎀 “It’s in my head” was never a system, babe.</p>
         </div>
       </div>
       {exportError && <p className="error-msg">{exportError}</p>}

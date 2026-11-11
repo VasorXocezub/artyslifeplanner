@@ -51,13 +51,13 @@ const MODULES = [
   {
     group: 'PEOPLE',
     items: [
-      { key: 'contacts', title: 'Social Calendar', desc: 'Birthdays, plans and gifts. “It’s in my head” was never a system, babe. 🎀', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
+      { key: 'contacts', title: 'Social Calendar', desc: '🎀 “It’s in my head” was never a system, babe.', enabled: true, accent: 'var(--lavender)', tint: '#F0E8F5' },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { key: 'goals', title: 'Dream Board', desc: 'Delulu? No. Visionary. ✨', enabled: true, accent: 'var(--accent-deep)', tint: 'var(--accent-tint)' },
+      { key: 'goals', title: 'Dream Board', desc: '✨ Delulu? No. Visionary.', enabled: true, accent: 'var(--accent-deep)', tint: 'var(--accent-tint)' },
       { key: 'habits', title: 'Daily Habits', desc: '✨ Romanticizing basic human maintenance.', enabled: true, accent: 'var(--accent-deep)', tint: 'var(--accent-tint)' },
       { key: 'todos', title: 'To-Do List', desc: '🫡 Unfortunately, I assigned this to myself.', enabled: true, accent: 'var(--accent-mid)', tint: 'var(--accent-tint)' },
     ],
@@ -71,7 +71,7 @@ const MODULES = [
   {
     group: 'WELLNESS',
     items: [
-      { key: 'glowup', title: 'Glow Up Hub', desc: 'Mind, body and main character energy. ✨', enabled: true, accent: '#EC9A8C', tint: '#FBF3F6' },
+      { key: 'glowup', title: 'Glow Up Hub', desc: '✨ Mind, body and main character energy.', enabled: true, accent: '#EC9A8C', tint: '#FBF3F6' },
     ],
   },
   {

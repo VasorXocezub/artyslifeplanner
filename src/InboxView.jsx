@@ -483,7 +483,7 @@ export default function InboxView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Inbox</h1>
-          <p className="view-subtitle cake-club-subtitle">Your capture space — save it now, sort it later. 📥</p>
+          <p className="view-subtitle cake-club-subtitle">📥 Your capture space — save it now, sort it later.</p>
         </div>
         <div className="toolbar">
           <button className="btn-check" onClick={() => setTemplatePickerOpen(true)}>📋 From Template</button>

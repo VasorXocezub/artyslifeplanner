@@ -788,7 +788,7 @@ export default function TodoView() {
           <h1 className="view-title">To-Do List</h1>
           {isPersonal ? (
             <>
-              <p className="view-subtitle cake-club-subtitle">Okay queen, what's getting done today? 👑</p>
+              <p className="view-subtitle cake-club-subtitle">👑 Okay queen, what's getting done today?</p>
               <p className="field-hint" style={{ marginTop: 4 }}>{hypeMessage}</p>
             </>
           ) : (

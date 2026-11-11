@@ -466,7 +466,7 @@ export default function GlowUpHubView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Glow Up Hub</h1>
-          <p className="view-subtitle cake-club-subtitle">Mind, body and main character energy. ✨</p>
+          <p className="view-subtitle cake-club-subtitle">✨ Mind, body and main character energy.</p>
         </div>
       </div>
 

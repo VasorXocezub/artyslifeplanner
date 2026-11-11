@@ -36,7 +36,7 @@ export default function BrainDumpView() {
       <div className="view-header">
         <div>
           <h1 className="view-title">Brain Dump</h1>
-          <p className="view-subtitle cake-club-subtitle">Because therapy is expensive. 💌</p>
+          <p className="view-subtitle cake-club-subtitle">💌 Because therapy is expensive.</p>
         </div>
       </div>
 
