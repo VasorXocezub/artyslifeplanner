@@ -103,7 +103,7 @@ function shiftKey(key, n, settings, customs) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
 }
 
-const emptyLine = { id: null, kind: 'expense', category: '', customCategory: false, icon: '🧾', color: COLORS[0], grp: '', planned_amount: '', rollover: false, notes: '', forward: 0 }
+const emptyLine = { id: null, kind: 'expense', category: '', customCategory: false, icon: '🧾', color: COLORS[0], grp: '', planned_amount: '', rollover: false, notes: '', forward: 0, parts: [] }
 
 export default function BudgetPlanner({ currency }) {
   // whole amounts show without cents; anything with cents keeps them
@@ -218,13 +218,14 @@ export default function BudgetPlanner({ currency }) {
       .reduce((s, t) => s + Number(t.amount), 0)
 
   const rows = useMemo(() => items.map((i, idx) => {
-    const planned = Number(i.planned_amount) || 0
+    const parts = Array.isArray(i.items) ? i.items.filter(p => p && p.name) : []
+    const planned = parts.length ? parts.reduce((a, p) => a + (Number(p.amount) || 0), 0) : (Number(i.planned_amount) || 0)
     const prevLine = i.rollover ? prevItems.find(p => p.kind === i.kind && p.category.toLowerCase() === i.category.toLowerCase()) : null
     const carry = prevLine ? Math.max(0, (Number(prevLine.planned_amount) || 0) - sumTx(prevTx, prevLine.kind, prevLine.category)) : 0
     const budget = planned + carry
     const actual = sumTx(tx, i.kind, i.category)
     const pct = budget > 0 ? (actual / budget) * 100 : (actual > 0 ? 999 : 0)
-    return { ...i, planned, carry, budget, actual, pct, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
+    return { ...i, parts, planned, carry, budget, actual, pct, remaining: budget - actual, grpName: (i.grp || '').trim() || (i.kind === 'income' ? 'Income' : 'Expenses'), order: i.sort_order ?? idx }
   }), [items, prevItems, tx, prevTx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const expenseRows = rows.filter(r => r.kind === 'expense')
@@ -281,19 +282,22 @@ export default function BudgetPlanner({ currency }) {
     setModal({
       id: r.id, kind: r.kind, category: r.category, customCategory: false, icon: r.icon || '🧾', color: r.color || COLORS[0],
       grp: r.grp || '', planned_amount: String(r.planned), rollover: !!r.rollover, notes: r.notes || '', forward: 0,
+      parts: (r.parts || []).map(p => ({ name: p.name, amount: String(p.amount ?? '') })),
     })
   }
 
   async function saveLine(e) {
     e.preventDefault()
     const cat = modal.category.trim()
-    const amt = parseFloat(modal.planned_amount)
+    const cleanParts = (modal.parts || []).map(p => ({ name: p.name.trim(), amount: parseFloat(p.amount) })).filter(p => p.name || !Number.isNaN(p.amount))
+    if (cleanParts.some(p => !p.name || Number.isNaN(p.amount) || p.amount < 0)) { setError('Each item needs a name and an amount (0 or more) — or remove the empty row.'); return }
+    const amt = cleanParts.length ? cleanParts.reduce((a, p) => a + p.amount, 0) : parseFloat(modal.planned_amount)
     if (!cat) { setError('Choose or type a category.'); return }
     if (Number.isNaN(amt) || amt < 0) { setError('Enter a budget amount (0 or more).'); return }
     setSaving(true)
     setError(null)
     const base = {
-      category: cat, kind: modal.kind, planned_amount: amt, icon: modal.icon || null, color: modal.color || null,
+      category: cat, kind: modal.kind, planned_amount: amt, items: cleanParts, icon: modal.icon || null, color: modal.color || null,
       grp: modal.grp.trim() || null, rollover: modal.kind === 'expense' && modal.rollover, notes: modal.notes.trim() || null,
     }
     let err
@@ -357,7 +361,7 @@ export default function BudgetPlanner({ currency }) {
 
   async function copyFromLast() {
     await bulkInsert(prevItems.map(p => ({
-      category: p.category, kind: p.kind, planned_amount: p.planned_amount, icon: p.icon, color: p.color,
+      category: p.category, kind: p.kind, planned_amount: p.planned_amount, items: p.items || [], icon: p.icon, color: p.color,
       grp: p.grp, rollover: p.rollover, notes: p.notes,
     })), `Copied from previous ${unit}`)
   }
@@ -475,7 +479,7 @@ export default function BudgetPlanner({ currency }) {
           <span className="bd-icon" style={{ background: accent + '2E' }}>{r.icon || '🧾'}</span>
           <span className="bd-row-body">
             <span className="bd-row-top">
-              <span className="bd-name">{r.category}{r.carry > 0 ? <span className="bd-dim" title={`+${money(r.carry)} rolled over`}> ↻</span> : null}</span>
+              <span className="bd-name">{r.category}{r.parts.length > 0 ? <span className="bd-dim"> · {r.parts.length} items</span> : null}{r.carry > 0 ? <span className="bd-dim" title={`+${money(r.carry)} rolled over`}> ↻</span> : null}</span>
               <span className="bd-amounts">{money(r.actual)}<span className="bd-dim"> / {money(r.budget)}</span></span>
             </span>
             <span className="bd-row-bar">
@@ -489,6 +493,29 @@ export default function BudgetPlanner({ currency }) {
         </button>
         {open && (
           <div className="bd-detail">
+            {r.parts.length > 0 && (() => {
+              const used = new Set()
+              const partRows = r.parts.map(p => {
+                const key = p.name.toLowerCase()
+                const hits = catTx.filter(t => !used.has(t.id) && (t.notes || '').toLowerCase().includes(key))
+                hits.forEach(t => used.add(t.id))
+                return { ...p, spent: hits.reduce((a, t) => a + Number(t.amount), 0) }
+              })
+              const rest = catTx.filter(t => !used.has(t.id)).reduce((a, t) => a + Number(t.amount), 0)
+              const anyMatched = partRows.some(p => p.spent > 0)
+              return (
+                <div className="bd-parts">
+                  {partRows.map((p, i) => (
+                    <div key={i} className="bd-part">
+                      <span>{p.name}</span>
+                      <span>{p.spent > 0 ? <><strong>{money(p.spent)}</strong><span className="bd-dim"> / {money(Number(p.amount))}</span></> : <span className="bd-dim">{money(Number(p.amount))}</span>}</span>
+                    </div>
+                  ))}
+                  {rest > 0 && <div className="bd-part"><span className="bd-dim">Not matched to an item</span><span className="bd-dim">{money(rest)}</span></div>}
+                  {!anyMatched && <p className="bd-dim bd-note">Tip: put an item's name in a transaction's notes (e.g. “Spotify”) and its spending shows here.</p>}
+                </div>
+              )
+            })()}
             {r.notes && <p className="bd-note">📝 {r.notes}</p>}
             {r.carry > 0 && <p className="bd-dim bd-note">↻ Includes {money(r.carry)} rolled over</p>}
             {catTx.length === 0 ? <p className="bd-dim bd-note">No transactions in this category this period.</p> : (
@@ -835,8 +862,23 @@ export default function BudgetPlanner({ currency }) {
                 )}
               </div>
               <div className="field">
-                <label>{modal.kind === 'income' ? 'Expected' : 'Budget'} per {unit} ({currency})</label>
-                <input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0" value={modal.planned_amount} onChange={e => setModal({ ...modal, planned_amount: e.target.value })} />
+                <label>{modal.kind === 'income' ? 'Expected' : 'Budget'} per {unit} ({currency}){modal.parts.length > 0 ? ' — total of items' : ''}</label>
+                <input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0"
+                  value={modal.parts.length > 0 ? String(Math.round(modal.parts.reduce((a, p) => a + (parseFloat(p.amount) || 0), 0) * 100) / 100) : modal.planned_amount}
+                  disabled={modal.parts.length > 0}
+                  onChange={e => setModal({ ...modal, planned_amount: e.target.value })} />
+              </div>
+              <div className="field">
+                <label>Break it down (optional)</label>
+                {modal.parts.map((p, idx) => (
+                  <div key={idx} className="bd-part-row">
+                    <input placeholder="Item (e.g. Spotify)" value={p.name} onChange={e => setModal({ ...modal, parts: modal.parts.map((x, j) => j === idx ? { ...x, name: e.target.value } : x) })} />
+                    <input type="number" inputMode="decimal" step="0.01" min="0" placeholder="0" value={p.amount} onChange={e => setModal({ ...modal, parts: modal.parts.map((x, j) => j === idx ? { ...x, amount: e.target.value } : x) })} aria-label="Item amount" />
+                    <button type="button" className="budget-remove" aria-label="Remove item" onClick={() => setModal({ ...modal, parts: modal.parts.filter((_, j) => j !== idx) })}>✕</button>
+                  </div>
+                ))}
+                <button type="button" className="bd-mini" onClick={() => setModal({ ...modal, parts: [...modal.parts, { name: '', amount: '' }] })}>＋ Add item</button>
+                <small className="bd-dim" style={{ display: 'block', marginTop: 6 }}>Split this category into line items — the total becomes the budget.</small>
               </div>
               <div className="field">
                 <label>Icon</label>
