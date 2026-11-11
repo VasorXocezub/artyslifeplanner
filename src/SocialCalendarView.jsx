@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import ConfirmSheet from './ConfirmSheet'
+import UndoBar from './UndoBar'
 import { parseQuickPlan } from './lib/quickAdd'
 import {
   MONTH_NAMES, DAY_NAMES, CHIP_COLORS, RECURRENCE, parseLocalDate, formatMonthDay, formatTime,
@@ -81,6 +82,8 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   const [quick, setQuick] = useState('')
   const [quickNote, setQuickNote] = useState(null)
   const [typesOpen, setTypesOpen] = useState(false)
+  const [undo, setUndo] = useState(null)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [typeEdits, setTypeEdits] = useState({})
   const [customEmoji, setCustomEmoji] = useState('✨')
   const [customName, setCustomName] = useState('')
@@ -107,6 +110,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
     setQuickNote(null)
     setCustomEmoji('✨')
     setCustomName('')
+    setMoreOpen(false)
     setModalOpen(true)
   }
 
@@ -172,7 +176,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
       location: r.location || f.location,
       event_type: r.event_type || f.event_type,
     }))
-    setQuickNote(`Filled in${r.event_date ? ` ${formatMonthDay(parseLocalDate(r.event_date).month, parseLocalDate(r.event_date).day)}` : ''}${r.event_time ? ` at ${formatTime(r.event_time)}` : ''} — check the details below.`)
+    setQuickNote(`✓ Filled in${r.event_date ? ` ${formatMonthDay(parseLocalDate(r.event_date).month, parseLocalDate(r.event_date).day)}` : ''}${r.event_time ? ` at ${formatTime(r.event_time)}` : ''} — check below.`)
     setQuick('')
   }
 
@@ -224,11 +228,39 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
   async function handleDelete() {
     if (!editingId) return
     setSaving(true)
+    const row = events.find((x) => x.id === editingId)
     const { error } = await supabase.from('social_events').delete().eq('id', editingId)
     setSaving(false)
     if (error) { setError(error.message); return }
     closeModal()
     fetchAll()
+    if (row) {
+      setUndo({
+        message: `Deleted “${row.title}”`,
+        undo: async () => {
+          const { error: e2 } = await supabase.from('social_events').insert(row)
+          if (e2) setError(`Couldn’t restore it: ${e2.message}`)
+          fetchAll()
+        },
+      })
+    }
+  }
+
+  async function skipOne(ev, e) {
+    e?.stopPropagation()
+    const prev = Array.isArray(ev.skipped_dates) ? ev.skipped_dates : []
+    const iso = toIso(ev.nextDate)
+    const { error } = await supabase.from('social_events').update({ skipped_dates: [...prev, iso] }).eq('id', ev.id)
+    if (error) { setError(missingColumnHint(error.message) + (/column|schema cache/i.test(error.message) ? ' (needs social-calendar-v4.sql)' : '')); return }
+    fetchAll()
+    setUndo({
+      message: `Skipped ${ev.title} on ${formatMonthDay(ev.nextDate.getMonth(), ev.nextDate.getDate())}`,
+      undo: async () => {
+        const { error: e2 } = await supabase.from('social_events').update({ skipped_dates: prev }).eq('id', ev.id)
+        if (e2) setError(e2.message)
+        fetchAll()
+      },
+    })
   }
 
   async function setStatus(ev, status, e) {
@@ -321,6 +353,9 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
           <span className="sc-row-sub">{bits.join(' · ')}</span>
         </div>
         <span className="sc-card-actions">
+          {e.recurrence && (
+            <button className="sc-icon-btn" onClick={(ev) => skipOne(e, ev)} title="Skip this one" aria-label="Skip this occurrence">⏭</button>
+          )}
           {!e.recurrence && e.status !== 'done' && e.status !== 'cancelled' && (
             <button className="sc-icon-btn" onClick={(ev) => setStatus(e, 'done', ev)} title="Mark done" aria-label="Mark done">✅</button>
           )}
@@ -330,6 +365,7 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
     )
   }
 
+  const hasMore = !!(form.recurrence || form.status !== 'planned' || form.contact_ids.length || form.checklist.length)
   const dayList = dayPick ? (eventsByDay[dayPick] || []) : []
 
   return (
@@ -478,6 +514,8 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
         </div>
       )}
 
+      {undo && <UndoBar message={undo.message} onDismiss={() => setUndo(null)} onUndo={() => { const u = undo.undo; setUndo(null); u() }} />}
+
       {ask && (
         <ConfirmSheet title={ask.title} body={ask.body} confirmLabel={ask.label} danger onCancel={() => setAsk(null)} onConfirm={() => { const r = ask.run; setAsk(null); r() }} />
       )}
@@ -488,21 +526,24 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
             <h2>{editingId ? 'Edit plan' : 'New plan'}</h2>
             <form onSubmit={handleSave}>
               {!editingId && (
-                <div className="field">
+                <div className="field sc-quick">
                   <label>✨ Quick add</label>
-                  <input
-                    value={quick}
-                    onChange={(e) => { setQuick(e.target.value); setQuickNote(null) }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyQuick() } }}
-                    onBlur={applyQuick}
-                    placeholder="Dinner Fri 7pm at Rosebank"
-                  />
-                  {quickNote && <p className="field-hint">{quickNote}</p>}
+                  <div className="sc-quick-row">
+                    <input
+                      autoFocus
+                      value={quick}
+                      onChange={(e) => { setQuick(e.target.value); setQuickNote(null) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyQuick() } }}
+                      placeholder="Dinner Fri 7pm at Rosebank"
+                    />
+                    <button type="button" className="sc-chip-btn" onClick={applyQuick} disabled={!quick.trim()}>Fill in</button>
+                  </div>
+                  <p className="field-hint sc-quick-note">{quickNote || 'Type it the way you’d say it, then press Enter.'}</p>
                 </div>
               )}
               <div className="field">
                 <label>What's the plan?</label>
-                <input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Sarah's birthday dinner, girls' trip…" required />
+                <input autoFocus={!!editingId} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Sarah's birthday dinner, girls' trip…" required />
               </div>
               <div className="field">
                 <label>Type</label>
@@ -548,6 +589,27 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
                   <input type="time" value={form.event_time} onChange={(e) => setForm({ ...form, event_time: e.target.value })} />
                 </div>
               </div>
+              <div className="field">
+                <label>Location (optional)</label>
+                <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Where's it happening?" />
+              </div>
+              {!NO_RSVP_TYPES.includes(form.event_type) && (
+                <div className="field">
+                  <label>RSVP</label>
+                  <select value={form.rsvp} onChange={(e) => setForm({ ...form, rsvp: e.target.value })}>
+                    {RSVP_OPTIONS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="field">
+                <label>Notes</label>
+                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="What to wear, what to bring, who's going…" />
+              </div>
+              <button type="button" className="sc-more-toggle" onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen || hasMore}>
+                {moreOpen || hasMore ? '▲ Fewer options' : '▼ More options (repeat, people, checklist)'}
+              </button>
+              {(moreOpen || hasMore) && (
+                <>
               <div className="field-row">
                 <div className="field">
                   <label>Repeats</label>
@@ -564,18 +626,6 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
                   </select>
                 </div>
               </div>
-              <div className="field">
-                <label>Location (optional)</label>
-                <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Where's it happening?" />
-              </div>
-              {!NO_RSVP_TYPES.includes(form.event_type) && (
-                <div className="field">
-                  <label>RSVP</label>
-                  <select value={form.rsvp} onChange={(e) => setForm({ ...form, rsvp: e.target.value })}>
-                    {RSVP_OPTIONS.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
-                  </select>
-                </div>
-              )}
               {contacts.length > 0 && (
                 <div className="field">
                   <label>Who's it with? (optional)</label>
@@ -603,10 +653,8 @@ export default function SocialCalendarView({ focus = null, onFocusDone }) {
                 ))}
                 <button type="button" className="sc-chip-btn" onClick={() => setForm({ ...form, checklist: [...form.checklist, { t: '', d: false }] })}>+ Add item</button>
               </div>
-              <div className="field">
-                <label>Notes</label>
-                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="What to wear, what to bring, who's going…" />
-              </div>
+                </>
+              )}
               <div className="modal-actions">
                 <div>
                   {editingId && (

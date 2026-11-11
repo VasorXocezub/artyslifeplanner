@@ -51,8 +51,11 @@ function addMonthsClamped(base, n) {
   return d
 }
 
+const skippedSet = (ev) => new Set(Array.isArray(ev.skipped_dates) ? ev.skipped_dates : [])
+
 export function planOccursOn(ev, date) {
   if (!ev.event_date) return false
+  if (skippedSet(ev).has(toIso(date))) return false
   const start = dateOf(ev.event_date)
   if (date < start) return false
   if (!ev.recurrence) return toIso(date) === ev.event_date
@@ -67,6 +70,16 @@ export function planOccursOn(ev, date) {
 
 // The next time this plan happens on/after `today` (or, for one-offs, its only date).
 export function planNext(ev, today) {
+  let r = planNextRaw(ev, today)
+  const skip = skippedSet(ev)
+  // jump over skipped occurrences of a repeating plan
+  for (let i = 0; i < 120 && ev.recurrence && skip.has(toIso(r.next)); i++) {
+    r = planNextRaw(ev, new Date(r.next.getFullYear(), r.next.getMonth(), r.next.getDate() + 1))
+  }
+  return r
+}
+
+function planNextRaw(ev, today) {
   const start = dateOf(ev.event_date)
   let next = start
   if (ev.recurrence && start < today) {

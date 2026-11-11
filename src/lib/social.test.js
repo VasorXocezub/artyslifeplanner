@@ -117,3 +117,21 @@ describe('reminders and wishes', () => {
     expect(wishFor('sweet', 'Lindi Smith', 0)).not.toContain('Smith')
   })
 })
+
+import { giftsDueInPeriod } from './giftBudget'
+describe('skip occurrence and gift budget', () => {
+  it('skips one occurrence of a weekly plan', () => {
+    const ev = { event_date: '2026-11-02', recurrence: 'weekly', skipped_dates: ['2026-11-16'] }
+    expect(planOccursOn(ev, d('2026-11-16'))).toBe(false)
+    expect(toIso(planNext(ev, d('2026-11-11')).next)).toBe('2026-11-23')
+  })
+  it('sums gifts due in a period', () => {
+    const cs = [
+      { birthday: '1990-11-14', gift_price: 500 },
+      { birthday: '1990-12-30', gift_price: 300 },
+      { birthday: '1990-11-20', gift_price: 200, no_gift: true },
+      { birthday: '1990-11-22' },
+    ]
+    expect(giftsDueInPeriod(cs, d('2026-11-01'), d('2026-11-30'))).toEqual({ total: 500, count: 1 })
+  })
+})

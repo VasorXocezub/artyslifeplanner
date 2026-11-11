@@ -3,6 +3,8 @@ import { supabase, getUserId } from './lib/supabase'
 import ConfirmSheet from './ConfirmSheet'
 import ImportBirthdaysModal from './ImportBirthdaysModal'
 import WishSheet from './WishSheet'
+import UndoBar from './UndoBar'
+import { addGiftsToBudget } from './lib/giftBudget'
 import { formatMoney } from './lib/currency'
 import { getCurrency } from './lib/localPrefs'
 import {
@@ -129,6 +131,9 @@ export default function ContactsView({ focus = null, onFocusDone }) {
   const [ask, setAsk] = useState(null)
   const [importOpen, setImportOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [undo, setUndo] = useState(null)
+  const [budgetMsg, setBudgetMsg] = useState(null)
+  const [giftOpen, setGiftOpen] = useState(false)
   const [notice, setNotice] = useState(null)
 
   useEffect(() => {
@@ -154,6 +159,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
   }
 
   function openAdd(prefillDate) {
+    setGiftOpen(false)
     setEditingId(null)
     setForm({ ...emptyForm, birthday: prefillDate || todayIso() })
     setProfileMode(false)
@@ -250,6 +256,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
   async function handleDelete() {
     if (!editingId) return
     setSaving(true)
+    const row = contacts.find((x) => x.id === editingId)
     const { error } = await supabase.from('contacts').delete().eq('id', editingId)
     setSaving(false)
     if (error) {
@@ -258,6 +265,27 @@ export default function ContactsView({ focus = null, onFocusDone }) {
     }
     closeModal()
     fetchContacts()
+    if (row) {
+      setUndo({
+        message: `Deleted ${row.name}`,
+        undo: async () => {
+          const { error: e2 } = await supabase.from('contacts').insert(row)
+          if (e2) setError(`Couldn’t restore them: ${e2.message}`)
+          fetchContacts()
+        },
+      })
+    }
+  }
+
+  async function sendToBudget() {
+    setBudgetMsg(null)
+    try {
+      const r = await addGiftsToBudget(contacts)
+      setBudgetMsg(r.total > 0 ? `Added ${formatMoney(r.total, getCurrency(), 0)} for ${r.count} gift${r.count === 1 ? '' : 's'} to “🎁 Gifts” in your ${r.label} budget ✅` : 'No gifts with a budget fall in the current budget period.')
+    } catch (e) {
+      setBudgetMsg(`Couldn’t update your budget: ${e.message || e}`)
+    }
+    setTimeout(() => setBudgetMsg(null), 6000)
   }
 
   async function toggleGiftPurchased(contact, e) {
@@ -373,6 +401,7 @@ export default function ContactsView({ focus = null, onFocusDone }) {
     return { spent, planned }
   }, [contacts])
 
+  const hasGiftData = !!(editingId && (form.fave_flowers || form.fave_store || form.coffee_order || form.gift_ideas || form.gift_notes || form.gift_price || form.gift_link))
   const todays = upcoming.filter((c) => c.daysAway === 0)
   const giftNudge = upcoming.filter((c) => c.daysAway > 0 && c.daysAway <= 14 && giftNeeded(c))
 
@@ -453,10 +482,11 @@ export default function ContactsView({ focus = null, onFocusDone }) {
               <span> · </span><b>{stats.giftsRemaining}</b> gift{stats.giftsRemaining === 1 ? '' : 's'} to sort
               {stats.nextDays != null && <><span> · </span>next {inDays(stats.nextDays)}</>}
               {(giftSpend.spent > 0 || giftSpend.planned > 0) && (
-                <><span> · </span>🎁 <b>{formatMoney(giftSpend.spent, getCurrency(), 0)}</b> spent{giftSpend.planned > 0 && <> · {formatMoney(giftSpend.planned, getCurrency(), 0)} planned</>}</>
+                <><span> · </span>🎁 <b>{formatMoney(giftSpend.spent, getCurrency(), 0)}</b> spent{giftSpend.planned > 0 && <> · {formatMoney(giftSpend.planned, getCurrency(), 0)} planned</>} <button className="sc-chip-btn" onClick={sendToBudget}>Add to budget</button></>
               )}
             </p>
           )}
+          {budgetMsg && <p className="field-hint">{budgetMsg}</p>}
 
           {contacts.length > 0 && (showFilters || activeFilter) && (
             <div className="filter-row">
@@ -624,6 +654,8 @@ export default function ContactsView({ focus = null, onFocusDone }) {
           onDone={(n) => { setImportOpen(false); setNotice(`Imported ${n} birthday${n > 1 ? 's' : ''} 🎉`); setTimeout(() => setNotice(null), 4000); fetchContacts() }}
         />
       )}
+
+      {undo && <UndoBar message={undo.message} onDismiss={() => setUndo(null)} onUndo={() => { const u = undo.undo; setUndo(null); u() }} />}
 
       {wishFor && <WishSheet contact={wishFor} onClose={() => setWishFor(null)} />}
 
@@ -891,6 +923,11 @@ export default function ContactsView({ focus = null, onFocusDone }) {
                 </label>
               )}
 
+              <button type="button" className="sc-more-toggle" onClick={() => setGiftOpen((v) => !v)} aria-expanded={giftOpen || hasGiftData}>
+                {giftOpen || hasGiftData ? '▲ Hide gift vault' : '▼ Gift vault (favourites, ideas, budget, notes)'}
+              </button>
+              {(giftOpen || hasGiftData) && (
+                <>
               <div className="gift-vault-divider">
                 <span className="module-group-label">🔐 Gift vault</span>
                 <p className="field-hint">Their favorites, so you're always ready.</p>
@@ -952,6 +989,9 @@ export default function ContactsView({ focus = null, onFocusDone }) {
                   placeholder="Anything else worth remembering…"
                 />
               </div>
+
+                </>
+              )}
 
               <div className="modal-actions">
                 <div>

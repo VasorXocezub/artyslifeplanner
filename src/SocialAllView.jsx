@@ -21,6 +21,7 @@ export default function SocialAllView({ onOpen, onAdd }) {
   const [dayPick, setDayPick] = useState(null)
   const calRef = useRef(null)
   const [yearMode, setYearMode] = useState(false)
+  const [showAllLater, setShowAllLater] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -141,13 +142,18 @@ export default function SocialAllView({ onOpen, onAdd }) {
         <div className="upcoming-section">
           <p className="module-group-label">Later</p>
           <div className="upcoming-list">
-            {later.slice(0, q ? 20 : 6).map((x, i) => (
+            {later.slice(0, q || showAllLater ? 200 : 6).map((x, i) => (
               <div className="upcoming-row" key={`${x.kind}${x.id}`} onClick={() => onOpen(x.kind === 'b' ? 'contacts' : 'social', x.id)} style={{ borderLeftColor: CHIP_COLORS[x.kind === 'b' ? 0 : 1 + (i % 3)] }}>
                 <span className="upcoming-name">{emoji(x)} {x.title}</span>
                 <span className="upcoming-date">{when(x)} · {inDays(x.daysAway)}</span>
               </div>
             ))}
           </div>
+          {!q && later.length > 6 && (
+            <button className="sc-more-toggle" onClick={() => setShowAllLater((v) => !v)}>
+              {showAllLater ? '▲ Show fewer' : `▼ Show all ${later.length}`}
+            </button>
+          )}
         </div>
       )}
 
