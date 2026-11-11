@@ -89,3 +89,31 @@ describe('goals round 2', () => {
     expect(TEMPLATES.length).toBeGreaterThan(3)
   })
 })
+
+import { childrenMap, reorderIds, eraColor, affirmationOf, weekKey, checkinDue, shareText } from './goals'
+describe('goals round 3', () => {
+  it('parent progress rolls up from sub-dreams', () => {
+    const kids = [{ id: 'a', parent_id: 'p', status: 'done' }, { id: 'b', parent_id: 'p', status: 'not_started' }]
+    const p = { id: 'p', goal_type: 'simple', status: 'not_started' }
+    expect(derivedPct(p, { children: childrenMap(kids) })).toBe(50)
+  })
+  it('cost overrides savings target', () => {
+    const ctx = { savings: { s: { current_amount: 500, target_amount: 10000 } } }
+    expect(derivedPct({ linked_savings_id: 's', cost: 2000 }, ctx)).toBe(25)
+  })
+  it('reorders and sorts manually', () => {
+    const l = [{ id: 1 }, { id: 2 }, { id: 3 }]
+    expect(reorderIds(l, 3, 0)).toEqual([{ id: 3, sort_order: 0 }, { id: 1, sort_order: 1 }, { id: 2, sort_order: 2 }])
+    expect(sortGoals([{ id: 'x', sort_order: 2 }, { id: 'y', sort_order: 1 }, { id: 'z' }], 'manual').map((g) => g.id)).toEqual(['y', 'x', 'z'])
+  })
+  it('era colour is stable; affirmation + week key', () => {
+    expect(eraColor('🌸 Glow-Up Era')).toBe(eraColor('🌸 Glow-Up Era'))
+    expect(eraColor('')).toBeNull()
+    expect(typeof affirmationOf(new Date(2026, 10, 11))).toBe('string')
+    expect(weekKey(new Date(2026, 10, 11))).toBe('2026-11-09') // Wed -> Monday
+    expect(weekKey(new Date(2026, 10, 15))).toBe('2026-11-09') // Sun
+    expect(checkinDue(new Date(2026, 10, 15))).toBe(true)
+    expect(checkinDue(new Date(2026, 10, 11))).toBe(false)
+    expect(shareText({ title: 'Surf' }, 40)).toBe('🌱 Surf — 40%')
+  })
+})

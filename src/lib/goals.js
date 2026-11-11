@@ -12,9 +12,14 @@ export function computeProgress(goal) {
 
 // ctx = { savings: {id: row}, habitPct: {id: pct} }
 export function derivedPct(goal, ctx = {}) {
+  const kids = ctx.children?.[goal.id]
+  if (kids && kids.length) {
+    const sub = { ...ctx, children: {} }
+    return clamp(kids.reduce((n, k) => n + effectivePct(k, sub), 0) / kids.length)
+  }
   if (goal.linked_savings_id && ctx.savings?.[goal.linked_savings_id]) {
     const s = ctx.savings[goal.linked_savings_id]
-    const t = Number(s.target_amount)
+    const t = Number(goal.cost) > 0 ? Number(goal.cost) : Number(s.target_amount)
     return t > 0 ? clamp((Number(s.current_amount || 0) / t) * 100) : 0
   }
   if (goal.linked_habit_id && ctx.habitPct && goal.linked_habit_id in ctx.habitPct) return ctx.habitPct[goal.linked_habit_id]
@@ -93,6 +98,7 @@ export function sortGoals(list, how, ctx) {
   const a = [...list]
   if (how === 'due') return a.sort((x, y) => (x.target_date || '9999') .localeCompare(y.target_date || '9999'))
   if (how === 'close') return a.sort((x, y) => effectivePct(y, ctx) - effectivePct(x, ctx))
+  if (how === 'manual') return a.sort((x, y) => (x.sort_order ?? 1e9) - (y.sort_order ?? 1e9))
   return a
 }
 
@@ -204,3 +210,56 @@ export const TEMPLATES = [
   { label: '🌍 Plan a trip', form: { title: 'Plan a dream trip', category: '✈️ Passport Princess Era', goal_type: 'simple', cover_emoji: '✈️', milestones: ['Pick destination', 'Set budget', 'Book flights', 'Book stay', 'Pack'] } },
   { label: '🏡 Declutter home', form: { title: 'Declutter the house', category: '🏡 Cozy Girl Era', goal_type: 'simple', cover_emoji: '🏡', milestones: ['Wardrobe', 'Kitchen', 'Bathroom', 'Paperwork', 'Donate bags'] } },
 ]
+
+// ---------- round 3 ----------
+export function childrenMap(goals) {
+  const m = {}
+  goals.forEach((g) => { if (g.parent_id) (m[g.parent_id] = m[g.parent_id] || []).push(g) })
+  return m
+}
+
+// Move goal `id` to `toIndex` in `list`; returns [{id, sort_order}] for the whole list
+export function reorderIds(list, id, toIndex) {
+  const ids = list.map((g) => g.id)
+  const from = ids.indexOf(id)
+  if (from < 0) return []
+  ids.splice(from, 1)
+  ids.splice(Math.max(0, Math.min(ids.length, toIndex)), 0, id)
+  return ids.map((x, i) => ({ id: x, sort_order: i }))
+}
+
+const ERA_PALETTE = ['#F4B6C2', '#F6D0C8', '#D9C7F0', '#C9E4DE', '#FBE3A5', '#BFD7F2']
+export function eraColor(era) {
+  if (!era) return null
+  let h = 0
+  for (const ch of era) h = (h * 31 + ch.codePointAt(0)) >>> 0
+  return ERA_PALETTE[h % ERA_PALETTE.length]
+}
+
+export const AFFIRMATIONS = [
+  'Delulu is the solulu.',
+  'Future you is already proud.',
+  'Small steps still count as steps, babe.',
+  'You don’t need a perfect plan, just the next step.',
+  'Main character energy, one tick at a time.',
+  'Your dreams called — they’re on their way.',
+  'Slow progress is still glow-up progress.',
+  'Manifesting, but make it organised.',
+]
+export function affirmationOf(date = new Date()) {
+  const start = new Date(date.getFullYear(), 0, 0)
+  const day = Math.floor((date - start) / DAY)
+  return AFFIRMATIONS[day % AFFIRMATIONS.length]
+}
+
+// ISO-ish week key (Mon-based) for weekly check-ins
+export function weekKey(date = new Date()) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return isoOf(d)
+}
+export const checkinDue = (date = new Date()) => date.getDay() === 0 || date.getDay() === 1
+
+export function shareText(goal, pct) {
+  return `🌱 ${goal.title} — ${pct}%${goal.target_date ? ` · target ${goal.target_date}` : ''}${goal.category ? ` · ${goal.category}` : ''}`
+}

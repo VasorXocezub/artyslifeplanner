@@ -6,13 +6,17 @@ import {
   derivedPct, effectivePct, effectiveStatus, dueInfo, computeBadges, progressStage,
   habitConsistency, sparkPoints, sortGoals,
   firstOpenStep, moveItem, stepDue, projectFinish, isStalled, recapStats, TEMPLATES,
+  childrenMap, reorderIds, eraColor, affirmationOf, weekKey, checkinDue, shareText,
 } from './lib/goals'
+import { exportBoardPng } from './lib/exportBoard'
+import { formatMoney } from './lib/currency'
 import { toIso } from './lib/social'
+import { fileToDataUrl } from './lib/image'
 
 const emptyForm = {
   title: '', category: '', newEra: '', target_date: '', status: 'not_started', notes: '',
   goal_type: 'simple', start_value: '', current_value: '', target_value: '', unit: '', reward: '',
-  milestones: [], cover_emoji: '', cover_color: '', cover_url: '', linked_savings_id: '', linked_habit_id: '',
+  milestones: [], cover_emoji: '', cover_color: '', cover_url: '', linked_savings_id: '', linked_habit_id: '', parent_id: '', cost: '',
 }
 
 const STATUS_LABELS = { not_started: '🌱 Not started', in_progress: '🚀 In motion', done: '👑 Slayed' }
@@ -40,6 +44,13 @@ const hint = (msg) => (/column|schema cache|relation|does not exist/i.test(msg |
 function formatDate(d) {
   if (!d) return null
   return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function DreamImg({ src, className, fallback }) {
+  const [bad, setBad] = useState(false)
+  useEffect(() => setBad(false), [src])
+  if (bad) return fallback || null
+  return <img className={className} src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} />
 }
 
 function Confetti() {
@@ -86,19 +97,33 @@ export default function GoalsView() {
   const [recapOpen, setRecapOpen] = useState(false)
   const [expanded, setExpanded] = useState({})
   const [inlineStep, setInlineStep] = useState({})
+  const [notes, setNotes] = useState([])
+  const [notesMissing, setNotesMissing] = useState(false)
+  const [noteInput, setNoteInput] = useState('')
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState(() => new Set())
+  const [confirmBulk, setConfirmBulk] = useState(false)
+  const [checkinOpen, setCheckinOpen] = useState(() => {
+    try { return checkinDue() && localStorage.getItem('dream-checkin') !== weekKey() } catch { return false }
+  })
+  const [dragId, setDragId] = useState(null)
+  const [checkedIn, setCheckedIn] = useState({})
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
     setError(null)
-    const [g, u, s, h, hl] = await Promise.all([
+    const [g, u, s, h, hl, nt] = await Promise.all([
       supabase.from('goals').select('*').order('created_at', { ascending: false }),
       supabase.from('goal_updates').select('*').order('created_at', { ascending: true }),
       supabase.from('savings_goals').select('id,name,icon,target_amount,current_amount'),
       supabase.from('habits').select('id,name'),
       supabase.from('habit_logs').select('habit_id,logged_date'),
+      supabase.from('goal_notes').select('*').order('created_at', { ascending: false }),
     ])
+    if (nt.error) setNotesMissing(true)
+    else { setNotes(nt.data || []); setNotesMissing(false) }
     if (g.error) setError(g.error.message)
     else setGoals(g.data || [])
     if (u.error) setNote(`Progress history isn't available yet — ${V2_HINT}.`)
@@ -119,8 +144,8 @@ export default function GoalsView() {
     savings.forEach((s) => { sv[s.id] = s })
     const hp = {}
     habits.forEach((h) => { hp[h.id] = habitConsistency(habitLogs, h.id) })
-    return { savings: sv, habitPct: hp }
-  }, [savings, habits, habitLogs])
+    return { savings: sv, habitPct: hp, children: childrenMap(goals.filter((x) => !x.archived)) }
+  }, [savings, habits, habitLogs, goals])
 
   const updatesByGoal = useMemo(() => {
     const m = {}
@@ -155,8 +180,10 @@ export default function GoalsView() {
       milestones: Array.isArray(goal.milestones) ? goal.milestones : [],
       cover_emoji: goal.cover_emoji || '', cover_color: goal.cover_color || '', cover_url: goal.cover_url || '',
       linked_savings_id: goal.linked_savings_id || '', linked_habit_id: goal.linked_habit_id || '',
+      parent_id: goal.parent_id || '', cost: goal.cost != null ? String(goal.cost) : '',
     })
-    setMoreOpen(!!(goal.cover_emoji || goal.cover_color || goal.cover_url || goal.linked_savings_id || goal.linked_habit_id))
+    setNoteInput('')
+    setMoreOpen(!!(goal.cover_emoji || goal.cover_color || goal.cover_url || goal.linked_savings_id || goal.linked_habit_id || goal.parent_id || goal.cost))
     setNewStep('')
     setModalOpen(true)
   }
@@ -199,6 +226,8 @@ export default function GoalsView() {
       cover_url: form.cover_url.trim() || null,
       linked_savings_id: form.linked_savings_id || null,
       linked_habit_id: form.linked_habit_id || null,
+      parent_id: form.parent_id || null,
+      cost: form.cost !== '' && !isNaN(parseFloat(form.cost)) ? parseFloat(form.cost) : null,
     }
     if (existing) {
       if ('touched_at' in existing) payload.touched_at = new Date().toISOString()
@@ -235,7 +264,11 @@ export default function GoalsView() {
     const before = effectiveStatus(goal, ctx)
     const ms = goal.milestones.map((m, i) => (i === idx ? { ...m, d: !m.d } : m))
     const becameDone = before !== 'done' && effectiveStatus({ ...goal, milestones: ms }, ctx) === 'done'
-    const ok = await patchGoal(goal.id, { milestones: ms, ...stamps(goal, becameDone) })
+    const prevMs = goal.milestones
+    const ok = await patchGoal(goal.id, { milestones: ms, ...stamps(goal, becameDone) }, {
+      message: `${ms[idx].d ? 'Ticked' : 'Unticked'} “${ms[idx].t}”`,
+      run: async () => { await patchGoal(goal.id, { milestones: prevMs }) },
+    })
     if (ok && becameDone) fireCelebration(goal.id)
   }
 
@@ -315,7 +348,7 @@ export default function GoalsView() {
   }
 
   async function claimReward(goal) {
-    await patchGoal(goal.id, { reward_claimed: true })
+    await patchGoal(goal.id, { reward_claimed: true }, { message: `Claimed “${goal.reward}” 🎁`, run: async () => { await patchGoal(goal.id, { reward_claimed: false }) } })
   }
 
   async function archiveGoal(goal, archived) {
@@ -323,6 +356,122 @@ export default function GoalsView() {
       message: archived ? `Archived "${goal.title}"` : `Restored "${goal.title}"`,
       run: async () => { await patchGoal(goal.id, { archived: !archived }) },
     })
+  }
+
+
+  async function setCover(goal, file) {
+    if (!file) return
+    try {
+      const d = await fileToDataUrl(file)
+      await patchGoal(goal.id, { cover_url: d }, { message: `Cover added to “${goal.title}”`, run: async () => { await patchGoal(goal.id, { cover_url: goal.cover_url || null }) } })
+    } catch (err) { setError(err.message) }
+  }
+
+  async function addNote(goalId) {
+    const body = noteInput.trim()
+    if (!body) return
+    const user_id = await getUserId()
+    const r = await supabase.from('goal_notes').insert({ user_id, goal_id: String(goalId), body }).select().single()
+    if (r.error) { setError(hint(r.error.message)); return }
+    setNotes((n) => [r.data, ...n]); setNoteInput('')
+  }
+
+  async function deleteNote(id) {
+    const { error } = await supabase.from('goal_notes').delete().eq('id', id)
+    if (error) { setError(hint(error.message)); return }
+    setNotes((n) => n.filter((x) => x.id !== id))
+  }
+
+  async function sendStep(goal, step, where) {
+    const user_id = await getUserId()
+    let r
+    if (where === 'calendar') r = await supabase.from('social_events').insert({ user_id, title: `${step.t} (${goal.title})`, event_date: step.due, event_type: 'reminder' })
+    else r = await supabase.from('todos').insert({ user_id, text: `${step.t} — ${goal.title}`, category: 'personal', energy: 'quick_win' })
+    if (r.error) setError(hint(r.error.message))
+    else setUndo({ message: where === 'calendar' ? `Added “${step.t}” to Social Calendar` : `Added “${step.t}” to your to-do list`, run: async () => {} })
+  }
+
+  async function persistOrder(order) {
+    if (!order.length) return
+    setSort('manual')
+    setGoals((gs) => gs.map((g) => { const o = order.find((x) => x.id === g.id); return o ? { ...g, sort_order: o.sort_order } : g }))
+    const res = await Promise.all(order.map((o) => supabase.from('goals').update({ sort_order: o.sort_order }).eq('id', o.id)))
+    const bad = res.find((r) => r.error)
+    if (bad) { setError(hint(bad.error.message)); refreshGoals() }
+  }
+
+  function dropOn(targetId, list) {
+    if (!dragId || dragId === targetId) return
+    persistOrder(reorderIds(list, dragId, list.findIndex((g) => g.id === targetId)))
+    setDragId(null)
+  }
+
+  function moveManual(goal, dir, list) {
+    const i = list.findIndex((g) => g.id === goal.id)
+    persistOrder(reorderIds(list, goal.id, i + dir))
+  }
+
+  function toggleSelect(id) {
+    setSelected((s0) => { const n = new Set(s0); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  }
+  function exitSelect() { setSelectMode(false); setSelected(new Set()) }
+
+  async function bulkPatch(patch, label) {
+    const ids = [...selected]
+    const prev = goals.filter((g) => selected.has(g.id)).map((g) => ({ id: g.id, v: Object.fromEntries(Object.keys(patch).map((k) => [k, g[k] ?? null])) }))
+    const res = await Promise.all(ids.map((id) => supabase.from('goals').update(patch).eq('id', id)))
+    const bad = res.find((r) => r.error)
+    if (bad) { setError(hint(bad.error.message)); return }
+    setUndo({ message: `${label} ${ids.length} dream${ids.length > 1 ? 's' : ''}`, run: async () => { await Promise.all(prev.map((p0) => supabase.from('goals').update(p0.v).eq('id', p0.id))); refreshGoals() } })
+    exitSelect(); refreshGoals()
+  }
+
+  async function bulkDelete() {
+    const rows = goals.filter((g) => selected.has(g.id))
+    const res = await Promise.all(rows.map((g) => supabase.from('goals').delete().eq('id', g.id)))
+    setConfirmBulk(false)
+    const bad = res.find((r) => r.error)
+    if (bad) { setError(hint(bad.error.message)); refreshGoals(); return }
+    setUndo({ message: `Deleted ${rows.length} dream${rows.length > 1 ? 's' : ''}`, run: async () => { await Promise.all(rows.map(({ id: _i, ...rest }) => supabase.from('goals').insert(rest))); refreshGoals() } })
+    exitSelect(); refreshGoals()
+  }
+
+  const swipe = { x: 0, y: 0 }
+  function swipeStart(e) { swipe.x = e.touches[0].clientX; swipe.y = e.touches[0].clientY }
+  function swipeEnd(e, g) {
+    if (e.target.closest('input,button,label,select,textarea,a')) return
+    const dx = e.changedTouches[0].clientX - swipe.x, dy = e.changedTouches[0].clientY - swipe.y
+    if (Math.abs(dx) < 90 || Math.abs(dy) > 40) return
+    if (dx > 0) togglePin(g); else archiveGoal(g, !g.archived)
+  }
+
+  async function exportBoard() {
+    try {
+      await exportBoardPng(live.map((g) => ({ title: g.title, emoji: g.cover_emoji, color: g.cover_color || eraColor(g.category), image: g.cover_url, pct: effectivePct(g, ctx) })))
+    } catch (err) { setError(err.message) }
+  }
+
+  async function shareGoal(g) {
+    const text = shareText(g, effectivePct(g, ctx))
+    try {
+      if (navigator.share) await navigator.share({ title: g.title, text })
+      else { await navigator.clipboard.writeText(text); setUndo({ message: 'Copied to clipboard', run: async () => {} }) }
+    } catch (err) { if (err?.name !== 'AbortError') setError("Couldn't share — copy the text from the card instead.") }
+  }
+
+  async function checkin(goal, how) {
+    const body = how === 'moved' ? '✅ Weekly check-in: moved forward' : '🧱 Weekly check-in: stuck this week'
+    const user_id = await getUserId()
+    const r = await supabase.from('goal_notes').insert({ user_id, goal_id: String(goal.id), body }).select().single()
+    if (r.error) { setError(hint(r.error.message)); return }
+    setNotes((n) => [r.data, ...n])
+    if (how === 'moved' && 'touched_at' in goal) await patchGoal(goal.id, { touched_at: new Date().toISOString() })
+    setCheckedIn((c) => ({ ...c, [goal.id]: how }))
+  }
+
+  function finishCheckin() {
+    try { localStorage.setItem('dream-checkin', weekKey()) } catch { /* ignore */ }
+    setCheckinOpen(false)
   }
 
   async function handleDelete() {
@@ -396,18 +545,34 @@ export default function GoalsView() {
     const isProgress = g.goal_type === 'progress'
     const sv = g.linked_savings_id && ctx.savings[g.linked_savings_id]
     const hb = g.linked_habit_id && habits.find((h) => String(h.id) === String(g.linked_habit_id))
-    const accent = g.cover_color || STATUS_COLORS[status]
+    const accent = g.cover_color || eraColor(g.category) || STATUS_COLORS[status]
+    const kids = ctx.children[g.id] || []
+    const parent = g.parent_id ? goals.find((x) => String(x.id) === String(g.parent_id)) : null
+    const noteCount = notes.filter((n) => n.goal_id === String(g.id)).length
+    const manual = sort === 'manual' && !selectMode
+    const savedAmt = sv ? Number(sv.current_amount || 0) : null
     const spark = sparkPoints([Number(g.start_value), ...ups.map((u) => Number(u.value))])
     const stalled = isStalled(g, status, ups)
     const shown = open ? steps.map((m, i) => i) : next ? [next.index] : []
     return (
-      <div className="contact-card dream-card" key={g.id} style={{ borderTopColor: accent }}>
+      <div
+        className={`contact-card dream-card ${selected.has(g.id) ? 'dream-selected' : ''} ${dragId === g.id ? 'dream-dragging' : ''}`}
+        key={g.id} style={{ borderTopColor: accent }}
+        draggable={manual}
+        onDragStart={() => setDragId(g.id)} onDragEnd={() => setDragId(null)}
+        onDragOver={(e) => manual && e.preventDefault()} onDrop={() => manual && dropOn(g.id, filtered)}
+        onTouchStart={swipeStart} onTouchEnd={(e) => swipeEnd(e, g)}
+      >
         {celebrate === g.id && <Confetti />}
-        {g.cover_url && <img className="dream-cover" src={g.cover_url} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+        {g.cover_url && <DreamImg src={g.cover_url} className="dream-cover" fallback={<p className="field-hint">⚠ Cover image couldn't load — open the dream to upload it instead.</p>} />}
         <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
           <div className="dream-top">
-            <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>{STATUS_LABELS[status]}</span>
+            <span className="dream-top-left">
+              {selectMode && <input type="checkbox" className="dream-select" aria-label={`Select ${g.title}`} checked={selected.has(g.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(g.id)} />}
+              <span className="status-badge" style={{ background: STATUS_COLORS[status] }}>{STATUS_LABELS[status]}</span>
+            </span>
             <span className="dream-top-right">
+              <label className="dream-cam" title="Add cover photo" onClick={(e) => e.stopPropagation()}>📷<input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; setCover(g, f) }} /></label>
               {due && <span className={`dream-due dream-due-${due.tone}`}>{due.label}</span>}
               {!isArchived(g) && (
                 <button className={`dream-pin ${g.pinned ? 'on' : ''}`} aria-label={g.pinned ? 'Unpin from this week' : 'Pin to this week'} title={g.pinned ? 'Unpin from this week' : 'Pin to this week'} onClick={(e) => { e.stopPropagation(); togglePin(g) }}>{g.pinned ? '★' : '☆'}</button>
@@ -418,9 +583,17 @@ export default function GoalsView() {
             {g.cover_emoji && <span className="dream-emoji" style={{ background: g.cover_color || 'var(--accent-tint)' }}>{g.cover_emoji}</span>}
             {g.title}
           </h3>
-          {g.category && <p className="contact-relationship goal-era">{g.category}</p>}
-          {g.target_date && <p className="dream-date">Target {formatDate(g.target_date)}</p>}
-          {g.notes && <p className="contact-notes">{g.notes}</p>}
+          <p className="dream-meta">
+            {g.category && <span className="goal-era" style={{ borderLeft: `4px solid ${eraColor(g.category)}`, paddingLeft: 6 }}>{g.category}</span>}
+            {g.target_date && <span>Target {formatDate(g.target_date)}</span>}
+            {noteCount > 0 && <span>📝 {noteCount}</span>}
+          </p>
+          {parent && <p className="dream-meta"><span>↳ Part of {parent.title}</span></p>}
+          {kids.length > 0 && <p className="dream-meta"><span>🧩 {kids.length} sub-dream{kids.length > 1 ? 's' : ''}: {kids.map((k) => `${k.title} (${effectivePct(k, { ...ctx, children: {} })}%)`).join(', ')}</span></p>}
+          {(g.cost > 0 || sv) && (
+            <p className="dream-meta"><span>💰 {savedAmt != null ? `${formatMoney(savedAmt, 'ZAR', 0)} of ${formatMoney(Number(g.cost) > 0 ? g.cost : sv.target_amount, 'ZAR', 0)} saved` : `Costs ${formatMoney(g.cost, 'ZAR', 0)}`}</span></p>
+          )}
+          {g.notes && <p className="contact-notes dream-notes">{g.notes}</p>}
         </div>
 
         {(real || status === 'in_progress') && (
@@ -450,6 +623,12 @@ export default function GoalsView() {
                       <span className={m.d ? 'dream-step-done' : ''}>{!open && <em className="dream-next">Next: </em>}{m.t}</span>
                       {sd && <span className={`dream-due dream-due-${sd.tone}`}>{sd.label}</span>}
                     </label>
+                    {open && m.due && !m.d && (
+                      <span className="dream-step-move">
+                        <button aria-label="Add step to Social Calendar" title="Add to Social Calendar" onClick={() => sendStep(g, m, 'calendar')}>📅</button>
+                        <button aria-label="Add step to to-do list" title="Add to to-do list" onClick={() => sendStep(g, m, 'todo')}>📝</button>
+                      </span>
+                    )}
                     {open && (
                       <span className="dream-step-move">
                         <button aria-label="Move step up" disabled={i === 0} onClick={() => moveStep(g, i, -1)}>▲</button>
@@ -517,6 +696,13 @@ export default function GoalsView() {
           </div>
         )}
 
+        {manual && (
+          <span className="dream-manual">
+            <button className="sc-chip-btn" aria-label="Move earlier" onClick={() => moveManual(g, -1, filtered)}>↑</button>
+            <button className="sc-chip-btn" aria-label="Move later" onClick={() => moveManual(g, 1, filtered)}>↓</button>
+            <span className="dream-drag">⠿ drag to reorder</span>
+          </span>
+        )}
         {status === 'done' && !isArchived(g) && (
           <button className="sc-chip-btn dream-archive" onClick={() => archiveGoal(g, true)}>🗄️ Archive</button>
         )}
@@ -530,17 +716,36 @@ export default function GoalsView() {
   function renderTile(g) {
     const status = effectiveStatus(g, ctx)
     const pct = effectivePct(g, ctx)
-    const bg = g.cover_url ? `center / cover url("${g.cover_url}")` : (g.cover_color || 'var(--accent-tint)')
+    const manual = sort === 'manual' && !selectMode
+    const emoji = <span className="dream-tile-emoji">{g.cover_emoji || '✨'}</span>
     return (
-      <button key={g.id} className="dream-tile" style={{ background: bg }} onClick={() => openEdit(g)}>
-        {g.pinned && <span className="dream-tile-pin">★</span>}
+      <div
+        key={g.id} role="button" tabIndex={0}
+        className={`dream-tile ${selected.has(g.id) ? 'dream-selected' : ''} ${dragId === g.id ? 'dream-dragging' : ''}`}
+        style={{ background: g.cover_color || eraColor(g.category) || 'var(--accent-tint)' }}
+        onClick={() => (selectMode ? toggleSelect(g.id) : openEdit(g))}
+        onKeyDown={(e) => e.key === 'Enter' && (selectMode ? toggleSelect(g.id) : openEdit(g))}
+        draggable={manual} onDragStart={() => setDragId(g.id)} onDragEnd={() => setDragId(null)}
+        onDragOver={(e) => manual && e.preventDefault()} onDrop={() => manual && dropOn(g.id, filtered)}
+      >
+        {g.cover_url ? <DreamImg src={g.cover_url} className="dream-tile-img" fallback={emoji} /> : emoji}
+        {selectMode && <input type="checkbox" className="dream-select dream-tile-check" aria-label={`Select ${g.title}`} checked={selected.has(g.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(g.id)} />}
+        {!selectMode && g.pinned && <span className="dream-tile-pin">★</span>}
         {status === 'done' && <span className="dream-tile-done">👑</span>}
-        {!g.cover_url && <span className="dream-tile-emoji">{g.cover_emoji || '✨'}</span>}
+        {!selectMode && (
+          <label className="dream-cam dream-tile-cam" title="Add cover photo" onClick={(e) => e.stopPropagation()}>📷<input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; setCover(g, f) }} /></label>
+        )}
+        {manual && (
+          <span className="dream-tile-move" onClick={(e) => e.stopPropagation()}>
+            <button aria-label="Move earlier" onClick={() => moveManual(g, -1, filtered)}>◀</button>
+            <button aria-label="Move later" onClick={() => moveManual(g, 1, filtered)}>▶</button>
+          </span>
+        )}
         <span className="dream-tile-label">
           <b>{g.title}</b>
           <span className="progress-track"><span className="progress-fill" style={{ width: `${pct}%`, display: 'block', height: '100%', background: STATUS_COLORS[status] }} /></span>
         </span>
-      </button>
+      </div>
     )
   }
 
@@ -554,6 +759,7 @@ export default function GoalsView() {
         <div>
           <h1 className="view-title">Dream Board</h1>
           <p className="view-subtitle cake-club-subtitle">✨ Delulu? No. Visionary.</p>
+          <p className="dream-affirm">{affirmationOf()}</p>
         </div>
       </div>
 
@@ -563,6 +769,7 @@ export default function GoalsView() {
           <option value="new">Newest</option>
           <option value="due">Due soon</option>
           <option value="close">Closest to done</option>
+          <option value="manual">My order</option>
         </select>
         <div className="toolbar"><button className="btn-primary" onClick={openAdd} aria-label="Add dream">+ Add</button></div>
       </div>
@@ -593,7 +800,43 @@ export default function GoalsView() {
         <button className={`sc-filter-btn ${view === 'vision' ? 'on' : ''}`} onClick={() => setView('vision')}>🖼 Vision board</button>
         {view === 'cards' && <button className={`sc-filter-btn ${groupEra ? 'on' : ''}`} onClick={() => setGroupEra((v) => !v)}>Group by era</button>}
         <button className="sc-filter-btn" onClick={() => setRecapOpen(true)}>🏆 Recap</button>
+        <button className={`sc-filter-btn ${selectMode ? 'on' : ''}`} onClick={() => (selectMode ? exitSelect() : setSelectMode(true))}>☑ Select</button>
+        {live.some((g) => g.pinned) && <button className={`sc-filter-btn ${checkinOpen ? 'on' : ''}`} onClick={() => setCheckinOpen((o) => !o)}>🗓 Check-in</button>}
+        {view === 'vision' && <button className="sc-filter-btn" onClick={exportBoard}>⬇ Save as image</button>}
       </div>
+
+      {selectMode && (
+        <div className="dream-bulk" role="toolbar" aria-label="Bulk actions">
+          <b>{selected.size} selected</b>
+          <button className="sc-chip-btn" disabled={!selected.size} onClick={() => bulkPatch({ archived: true }, 'Archived')}>🗄️ Archive</button>
+          <select disabled={!selected.size} value="" onChange={(e) => e.target.value && bulkPatch({ category: e.target.value === '__none__' ? null : e.target.value }, 'Moved')} aria-label="Move selected to era">
+            <option value="">Move to era…</option>
+            <option value="__none__">No era</option>
+            {eraList.map((e) => <option key={e} value={e}>{e}</option>)}
+          </select>
+          <button className="sc-chip-btn" disabled={!selected.size} onClick={() => setConfirmBulk(true)}>🗑 Delete</button>
+          <button className="sc-chip-btn" onClick={exitSelect}>Done</button>
+        </div>
+      )}
+
+      {checkinOpen && live.some((g) => g.pinned) && (
+        <div className="dream-checkin">
+          <b>🗓 Weekly check-in</b>
+          <span className="field-hint">How did your “This week” dreams go?</span>
+          {live.filter((g) => g.pinned).map((g) => (
+            <div className="dream-checkin-row" key={g.id}>
+              <span>{g.cover_emoji || '🌱'} {g.title}</span>
+              {checkedIn[g.id] ? <em>{checkedIn[g.id] === 'moved' ? '✅ logged' : '🧱 logged'}</em> : (
+                <span>
+                  <button className="sc-chip-btn" onClick={() => checkin(g, 'moved')}>Moved forward</button>
+                  <button className="sc-chip-btn" onClick={() => checkin(g, 'stuck')}>Stuck</button>
+                </span>
+              )}
+            </div>
+          ))}
+          <button className="sc-chip-btn" onClick={finishCheckin}>Done for this week</button>
+        </div>
+      )}
 
       {loading && <p className="loading">Rounding up your ambitions… 🌟</p>}
       {error && <p className="error-msg">{error}</p>}
@@ -738,7 +981,37 @@ export default function GoalsView() {
                       </div>
                     </div>
                   </div>
-                  <div className="field"><label>Image link (optional)</label><input type="url" value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} placeholder="https://…" /></div>
+                  <div className="field">
+                    <label>Cover image</label>
+                    <div className="dream-upload">
+                      <label className="sc-chip-btn">
+                        📷 Upload photo
+                        <input type="file" accept="image/*" hidden onChange={async (e) => {
+                          const f = e.target.files?.[0]; e.target.value = ''
+                          if (!f) return
+                          try { setForm((x) => ({ ...x, cover_url: '' })); const d = await fileToDataUrl(f); setForm((x) => ({ ...x, cover_url: d })) }
+                          catch (err) { setError(err.message) }
+                        }} />
+                      </label>
+                      {form.cover_url && <button type="button" className="sc-chip-btn" onClick={() => setForm({ ...form, cover_url: '' })}>Remove</button>}
+                    </div>
+                    {form.cover_url && !form.cover_url.startsWith('data:') && <input type="url" style={{ marginTop: 6 }} value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} />}
+                    {!form.cover_url && <input type="url" style={{ marginTop: 6 }} value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} placeholder="…or paste a direct image link (ends in .jpg / .png)" />}
+                    {form.cover_url && <DreamImg src={form.cover_url} className="dream-preview" fallback={<p className="error-msg">That link isn't a direct image, so it can't be shown. Right-click the picture → "Copy image address", or upload the photo instead.</p>} />}
+                  </div>
+                  <div className="field-row">
+                    <div className="field">
+                      <label>Part of (bigger dream)</label>
+                      <select value={form.parent_id} onChange={(e) => setForm({ ...form, parent_id: e.target.value })}>
+                        <option value="">None</option>
+                        {goals.filter((x) => x.id !== editingId && !x.parent_id && !x.archived).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Price tag (optional)</label>
+                      <input type="number" min="0" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} placeholder="e.g. 50000" />
+                    </div>
+                  </div>
                   <div className="field">
                     <label>Track with a savings goal</label>
                     <select value={form.linked_savings_id} onChange={(e) => setForm({ ...form, linked_savings_id: e.target.value })}>
@@ -756,10 +1029,33 @@ export default function GoalsView() {
                 </>
               )}
 
+              {editingId && (
+                <div className="field dream-journal">
+                  <label>Journal</label>
+                  {notesMissing ? <p className="field-hint">Journal needs dream-board-v4.sql — run it in Supabase, then refresh.</p> : (
+                    <>
+                      <div className="dream-step-edit">
+                        <input value={noteInput} onChange={(e) => setNoteInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNote(editingId) } }} placeholder="What happened today?" />
+                        <button type="button" className="sc-chip-btn" onClick={() => addNote(editingId)}>Add</button>
+                      </div>
+                      <ul className="dream-history">
+                        {notes.filter((n) => n.goal_id === String(editingId)).map((n) => (
+                          <li key={n.id}>
+                            <span><small>{new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small> {n.body}</span>
+                            <button type="button" className="sc-icon-btn" aria-label="Delete note" onClick={() => deleteNote(n.id)}>✕</button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="modal-actions">
                 <div>
                   {editingId && <button type="button" className="btn-delete" onClick={() => setConfirmDelete(true)} disabled={saving}>Delete</button>}
                   {editingId && <button type="button" className="btn-cancel" style={{ marginLeft: 6 }} onClick={duplicateGoal}>Duplicate</button>}
+                  {editingId && <button type="button" className="btn-cancel" style={{ marginLeft: 6 }} onClick={() => shareGoal(goals.find((x) => x.id === editingId))}>Share</button>}
                 </div>
                 <div className="modal-actions-right">
                   <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
@@ -777,6 +1073,10 @@ export default function GoalsView() {
           confirmLabel="Delete" danger
           onConfirm={handleDelete} onCancel={() => setConfirmDelete(false)}
         />
+      )}
+
+      {confirmBulk && (
+        <ConfirmSheet title={`Delete ${selected.size} dream${selected.size > 1 ? 's' : ''}?`} body="You can undo for a few seconds after." confirmLabel="Delete" danger onConfirm={bulkDelete} onCancel={() => setConfirmBulk(false)} />
       )}
 
       {chartGoal && (() => {
