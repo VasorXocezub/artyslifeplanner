@@ -50,7 +50,7 @@ function DreamImg({ src, className, fallback }) {
   const [bad, setBad] = useState(false)
   useEffect(() => setBad(false), [src])
   if (bad) return fallback || null
-  return <img className={className} src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBad(true)} />
+  return <img className={className} src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} />
 }
 
 function Confetti() {
@@ -728,7 +728,7 @@ export default function GoalsView() {
         draggable={manual} onDragStart={() => setDragId(g.id)} onDragEnd={() => setDragId(null)}
         onDragOver={(e) => manual && e.preventDefault()} onDrop={() => manual && dropOn(g.id, filtered)}
       >
-        {g.cover_url ? <DreamImg src={g.cover_url} className="dream-tile-img" fallback={emoji} /> : emoji}
+        {g.cover_url ? <DreamImg src={g.cover_url} className="dream-tile-img" fallback={<>{emoji}<span className="dream-tile-warn" title="The saved image link doesn't load — use the 📷 button to upload the photo instead">⚠ image won't load</span></>} /> : emoji}
         {selectMode && <input type="checkbox" className="dream-select dream-tile-check" aria-label={`Select ${g.title}`} checked={selected.has(g.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(g.id)} />}
         {!selectMode && g.pinned && <span className="dream-tile-pin">★</span>}
         {status === 'done' && <span className="dream-tile-done">👑</span>}

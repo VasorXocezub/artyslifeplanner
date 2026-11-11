@@ -5190,3 +5190,4 @@
 .dream-step-edit .dream-step-date { flex: 0 0 128px !important; width: 128px !important; min-width: 0; }
 .dream-step-edit .sc-icon-btn { flex: 0 0 30px; }
 .dream-step-edit .sc-icon-btn:disabled { opacity: .35; cursor: default; }
+.dream-tile-warn { position: absolute; left: 8px; top: 8px; font-size: 10px; font-weight: 800; background: rgba(255,255,255,.9); color: var(--coral); border-radius: 999px; padding: 2px 8px; }
