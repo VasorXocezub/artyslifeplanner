@@ -1,5 +1,6 @@
 import { dreamHighlights } from './lib/goals'
 import FocusPanel from './FocusPanel'
+import { balanceAsOf } from './lib/accountBalance'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { toIso, planItem } from './lib/social'
@@ -145,6 +146,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     giftNudges: [],
     dreams: { chips: [], closest: null },
     focusToday: 0,
+    hasAccount: false,
   })
   const [loading, setLoading] = useState(true)
 
@@ -155,6 +157,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   async function fetchStats() {
     const { data, error } = await supabase.from('contacts').select('*')
     const { data: goalsData } = await supabase.from('goals').select('*')
+    const { data: acctData } = await supabase.from('account_settings').select('*').limit(1).maybeSingle()
     const { data: focusData } = await supabase.from('focus_sessions').select('duration_minutes, completed_at').eq('completed', true).gte('completed_at', new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString())
     const focusToday = (focusData || []).reduce((n, x) => n + Number(x.duration_minutes || 0), 0)
     const { data: habitsData } = await supabase.from('habits').select('*')
@@ -207,9 +210,14 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const habitsDoneToday = (habitLogsData || []).filter((l) => l.logged_date === todayStr).length
     const habitsTotal = (habitsData || []).length
 
-    const netBalance = (transactionsData || []).reduce((acc, t) => {
-      return t.type === 'income' ? acc + Number(t.amount) : acc - Number(t.amount)
-    }, 0)
+    // Spending power = what's actually in your account today (starting balance + everything since).
+    // Without a starting balance, fall back to this month's net so the number still means something.
+    const monthPrefix = todayStr.slice(0, 7)
+    const monthNet = (transactionsData || []).filter((t) => t.date && t.date.startsWith(monthPrefix) && t.date <= todayStr)
+      .reduce((acc, t) => (t.type === 'income' ? acc + Number(t.amount) : acc - Number(t.amount)), 0)
+    const accountBalance = acctData ? balanceAsOf(acctData, transactionsData || [], todayStr) : null
+    const netBalance = accountBalance !== null ? accountBalance : monthNet
+    const hasAccount = accountBalance !== null
     const hasTransactions = (transactionsData || []).length > 0
 
     const totalSaved = (savingsData || []).reduce((acc, g) => acc + Number(g.current_amount || 0), 0)
@@ -236,7 +244,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const todayPlans = upcomingPlans.filter((p) => p.daysAway === 0).map((p) => p.title)
     const nextPlans = upcomingPlans.slice(0, 4).map((p) => ({ title: p.title, daysAway: p.daysAway }))
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges, dreams, focusToday })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges, dreams, focusToday, hasAccount })
     setLoading(false)
   }
 
@@ -277,10 +285,10 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   }
   if (!hiddenModules.includes('finances') && stats.hasTransactions) {
     statCandidates.push({
-      key: 'net', nav: 'finances', icon: '🎀', title: 'Spending Power',
+      key: 'net', nav: 'finances', icon: '🎀', title: stats.hasAccount ? 'Spending Power' : 'Net this month',
       bigNumber: formatMoney(stats.netBalance, currency), unit: '',
       subtitle: "You're keeping it cute with your money 💅",
-      progressPct: null, color: 'var(--ink)', insight: `Spending power: ${formatMoney(stats.netBalance, currency)}`,
+      progressPct: null, color: 'var(--ink)', insight: `${stats.hasAccount ? 'Spending power' : 'Net this month'}: ${formatMoney(stats.netBalance, currency)}`,
     })
   }
   if (!hiddenModules.includes('finances') && stats.hasSavings) {
@@ -334,7 +342,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     insightItems.push({ icon: '🌸', text: `${stats.habitsDoneToday} habit${stats.habitsDoneToday > 1 ? 's' : ''} completed today`, nav: 'habits' })
   }
   if (!hiddenModules.includes('finances') && heroFocus?.key !== 'net' && stats.hasTransactions) {
-    insightItems.push({ icon: '💸', text: `Spending power: ${formatMoney(stats.netBalance, currency)}`, nav: 'finances' })
+    insightItems.push({ icon: '💸', text: `${stats.hasAccount ? 'Spending power' : 'Net this month'}: ${formatMoney(stats.netBalance, currency)}`, nav: 'finances' })
   }
   if (!hiddenModules.includes('finances') && heroFocus?.key !== 'savings' && stats.hasSavings) {
     insightItems.push({ icon: '✨', text: `${formatMoney(stats.totalSaved, currency)} saved toward your goals`, nav: 'finances' })

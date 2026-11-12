@@ -47,7 +47,7 @@ export default function FinanceOverview({ currency }) {
     const a = acctRes.error ? null : acctRes.data
     setAcct(a)
     if (a) {
-      const { data: all } = await supabase.from('transactions').select('type, amount').gte('date', a.start_date)
+      const { data: all } = await supabase.from('transactions').select('type, amount, date').gte('date', a.start_date).lte('date', toIso(new Date()))
       const delta = (all || []).reduce((sum, t) => sum + (t.type === 'income' ? 1 : -1) * Number(t.amount), 0)
       setBalance(Number(a.starting_balance) + delta)
     } else {

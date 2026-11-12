@@ -179,7 +179,7 @@ export default function BudgetPlanner({ currency }) {
       setSpendRows(sp.data || [])
     } else setSpendRows([])
     if (ac.data) {
-      const all = await soft(supabase.from('transactions').select('type, amount').gte('date', ac.data.start_date))
+      const all = await soft(supabase.from('transactions').select('type, amount').gte('date', ac.data.start_date).lte('date', ymd(new Date())))
       setBalance(all.data ? Number(ac.data.starting_balance) + all.data.reduce((a, x) => a + (x.type === 'income' ? 1 : -1) * Number(x.amount), 0) : null)
     } else setBalance(null)
     // irregular income: what came in over the last few periods
