@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { key: 'inbox', label: 'Inbox', num: '02', enabled: true },
   { key: 'goals', label: 'Dream Board', num: '03', enabled: true },
   { key: 'habits', label: 'Daily Habits', num: '04', enabled: true },
-  { key: 'focustimer', label: 'Mermaid Cove', num: '05', enabled: true },
+  { key: 'focustimer', label: 'Focus Timer', num: '05', enabled: true },
   { key: 'todos', label: 'To-Do List', num: '06', enabled: true },
   { key: 'glowup', label: 'Glow Up Hub', num: '07', enabled: true },
   { key: 'braindump', label: 'Brain Dump', num: '08', enabled: true },
@@ -193,7 +193,7 @@ function App() {
         </nav>
         {focusRemaining != null && (
           <button className="focus-sidebar-badge" onClick={() => setView('focustimer')}>
-            🧜‍♀️ {focusRemaining > 0 ? formatFocusRemaining(focusRemaining) : 'Session complete!'}
+            ⏱ {focusRemaining > 0 ? formatFocusRemaining(focusRemaining) : 'Session complete!'}
           </button>
         )}
         <div className="sidebar-footer">

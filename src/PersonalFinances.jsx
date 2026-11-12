@@ -5,6 +5,7 @@ import { useFinanceCategories, saveFinanceCategory } from './lib/financeCategori
 import BudgetHint from './BudgetHint'
 import { loadRules, matchRule } from './lib/budgetRules'
 import { toIso } from './lib/social'
+import { monthBalances } from './lib/accountBalance'
 
 const emptyForm = {
   date: toIso(new Date()),
@@ -39,13 +40,44 @@ export default function PersonalFinances({ currency }) {
   const [savingsGoals, setSavingsGoals] = useState([])
   const { categories: sharedCategories, refresh: refreshCategories } = useFinanceCategories()
   const [rules, setRules] = useState([])
+  const [acct, setAcct] = useState(null)
+  const [acctNote, setAcctNote] = useState(null)
+  const [balEdit, setBalEdit] = useState(false)
+  const [balInput, setBalInput] = useState('')
+  const [balDate, setBalDate] = useState('')
+  const [balError, setBalError] = useState(null)
   const [autoCat, setAutoCat] = useState(null)
   useEffect(() => { loadRules().then(setRules) }, [])
 
   useEffect(() => {
     fetchTransactions()
     fetchSavingsGoals()
+    fetchAccount()
   }, [])
+
+  async function fetchAccount() {
+    const { data, error } = await supabase.from('account_settings').select('*').limit(1).maybeSingle()
+    if (error) setAcctNote(`Account balance isn't available yet — ${error.message}. Run finance-balance-budget.sql in Supabase.`)
+    else { setAcct(data); setAcctNote(null) }
+  }
+
+  function openBalEditor() {
+    setBalInput(acct ? String(acct.starting_balance) : '0')
+    setBalDate(acct ? acct.start_date : toIso(new Date()))
+    setBalError(null); setBalEdit(true)
+  }
+
+  async function saveBalance() {
+    const amount = balInput.trim() === '' ? 0 : parseFloat(balInput)
+    if (Number.isNaN(amount)) { setBalError('Enter a number (negative is fine if you start overdrawn).'); return }
+    if (!balDate) { setBalError('Pick the date this balance was true.'); return }
+    const payload = { starting_balance: amount, start_date: balDate }
+    let error
+    if (acct) ({ error } = await supabase.from('account_settings').update(payload).eq('id', acct.id))
+    else { const user_id = await getUserId(); ({ error } = await supabase.from('account_settings').insert({ ...payload, user_id })) }
+    if (error) { setBalError(error.message); return }
+    setBalEdit(false); fetchAccount()
+  }
 
   async function fetchSavingsGoals() {
     const { data } = await supabase.from('savings_goals').select('*').order('created_at', { ascending: true })
@@ -200,6 +232,13 @@ export default function PersonalFinances({ currency }) {
     return matchesSearch && matchesType
   })
 
+  const ymdOf = (d) => toIso(d)
+  const bal = monthBalances(
+    acct, transactions,
+    ymdOf(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1)),
+    ymdOf(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0)),
+    toIso(new Date()),
+  )
   const monthLabel = viewMonth.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
   const isCurrentMonth =
     viewMonth.getMonth() === new Date().getMonth() && viewMonth.getFullYear() === new Date().getFullYear()
@@ -239,6 +278,41 @@ export default function PersonalFinances({ currency }) {
           </button>
         )}
       </div>
+
+      {acctNote && <p className="field-hint">{acctNote}</p>}
+      {!acctNote && (
+        <div className="calendar-card converter-card acct-card">
+          <p className="module-group-label">ACCOUNT BALANCE</p>
+          {balEdit ? (
+            <div className="acct-edit">
+              <label>Starting balance<input type="number" step="0.01" value={balInput} onChange={(e) => setBalInput(e.target.value)} autoFocus /></label>
+              <label>As of<input type="date" value={balDate} onChange={(e) => setBalDate(e.target.value)} /></label>
+              <p className="field-hint">Only transactions on or after this date are added to it.</p>
+              {balError && <p className="error-msg">{balError}</p>}
+              <div className="acct-actions">
+                <button className="btn-primary" onClick={saveBalance}>Save</button>
+                <button className="btn-cancel" onClick={() => setBalEdit(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : !acct ? (
+            <>
+              <p className="field-hint">Set your starting balance and these totals will roll it forward automatically.</p>
+              <button className="btn-primary" onClick={openBalEditor}>Set starting balance</button>
+            </>
+          ) : bal?.before ? (
+            <p className="field-hint">This month is before your starting balance date ({formatDate(acct.start_date)}).</p>
+          ) : bal && (
+            <>
+              <p className="converter-total">{formatMoney(bal.closing, currency)}</p>
+              <p className="acct-eq">
+                {formatMoney(bal.opening, currency)} {bal.startsMidMonth ? 'starting' : 'opening'} + {formatMoney(bal.income, currency)} in − {formatMoney(bal.expenses, currency)} out
+                {' '}= {bal.isCurrent ? 'balance now' : 'closing balance'}
+              </p>
+              <button className="btn-ghost" onClick={openBalEditor}>Edit starting balance</button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="calendar-card converter-card">
         <p className="module-group-label">TOTAL SPENT — {monthLabel.toUpperCase()}</p>

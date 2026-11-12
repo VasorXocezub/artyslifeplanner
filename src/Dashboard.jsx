@@ -143,6 +143,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     todayPlans: [],
     giftNudges: [],
     dreams: { chips: [], closest: null },
+    focusToday: 0,
   })
   const [loading, setLoading] = useState(true)
 
@@ -153,6 +154,8 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   async function fetchStats() {
     const { data, error } = await supabase.from('contacts').select('*')
     const { data: goalsData } = await supabase.from('goals').select('*')
+    const { data: focusData } = await supabase.from('focus_sessions').select('duration_minutes, completed_at').eq('completed', true).gte('completed_at', new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).toISOString())
+    const focusToday = (focusData || []).reduce((n, x) => n + Number(x.duration_minutes || 0), 0)
     const { data: habitsData } = await supabase.from('habits').select('*')
     const { data: habitLogsData } = await supabase.from('habit_logs').select('*')
     const { data: transactionsData } = await supabase.from('transactions').select('*')
@@ -232,7 +235,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
     const todayPlans = upcomingPlans.filter((p) => p.daysAway === 0).map((p) => p.title)
     const nextPlans = upcomingPlans.slice(0, 4).map((p) => ({ title: p.title, daysAway: p.daysAway }))
 
-    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges, dreams })
+    setStats({ nextBirthday, birthdaysThisMonth, goalsInProgress, habitsDoneToday, habitsTotal, netBalance, hasTransactions, totalSaved, hasSavings, todosOpen, shoppingOpen, shoppingPlanned, shoppingGroceries, currentlyReadingBook, booksReadThisYear, wellness: wellnessData || null, nextSocialEvent, nextPlans, todayBirthdays, todayPlans, giftNudges, dreams, focusToday })
     setLoading(false)
   }
 
@@ -382,6 +385,7 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
   if (!hiddenModules.includes('social')) for (const t of stats.todayPlans) todayItems.push({ icon: '💌', text: t, nav: 'social' })
   if (!hiddenModules.includes('habits') && stats.habitsTotal > 0 && stats.habitsDoneToday < stats.habitsTotal) todayItems.push({ icon: '🌸', text: `${stats.habitsTotal - stats.habitsDoneToday} habit${stats.habitsTotal - stats.habitsDoneToday > 1 ? 's' : ''} left`, nav: 'habits' })
   if (!hiddenModules.includes('goals')) for (const c of stats.dreams.chips) todayItems.push({ icon: '🌱', text: c.text, nav: 'goals' })
+  if (!hiddenModules.includes('focustimer') && stats.focusToday > 0) todayItems.push({ icon: '⏱️', text: `${stats.focusToday} min focused`, nav: 'focustimer' })
   if (!hiddenModules.includes('todos') && stats.todosOpen > 0) todayItems.push({ icon: '📝', text: `${stats.todosOpen} task${stats.todosOpen > 1 ? 's' : ''} open`, nav: 'todos' })
 
   return (

@@ -4304,378 +4304,6 @@
 }
 
 /* ---------- Focus Timer ---------- */
-.focus-timer-card {
-  text-align: center;
-  padding: 32px 24px;
-}
-
-.focus-timer-active {
-  padding: 40px 24px;
-}
-
-.focus-plant-emoji {
-  display: block;
-  font-size: 64px;
-  line-height: 1;
-  margin-bottom: 14px;
-  transition: transform 0.6s ease;
-}
-
-.focus-plant-stage {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink-dim);
-  margin-bottom: 14px;
-}
-
-.focus-timer-clock {
-  font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 0 0 16px 0;
-}
-
-.focus-garden-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.focus-garden-plant {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  border: 2px solid var(--border);
-  border-radius: var(--r12);
-  font-size: 20px;
-  transition: transform 0.12s ease;
-}
-
-.focus-garden-plant:hover {
-  transform: scale(1.15);
-}
-
-/* ---------- Mermaid Cove ---------- */
-.cove-top-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-
-.cove-pearl-counter {
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-weight: 800;
-  font-size: 14px;
-  color: var(--ink);
-}
-
-.cove-streak-pill {
-  background: var(--coral-soft);
-  color: var(--coral);
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-weight: 800;
-  font-size: 14px;
-}
-
-.cove-xp-block {
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--r18);
-  padding: 16px 20px;
-  margin-bottom: 18px;
-}
-
-.cove-level-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.cove-level-badge {
-  background: var(--ink);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 999px;
-}
-
-.cove-level-title {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.cove-scene {
-  position: relative;
-  border-radius: 22px;
-  padding: 22px;
-  margin-bottom: 12px;
-  overflow: hidden;
-  min-height: 260px;
-}
-
-.cove-scene-decorate {
-  box-shadow: inset 0 0 0 3px var(--coral);
-}
-
-.cove-stage-label {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  margin: 0 0 12px 0;
-}
-
-.cove-placed-item {
-  position: absolute;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translate(-50%, -50%);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  transition: transform 0.1s ease;
-  touch-action: none;
-  user-select: none;
-}
-
-.cove-placed-item:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-}
-
-.cove-placed-item-draggable {
-  cursor: grab;
-}
-
-.cove-placed-item-draggable:hover {
-  outline: 2px dashed rgba(255, 255, 255, 0.6);
-  outline-offset: 4px;
-  border-radius: 50%;
-}
-
-.cove-placed-item-dragging {
-  cursor: grabbing;
-  transform: translate(-50%, -50%) scale(1.2);
-  z-index: 10;
-}
-
-.cove-empty-hint {
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.cove-bubble {
-  position: absolute;
-  bottom: -10px;
-  font-size: 16px;
-  opacity: 0.7;
-}
-
-.cove-scene-animated .cove-bubble-1 { left: 20%; animation: coveBubbleRise 6s ease-in infinite; }
-.cove-scene-animated .cove-bubble-2 { left: 55%; animation: coveBubbleRise 8s ease-in infinite 1.5s; }
-.cove-scene-animated .cove-bubble-3 { left: 75%; animation: coveBubbleRise 7s ease-in infinite 3s; }
-
-@keyframes coveBubbleRise {
-  0% { transform: translateY(0) scale(0.8); opacity: 0; }
-  15% { opacity: 0.8; }
-  100% { transform: translateY(-160px) scale(1.1); opacity: 0; }
-}
-
-.cove-completion-card {
-  background: linear-gradient(120deg, var(--coral-soft) 0%, var(--pink-soft) 100%);
-}
-
-.cove-reward-row {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--ink);
-  margin: 10px 0;
-}
-
-.cove-goal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.cove-goal-select {
-  background: var(--bg);
-  border: 2px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.focus-timer-stat-value {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 4px 0;
-}
-
-/* Shop */
-.cove-shop-modal {
-  width: 620px;
-  max-width: 94vw;
-}
-
-.cove-shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.cove-shop-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg);
-  border: 2px solid var(--border);
-  border-radius: var(--r16);
-  padding: 14px 10px;
-  text-align: center;
-}
-
-.cove-shop-item-emoji {
-  font-size: 28px;
-}
-
-.cove-shop-item-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.cove-rarity-chip {
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.cove-owned-tag {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--coral);
-}
-
-/* Achievements */
-.cove-achievement-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-  max-height: 55vh;
-  overflow-y: auto;
-}
-
-.cove-achievement-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  background: var(--bg);
-  border: 2px solid var(--border);
-  border-radius: var(--r16);
-  padding: 14px 8px;
-  text-align: center;
-  opacity: 0.55;
-}
-
-.cove-achievement-unlocked {
-  opacity: 1;
-  border-color: var(--coral);
-  background: var(--coral-soft);
-}
-
-.cove-achievement-icon {
-  font-size: 24px;
-}
-
-.cove-achievement-name {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.cove-achievement-progress {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--ink-faint);
-}
-
-.cove-levelup-modal {
-  width: 340px;
-}
-
-/* Focus mode (minimal UI while timer runs) */
-.cove-focus-mode {
-  max-width: 480px;
-  margin: 40px auto;
-  text-align: center;
-}
-
-.cove-focus-mode-title {
-  font-family: var(--font-display);
-  font-size: 18px;
-  color: var(--ink);
-  margin-bottom: 16px;
-}
-
-.cove-scene-focus {
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cove-focus-mermaid {
-  font-size: 56px;
-  animation: coveMermaidSway 4s ease-in-out infinite;
-}
-
-@keyframes coveMermaidSway {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-8px) rotate(3deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cove-bubble, .cove-focus-mermaid {
-    animation: none !important;
-  }
-}
-
 .focus-sidebar-badge {
   display: block;
   width: 100%;
@@ -5191,3 +4819,50 @@
 .dream-step-edit .sc-icon-btn { flex: 0 0 30px; }
 .dream-step-edit .sc-icon-btn:disabled { opacity: .35; cursor: default; }
 .dream-tile-warn { position: absolute; left: 8px; top: 8px; font-size: 10px; font-weight: 800; background: rgba(255,255,255,.9); color: var(--coral); border-radius: 999px; padding: 2px 8px; }
+.dream-tile-warn { cursor: pointer; z-index: 2; } .dream-fix { cursor: pointer; text-decoration: underline; display: block; }
+
+/* Transactions: account balance card */
+.acct-card .converter-total { margin: 4px 0; }
+.acct-eq { margin: 0 0 8px; font-size: 13px; color: var(--ink-dim); }
+.acct-edit { display: flex; flex-direction: column; gap: 10px; }
+.acct-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+.acct-actions { display: flex; gap: 8px; }
+@media (max-width: 600px) {
+  .totals-row { gap: 8px; }
+  .totals-row .total-card { min-width: 0; flex: 1 1 0; padding-left: 10px; padding-right: 10px; }
+  .totals-row .total-value { font-size: clamp(13px, 4.2vw, 20px); white-space: nowrap; }
+}
+
+.ft-card { text-align: center; padding: 24px 18px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.ft-ring { position: relative; width: min(260px, 70vw); aspect-ratio: 1; }
+.ft-ring svg { width: 100%; height: 100%; }
+.ft-track { fill: none; stroke: var(--accent-tint); stroke-width: 10; }
+.ft-arc { fill: none; stroke: var(--accent-deep); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .5s linear; }
+.ft-arc-break { stroke: var(--lavender); }
+.ft-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 28px; }
+.ft-clock { font-family: var(--font-display); font-size: clamp(38px, 11vw, 54px); font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+.ft-sub { font-size: 12px; font-weight: 700; color: var(--ink-dim); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-presets { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+.ft-custom { width: 92px; border: 2px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700; }
+.ft-fields { display: flex; flex-direction: column; gap: 8px; width: min(420px, 100%); }
+.ft-fields input, .ft-fields select { width: 100%; }
+.ft-start { min-width: 180px; }
+.ft-controls { display: flex; gap: 10px; }
+.ft-done { display: flex; flex-direction: column; gap: 8px; align-items: center; background: var(--accent-tint); border-radius: 16px; padding: 14px; width: min(460px, 100%); }
+.ft-done-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.ft-stats { display: flex; gap: 10px; margin: 14px 0; }
+.ft-stats .total-card { flex: 1 1 0; min-width: 0; }
+.ft-week { margin-bottom: 14px; }
+.ft-goal-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ft-goal-row select { border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink); font-weight: 700; font-size: 12px; padding: 4px 10px; }
+.ft-bars { display: flex; gap: 8px; align-items: flex-end; height: 90px; margin-top: 10px; }
+.ft-bar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.ft-bar-fill { width: 100%; max-width: 28px; background: var(--accent-deep); border-radius: 8px 8px 4px 4px; display: block; }
+.ft-bar small { font-size: 10px; color: var(--ink-dim); font-weight: 700; }
+.ft-recent { list-style: none; margin: 8px 0 0; padding: 0; }
+.ft-recent li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.ft-recent small { color: var(--ink-dim); white-space: nowrap; }
+.ft-fields input, .ft-fields select { border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; padding: 10px 16px; }
+.ft-fields input:focus, .ft-fields select:focus, .ft-custom:focus { outline: none; border-color: var(--pink); }
+.ft-stats .total-value { white-space: nowrap; font-size: clamp(14px, 4.4vw, 20px); }
+.ft-stats .total-card { padding-left: 12px; padding-right: 12px; }

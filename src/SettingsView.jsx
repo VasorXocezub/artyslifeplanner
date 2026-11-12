@@ -6,7 +6,7 @@ const SPACES = [
   { key: 'contacts', label: 'Social Calendar: birthdays', icon: '🎂' },
   { key: 'goals', label: 'Dream Board', icon: '🌱' },
   { key: 'habits', label: 'Daily Habits', icon: '🔥' },
-  { key: 'focustimer', label: 'Mermaid Cove', icon: '🧜‍♀️' },
+  { key: 'focustimer', label: 'Focus Timer', icon: '⏱️' },
   { key: 'finances', label: 'Rich Girl Era', icon: '💸' },
   { key: 'todos', label: 'To-Do List', icon: '📋' },
   { key: 'shopping', label: 'Kitchen Club', icon: '🍎' },
@@ -502,7 +502,7 @@ export default function SettingsView({ session, hiddenModules, onSaveModules, on
         <p className="module-group-label">Danger zone</p>
         <h3 className="settings-danger-title">Reset all data</h3>
         <p className="settings-danger-text">
-          Permanently deletes everything you've added — contacts, to-dos, habits, finances, recipes, Mermaid Cove progress and more —
+          Permanently deletes everything you've added — contacts, to-dos, habits, finances, recipes, focus sessions and more —
           and resets your preferences. Your login stays. This can't be undone.
         </p>
         {!resetOpen ? (

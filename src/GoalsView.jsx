@@ -564,7 +564,7 @@ export default function GoalsView() {
         onTouchStart={swipeStart} onTouchEnd={(e) => swipeEnd(e, g)}
       >
         {celebrate === g.id && <Confetti />}
-        {g.cover_url && <DreamImg src={g.cover_url} className="dream-cover" fallback={<p className="field-hint">⚠ Cover image couldn't load — open the dream to upload it instead.</p>} />}
+        {g.cover_url && <DreamImg src={g.cover_url} className="dream-cover" fallback={<label className="field-hint dream-fix" onClick={(e) => e.stopPropagation()}>⚠ Cover image couldn't load — tap here to re-upload it<input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; setCover(g, f) }} /></label>} />}
         <div onClick={() => openEdit(g)} style={{ cursor: 'pointer' }}>
           <div className="dream-top">
             <span className="dream-top-left">
@@ -728,7 +728,7 @@ export default function GoalsView() {
         draggable={manual} onDragStart={() => setDragId(g.id)} onDragEnd={() => setDragId(null)}
         onDragOver={(e) => manual && e.preventDefault()} onDrop={() => manual && dropOn(g.id, filtered)}
       >
-        {g.cover_url ? <DreamImg src={g.cover_url} className="dream-tile-img" fallback={<>{emoji}<span className="dream-tile-warn" title="The saved image link doesn't load — use the 📷 button to upload the photo instead">⚠ image won't load</span></>} /> : emoji}
+        {g.cover_url ? <DreamImg src={g.cover_url} className="dream-tile-img" fallback={<>{emoji}<label className="dream-tile-warn" title="The saved image doesn't load — tap to upload the photo again" onClick={(e) => e.stopPropagation()}>⚠ Tap to re-upload<input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; setCover(g, f) }} /></label></>} /> : emoji}
         {selectMode && <input type="checkbox" className="dream-select dream-tile-check" aria-label={`Select ${g.title}`} checked={selected.has(g.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(g.id)} />}
         {!selectMode && g.pinned && <span className="dream-tile-pin">★</span>}
         {status === 'done' && <span className="dream-tile-done">👑</span>}
