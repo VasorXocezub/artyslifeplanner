@@ -4881,3 +4881,26 @@
 .ft-note { display: flex; gap: 6px; width: 100%; }
 .ft-note input { flex: 1; min-width: 0; border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink); padding: 8px 14px; font: inherit; font-size: 13px; }
 .ft-recent-note { color: var(--ink-dim); font-style: normal; }
+
+/* Compact focus widget (home): one slim row */
+.ft-side { display: contents; }
+.ft-more { background: none; border: none; color: var(--ink-dim); font-size: 12px; font-weight: 700; cursor: pointer; padding: 0; text-align: left; }
+.ft-widget { padding: 12px 16px; }
+.ft-widget > .module-group-label { margin: 0 0 6px; }
+.ft-compact { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 4px 14px; padding: 0; text-align: left; }
+.ft-compact .ft-ring { width: 84px; }
+.ft-compact .ft-center { padding: 0; }
+.ft-compact .ft-clock { font-size: 19px; }
+.ft-compact .ft-sub { display: none; }
+.ft-compact .ft-track, .ft-compact .ft-arc { stroke-width: 14; }
+.ft-compact .ft-side { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 0; }
+.ft-compact .ft-presets { justify-content: flex-start; gap: 6px; }
+.ft-compact .ft-presets .filter-pill { padding: 4px 10px; font-size: 12px; }
+.ft-compact .ft-custom { width: 70px; padding: 4px 10px; font-size: 12px; }
+.ft-compact .ft-fields { width: 100%; }
+.ft-compact .ft-start { min-width: 0; padding: 8px 18px; font-size: 13px; }
+.ft-compact .ft-controls { gap: 8px; }
+.ft-compact .ft-controls button { padding: 8px 16px; font-size: 13px; }
+.ft-compact .error-msg, .ft-compact .ft-done { grid-column: 1 / -1; width: 100%; }
+@media (max-width: 420px) { .ft-compact { grid-template-columns: 72px 1fr; } .ft-compact .ft-ring { width: 72px; } .ft-compact .ft-clock { font-size: 16px; } }
+.ft-compact .ft-custom { width: 84px; }

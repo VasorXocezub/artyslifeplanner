@@ -23,6 +23,7 @@ export default function FocusPanel({ compact = false }) {
   const [note, setNote] = useState('')
   const [noteSaved, setNoteSaved] = useState(false)
   const [sound, setSoundState] = useState(getSound)
+  const [more, setMore] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -84,6 +85,7 @@ export default function FocusPanel({ compact = false }) {
         </div>
       </div>
 
+      <div className="ft-side">
       {!active && (
         <>
           <div className="ft-presets">
@@ -92,14 +94,15 @@ export default function FocusPanel({ compact = false }) {
             ))}
             <input className="ft-custom" type="number" min="1" max="240" placeholder="Custom" value={custom} onChange={(e) => setCustom(e.target.value)} aria-label="Custom minutes" />
           </div>
-          <div className="ft-fields">
+          {compact && <button className="ft-more" onClick={() => setMore((m) => !m)}>{more || label || link ? '▾' : '▸'} What are you focusing on?</button>}
+          {(!compact || more || label || link) && <div className="ft-fields">
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="What are you focusing on?" maxLength={80} />
             <select value={link} onChange={(e) => setLink(e.target.value)} aria-label="Link to a to-do or dream">
               <option value="">Not linked</option>
               {dreams.length > 0 && <optgroup label="🌱 Dreams">{dreams.map((g) => <option key={g.id} value={`goal:${g.id}`}>{g.cover_emoji || '🌱'} {g.title}</option>)}</optgroup>}
               {todos.length > 0 && <optgroup label="✅ To-dos">{todos.map((t) => <option key={t.id} value={`todo:${t.id}`}>{t.text}</option>)}</optgroup>}
             </select>
-          </div>
+          </div>}
           <button className="btn-primary ft-start" onClick={begin}>Start {startMins} min</button>
           {!compact && (
             <div className="ft-options">
@@ -120,6 +123,7 @@ export default function FocusPanel({ compact = false }) {
           <button className="btn-cancel" onClick={() => (active.mode === 'break' ? engine.stop() : setConfirmStop(true))}>{active.mode === 'break' ? 'Skip break' : 'Stop'}</button>
         </div>
       )}
+      </div>
 
       {done && (
         <div className="ft-done">
