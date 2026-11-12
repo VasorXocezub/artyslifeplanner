@@ -32,18 +32,38 @@ export function focusStreak(sessions, today = new Date()) {
   return n
 }
 
-export function playChime() {
+export const SOUNDS = [
+  { key: 'chime', label: 'Soft chime', notes: [660, 880, 1320], type: 'sine', gap: 0.22 },
+  { key: 'bell', label: 'Bell', notes: [880, 660], type: 'triangle', gap: 0.5 },
+  { key: 'pop', label: 'Pop', notes: [520, 780], type: 'square', gap: 0.12 },
+  { key: 'off', label: 'Silent', notes: [], type: 'sine', gap: 0 },
+]
+
+export function getSound() {
+  try { return localStorage.getItem('focus-sound') || 'chime' } catch { return 'chime' }
+}
+export function setSound(k) {
+  try { localStorage.setItem('focus-sound', k) } catch { /* ignore */ }
+}
+
+export function playChime(kind = getSound()) {
+  const snd = SOUNDS.find((x) => x.key === kind) || SOUNDS[0]
+  if (!snd.notes.length) return
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext
     if (!Ctx) return
     const ctx = new Ctx()
-    ;[660, 880, 1320].forEach((f, i) => {
+    snd.notes.forEach((f, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain()
-      o.type = 'sine'; o.frequency.value = f
+      o.type = snd.type; o.frequency.value = f
       o.connect(g); g.connect(ctx.destination)
-      const t = ctx.currentTime + i * 0.22
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6)
+      const t = ctx.currentTime + i * snd.gap
+      const peak = snd.type === 'square' ? 0.06 : 0.18
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6)
       o.start(t); o.stop(t + 0.65)
     })
   } catch { /* audio is a nice-to-have */ }
 }
+
+// Pomodoro: long break after every 4th focus session
+export const breakLength = (completedToday) => (completedToday > 0 && completedToday % 4 === 0 ? 15 : 5)

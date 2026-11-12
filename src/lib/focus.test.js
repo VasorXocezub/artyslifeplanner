@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fmtClock, minutesOn, lastDays, focusStreak } from './focus'
+import { fmtClock, minutesOn, lastDays, focusStreak, breakLength, SOUNDS } from './focus'
 
 const at = (y, m, d, h = 10) => new Date(y, m, d, h).toISOString()
 describe('focus helpers', () => {
@@ -18,5 +18,12 @@ describe('focus helpers', () => {
     expect(focusStreak(sessions, today)).toBe(3)
     expect(focusStreak(sessions.slice(2), today)).toBe(2)
     expect(focusStreak([], today)).toBe(0)
+  })
+})
+
+describe('pomodoro + sounds', () => {
+  it('long break every 4th session', () => {
+    expect([1, 2, 3, 4, 5, 8].map(breakLength)).toEqual([5, 5, 5, 15, 5, 15])
+    expect(SOUNDS.map((x) => x.key)).toContain('off')
   })
 })

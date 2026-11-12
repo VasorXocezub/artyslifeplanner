@@ -1,6 +1,8 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
-import { getActiveFocusSession, remainingSecondsFor } from './lib/focusSession'
+import * as focusEngine from './lib/focusEngine'
+import { useFocus } from './lib/useFocus'
+import { fmtClock } from './lib/focus'
 import { runReminders } from './lib/reminders'
 import { getHiddenModules, setHiddenModules, getLastSeenTea, setLastSeenTea, getLastSeenUpdates, setLastSeenUpdates, getTheme } from './lib/localPrefs'
 import Auth from './Auth'
@@ -54,27 +56,13 @@ function App() {
   const [hasUnseenTea, setHasUnseenTea] = useState(false)
   const [hasUnseenUpdates, setHasUnseenUpdates] = useState(false)
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false)
-  const [focusRemaining, setFocusRemaining] = useState(null)
+  const focus = useFocus()
 
   useEffect(() => {
-    function poll() {
-      const stored = getActiveFocusSession()
-      if (!stored) {
-        setFocusRemaining(null)
-        return
-      }
-      setFocusRemaining(remainingSecondsFor(stored))
-    }
-    poll()
-    const id = setInterval(poll, 1000)
-    return () => clearInterval(id)
+    const go = (e) => setView(e.detail)
+    window.addEventListener('app:navigate', go)
+    return () => window.removeEventListener('app:navigate', go)
   }, [])
-
-  function formatFocusRemaining(seconds) {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -87,6 +75,10 @@ function App() {
 
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (session) focusEngine.init()
+  }, [session])
 
   useEffect(() => {
     if (!session) return
@@ -174,6 +166,11 @@ function App() {
         {mobileMenuOpen ? '✕' : '☰'}
       </button>
       {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />}
+      {(focus.active || focus.done) && view !== 'focustimer' && !mobileMenuOpen && (
+        <button className="focus-float" onClick={() => setView('focustimer')} aria-label="Open focus timer">
+          ⏱ {focus.active ? `${fmtClock(focus.remaining)}${focus.paused ? ' · paused' : ''}` : 'Done!'}
+        </button>
+      )}
       <aside className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
         <nav className="nav">
           {NAV_ITEMS.filter((item) => item.key === 'contacts' ? !(hiddenModules.includes('contacts') && hiddenModules.includes('social')) : !hiddenModules.includes(item.key)).map((item) => (
@@ -191,9 +188,9 @@ function App() {
             </button>
           ))}
         </nav>
-        {focusRemaining != null && (
+        {(focus.active || focus.done) && view !== 'focustimer' && (
           <button className="focus-sidebar-badge" onClick={() => setView('focustimer')}>
-            ⏱ {focusRemaining > 0 ? formatFocusRemaining(focusRemaining) : 'Session complete!'}
+            ⏱ {focus.active ? `${fmtClock(focus.remaining)}${focus.paused ? ' · paused' : focus.active.mode === 'break' ? ' · break' : ''}` : 'Session complete!'}
           </button>
         )}
         <div className="sidebar-footer">

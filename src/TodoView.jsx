@@ -1,3 +1,4 @@
+import * as focusEngine from './lib/focusEngine'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, getUserId } from './lib/supabase'
 import { getHiddenTodoTabs } from './lib/localPrefs'
@@ -1044,6 +1045,7 @@ export default function TodoView() {
                   >
                     💬{(notesByTodo[t.id] || []).length > 0 && <span className="todo-notes-count">{notesByTodo[t.id].length}</span>}
                   </button>
+                  <button className="todo-notes-btn" title="Focus on this" aria-label="Focus on this" onClick={() => { focusEngine.prefill({ link: `todo:${t.id}`, label: t.text }); window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'focustimer' })) }}>⏱</button>
                   <button className="todo-delete" onClick={() => handleDelete(t.id)}>×</button>
                 </div>
 

@@ -9,6 +9,7 @@ import {
   childrenMap, reorderIds, eraColor, affirmationOf, weekKey, checkinDue, shareText,
 } from './lib/goals'
 import { exportBoardPng } from './lib/exportBoard'
+import * as focusEngine from './lib/focusEngine'
 import { formatMoney } from './lib/currency'
 import { toIso } from './lib/social'
 import { fileToDataUrl } from './lib/image'
@@ -702,6 +703,9 @@ export default function GoalsView() {
             <button className="sc-chip-btn" aria-label="Move later" onClick={() => moveManual(g, 1, filtered)}>↓</button>
             <span className="dream-drag">⠿ drag to reorder</span>
           </span>
+        )}
+        {status !== 'done' && !isArchived(g) && (
+          <button className="sc-chip-btn dream-archive" onClick={() => { focusEngine.prefill({ link: `goal:${g.id}`, label: g.title }); window.dispatchEvent(new CustomEvent('app:navigate', { detail: 'focustimer' })) }}>⏱ Focus on this</button>
         )}
         {status === 'done' && !isArchived(g) && (
           <button className="sc-chip-btn dream-archive" onClick={() => archiveGoal(g, true)}>🗄️ Archive</button>

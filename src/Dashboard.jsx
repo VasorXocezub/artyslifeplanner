@@ -1,4 +1,5 @@
 import { dreamHighlights } from './lib/goals'
+import FocusPanel from './FocusPanel'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { toIso, planItem } from './lib/social'
@@ -419,6 +420,13 @@ export default function Dashboard({ onNavigate, user, hiddenModules = [] }) {
           <p className="hero-quote-text">{renderQuote(activeMessages[msgIndex])}</p>
         </div>
       </div>
+
+      {!hiddenModules.includes('focustimer') && (
+        <div className="calendar-card ft-widget">
+          <p className="module-group-label">⏱ Focus</p>
+          <FocusPanel compact />
+        </div>
+      )}
 
       {!loading && (heroFocus || insightItems.length > 0) && (
         <>
